@@ -650,6 +650,12 @@ body.mp-on { padding-bottom: 76px; }
 .nb-body { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 .nb-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: -6px; }
 .nb-tools .tiny { margin-right: auto; }
+.join-already { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 8px; background: var(--wait-bg); border: 2px solid var(--blue); border-radius: var(--r-s); padding: 12px 14px; text-align: center; }
+.join-already.bottom { background: transparent; border: 0; padding: 0; }
+.big-signin { font-size: 1.08rem; padding: 12px 18px; justify-content: center; background: var(--white); border: var(--bw) solid var(--ink); }
+.join-who { border-top: 1px dashed var(--line); padding: 8px 0; } .join-who > summary { cursor: pointer; font-family: var(--f-ui); }
+.join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
+.join .signin-card form .btn.primary { justify-content: center; font-size: 1.05rem; padding: 10px 16px; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -4122,13 +4128,15 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const s = Hub.roster.byId(params.id); if (!s) { main.innerHTML = U.empty('Student not found.'); return; }
     const stats = Hub.mastery.studentSkills(s.id), atts = S().attempts.filter(t => t.sid === s.id).slice().reverse();
     const mis = {}; S().evidence.filter(e => e.sid === s.id).forEach(e => (e.tags || []).forEach(t => (mis[t] = (mis[t] || 0) + 1)));
-    main.innerHTML = `<a class="back" href="#/mastery?group=${s.group}">← Mastery</a>` + U.heading(C().GROUPS[s.group].label.toUpperCase(), esc(s.name), `${esc(s.email)} · overall ${Hub.mastery.overall(s.id) ?? '—'}%`, `<button class="btn ghost" id="view-as">👁 View as ${esc(s.name.split(' ')[0])}</button>`) +
+    main.innerHTML = `<a class="back" href="#/mastery?group=${s.group}">← Mastery</a>` + U.heading(C().GROUPS[s.group].label.toUpperCase(), esc(s.name), `${esc(s.username || s.email || 'not joined yet')} · overall ${Hub.mastery.overall(s.id) ?? '—'}%`, `<button class="btn ghost" id="view-as">👁 View as ${esc(s.name.split(' ')[0])}</button>`) +
       `<div class="grid g2"><section class="card"><h2 class="bar-head green">Skills</h2>${C().UNITS[s.course].filter(([u]) => stats.some(x => C().SKILL[x.skill].unit === u)).map(([u, name]) => `<h3 class="unit-h ${U.unitColour(u)}">Unit ${u} · ${esc(name)}</h3>${stats.filter(x => C().SKILL[x.skill].unit === u).map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<span class="tiny muted">${x.status === 'not-taught' ? 'taught ' + (C().taughtDate(x.skill, s.group) ? fmtDate(C().taughtDate(x.skill, s.group)) : 'later') : x.marks + ' marks' + (x.recent !== null ? ` · recent ${x.recent}%` : '')}</span></div>`).join('')}`).join('')}</section>
       <section><div class="card"><h2 class="bar-head pink">Recurring misconceptions</h2>${Object.keys(mis).length ? `<ul class="mis">${Object.entries(mis).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t, n]) => `<li><span class="mis-n">${n}</span><b>${esc(Hub.mastery.tagText(t))}</b></li>`).join('')}</ul>` : '<p>None recorded.</p>'}</div>
       <div class="card"><h2 class="bar-head blue">Recent work</h2>${atts.length ? atts.slice(0, 8).map(t => `<div class="row-between small"><span>${esc(t.inline ? t.inline.title : (Hub.assess.byId(t.aid) || {}).title || t.type)}</span><span>${Hub.assess.score(t).earned}/${t.max} · ${t.status === 'released' ? 'released' : '<a href="#/mark/' + t.id + '">to mark</a>'}</span></div>`).join('') : '<p>No submissions yet.</p>'}</div>
+      ${Hub.join ? Hub.join.loginCardHTML(s) : ''}
       <div class="card"><h2 class="bar-head green">Lesson notebooks</h2>${notebookList(s)}</div>
       <div class="card"><h2 class="bar-head amber">IA</h2>${iaSummary(s)}<a class="btn small" href="#/ia/${s.id}">Open notebook</a></div></section></div>`;
     $('#view-as').onclick = () => { Hub.auth.viewAs(s.id); go('#/home'); };
+    if (Hub.join) Hub.join.bindManage(main, () => go('#/mastery?group=' + s.group));
   }
   /** Every notebook this student's course has, newest first, with how far they got and a link to read their whole notebook. */
   function notebookList(s) {
@@ -4471,7 +4479,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 
   /* ---------- student: the join page ---------- */
   function page(msg) {
-    app().innerHTML = card(`<h1>Join your class</h1><p>Type the class code from Miss Badmus and your name as it is on the class register. Then choose a password.</p>
+    const signinBtn = (id, label) => `<a class="btn big-signin" href="#/" id="${id}">${label}</a>`;
+    app().innerHTML = card(`<div class="join-already"><p><b>Already joined?</b> You don’t need to join again.</p>${signinBtn('join-back-top', 'Sign in with my username →')}</div>
+      <h1>New here? Join your class</h1><p>Type the class code from Miss Badmus and your name as it is on the class register. Then choose a password. You only do this once.</p>
       <form id="join-form" novalidate>
         <label>Class code<input id="join-code" class="code-in" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="e.g. K7Q2MX" required></label>
         <div class="join-names"><label>First name<input id="join-first" autocomplete="given-name" required></label><label>Last name<input id="join-last" autocomplete="family-name" required></label></div>
@@ -4479,10 +4489,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <label>Type the password again<input id="join-pw2" type="password" autocomplete="new-password" minlength="8" required></label>
         <button class="btn primary" id="join-go">Join my class</button></form>
       <p id="join-msg" role="alert" class="small">${msg ? esc(msg) : ''}</p>
-      <p class="tiny"><a href="#/" id="join-back">I have already joined — sign in</a></p>`);
+      <div class="join-already bottom">${signinBtn('join-back', 'I have already joined — sign in')}</div>`);
     const codeIn = $('#join-code');
     codeIn.oninput = () => { const v = clean(codeIn.value); if (v !== codeIn.value) codeIn.value = v; };
-    $('#join-back').onclick = e => { e.preventDefault(); location.hash = '#/'; location.reload(); };
+    $$('#join-back, #join-back-top').forEach(a => (a.onclick = e => { e.preventDefault(); location.hash = '#/'; location.reload(); }));
     $('#join-form').onsubmit = async e => {
       e.preventDefault(); const say = t => { $('#join-msg').textContent = t; };
       const code = clean(codeIn.value), first = $('#join-first').value.trim(), last = $('#join-last').value.trim(), pw = $('#join-pw').value;
@@ -4500,13 +4510,13 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
           <p class="small"><b>Write it down.</b> Next time, sign in with this username and the password you just chose.</p>
           <button class="btn primary" id="join-in" type="button">Go to my Hub →</button>`);
         $('#join-in').onclick = () => { location.hash = '#/home'; location.reload(); };
-      } catch (err) { say(err.message); b.disabled = false; }
+      } catch (err) { say(err.message); b.disabled = false; if (/already joined/.test(err.message)) $('#join-back').focus(); }
     };
     codeIn.focus();
   }
 
-  /** Called while the app starts: the join link shows the join page (signed in or not). */
-  async function resume() { if (/^#\/join\b/.test(location.hash)) { page(); return true; } return false; }
+  /** Called while the app starts: the join link shows the join page — unless this browser is already signed in, then straight to the Hub. */
+  async function resume(session) { if (/^#\/join\b/.test(location.hash) && !session) { page(); return true; } if (/^#\/join\b/.test(location.hash)) history.replaceState(null, '', '#/home'); return false; }
 
   /* ---------- teacher: Data & settings card ---------- */
   const S = () => Hub.store.state;
@@ -4518,14 +4528,52 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const row = g => { const c = (J.codes || {})[g.id], studs = Hub.roster.inGroup(g.id), n = studs.filter(isIn).length;
       return `<tr><td><b>${esc(g.label)}</b></td><td>${c && c.code ? `<span class="join-code">${esc(c.code)}</span>` : '<span class="tiny muted">no code yet</span>'}</td><td>${c && c.code ? (c.open === false ? '<span class="pill grey">Closed</span>' : '<span class="pill green">Open</span>') : ''}</td><td>${n}/${studs.length}</td>
         <td><div class="join-act">${c && c.code ? `<button class="btn small ghost" data-jcopy="${g.id}" type="button">Copy for students</button><button class="btn small ghost" data-jtoggle="${g.id}" type="button">${c.open === false ? 'Open joining' : 'Close joining'}</button><button class="btn small ghost" data-jnew="${g.id}" type="button">New code</button>` : `<button class="btn small" data-jnew="${g.id}" type="button">Make a code</button>`}</div></td></tr>`; };
-    const who = Object.values(GROUPS()).map(g => { const studs = Hub.roster.inGroup(g.id); if (!studs.length) return ''; const yes = studs.filter(isIn), no = studs.filter(s => !isIn(s));
-      return `<div class="join-who"><b>${esc(g.label)}</b> · ${yes.length}/${studs.length} joined${no.length ? `<p class="tiny"><span class="muted">Not joined yet:</span> ${no.map(s => esc(s.name)).join(', ')}</p>` : ''}${yes.length ? `<ul class="tiny">${yes.map(s => `<li>${esc(s.name)} · <code>${esc(s.username || s.email || '')}</code>${s.joinedAt ? ` <button class="btn small ghost" data-reset="${esc(s.id)}" type="button">Reset login</button>` : ''}</li>`).join('')}</ul>` : ''}</div>`; }).join('');
+    const who = Object.values(GROUPS()).map(g => { const studs = Hub.roster.inGroup(g.id); if (!studs.length) return ''; const yes = studs.filter(isIn);
+      return `<details class="join-who"><summary><b>${esc(g.label)}</b> · ${yes.length}/${studs.length} joined</summary><table class="tbl join-stu"><tbody>${studs.map(s => `<tr><td>${esc(s.name)}</td><td>${isIn(s) ? `<code>${esc(s.username || s.email || '')}</code>` : '<span class="tiny muted">not joined yet</span>'}</td><td><div class="join-act">${manageButtons(s)}</div></td></tr>`).join('')}</tbody></table></details>`; }).join('');
     return `<section class="card join-card"><h2 class="bar-head green">Class join codes</h2>
       <p>Give students the join link and their class code. They type the code and their first and last name, and choose a password. They are matched to your roster <b>automatically</b> and get a username (e.g. <code>amara.okafor</code>) to sign in with. No emails.</p>
       <div class="join-link"><span class="key-lab">Join link</span><code id="join-url">${esc(joinURL().replace(/^https?:\/\//, ''))}</code><button class="btn small ghost" id="join-copy-link" type="button">Copy link</button></div>
       <div class="scroll"><table class="tbl join-tbl"><thead><tr><th>Class</th><th>Code</th><th>Joining</th><th>Joined</th><th></th></tr></thead><tbody>${Object.values(GROUPS()).map(row).join('')}</tbody></table></div>
-      <p class="tiny muted">If a student’s name is not found, check how it is spelled on your roster. Forgot password? Press <b>Reset login</b> by their name (under “Who has joined”); they join again with the code and choose a new password, keeping the same username and all their work. A new code stops the old one working; close joining once everyone is in.</p>
-      <details class="join-whod" ${Hub.roster.all().length ? 'open' : ''}><summary>Who has joined</summary>${who || '<p class="tiny muted">Upload a roster first.</p>'}</details></section>`;
+      <p class="tiny muted">If a student’s name is not found, check how it is spelled on your roster. A new code stops the old one working; close joining once everyone is in.</p>
+      <h3 class="sub-h">Your students</h3><p class="tiny muted"><b>Reset password</b> gives a student a new password to sign in with straight away. <b>Join again</b> lets them redo the class-code join (e.g. someone else used their name). <b>Delete</b> removes the student and all their work.</p>
+      ${who || '<p class="tiny muted">Upload a roster first.</p>'}</section>`;
+  }
+  function manageButtons(s) {
+    return `${s.uid ? `<button class="btn small" data-pw="${esc(s.id)}" type="button">Reset password</button>` : ''}${s.joinedAt ? `<button class="btn small ghost" data-reset="${esc(s.id)}" type="button">Join again</button>` : ''}<button class="btn small ghost danger" data-del="${esc(s.id)}" type="button">Delete</button>`;
+  }
+  const pwWords = ['maths', 'wolf', 'prime', 'delta', 'sigma', 'vector', 'matrix', 'theta', 'graph', 'radius'];
+  const newPassword = () => { const r = crypto.getRandomValues(new Uint32Array(2)); return pwWords[r[0] % pwWords.length] + '-' + (1000 + r[1] % 9000); };
+  /** Teacher sets a new password for a student; shows it so she can tell them. */
+  function resetPassword(s) {
+    const first = String(s.name).includes(',') ? s.name.split(',')[1].trim().split(' ')[0] : s.name.split(' ')[0];
+    const m = Hub.ui.modal(`<h2 class="modal-title">Reset ${esc(s.name)}’s password</h2><p>Username: <code>${esc(s.username || '')}</code></p>
+      <label>New password <span class="tiny muted">(8 characters or more — change it if you like)</span><input id="rp-pw" value="${newPassword()}" autocomplete="off" spellcheck="false"></label>
+      <div class="actions"><button class="btn primary" id="rp-save" type="button">Save new password</button><button class="btn ghost" id="rp-cancel" type="button">Cancel</button></div><p id="rp-msg" role="status"></p>`);
+    $('#rp-cancel', m.el).onclick = m.close;
+    $('#rp-save', m.el).onclick = async () => {
+      const pw = $('#rp-pw', m.el).value.trim(), b = $('#rp-save', m.el); if (pw.length < 8) { $('#rp-msg', m.el).textContent = 'Use at least 8 characters.'; return; }
+      b.disabled = true; $('#rp-msg', m.el).textContent = 'Saving…';
+      try { await Hub.store.flush(); const r = await Hub.cloud.call('set-password', { sid: s.id, password: pw }); if (r.state) Hub.store.accept(r.state);
+        m.el.innerHTML = `<h2 class="modal-title">Done ✓</h2><p>Tell ${esc(first)}:</p><div class="join-user"><span class="key-lab">Username</span><b>${esc(r.username || s.username)}</b><span class="key-lab">Password</span><b>${esc(pw)}</b></div><div class="actions"><button class="btn primary" id="rp-ok" type="button">OK</button></div>`;
+        $('#rp-ok', m.el).onclick = () => { m.close(); Hub.app.render(); };
+      } catch (e) { $('#rp-msg', m.el).textContent = e.message; b.disabled = false; }
+    };
+  }
+  async function deleteStudent(s, after) {
+    if (!(await Hub.ui.confirmBox(`Delete <b>${esc(s.name)}</b> (${esc(classLabel(s.group))})? This removes them from your roster with all their work, notebook answers and photos, and their login. It cannot be undone.`, 'Delete student', { danger: true }))) return;
+    try { await Hub.store.flush(); const r = await Hub.cloud.call('delete-student', { sid: s.id }); if (r.state) Hub.store.accept(r.state); toast(`${s.name} deleted.`); if (after) after(); else Hub.app.render(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  async function joinAgain(s) {
+    if (!(await Hub.ui.confirmBox(`Let ${esc(s.name)} join again with the class code? Their current password stops mattering once they rejoin and choose a new one. Their username (${esc(s.username || '')}) and all their work stay.`, 'Join again'))) return;
+    delete s.joinedAt; Hub.store.log(`Let ${s.name} join again with the class code`); await saveNow(`Done. ${s.name} can join again with the class code.`);
+  }
+  /** Buttons on a student's profile page. */
+  const loginCardHTML = s => `<div class="card"><h2 class="bar-head blue">Login</h2><p>${isIn(s) ? `Username: <code>${esc(s.username || s.email || '')}</code>${s.joinedAt ? ` · joined ${Hub.core.fmtDate(String(s.joinedAt).slice(0, 10))}` : ''}` : 'Not joined yet — they join with the class code (Data & settings).'}</p><div class="join-act">${manageButtons(s)}</div></div>`;
+  function bindManage(root, after) {
+    $$('[data-pw]', root).forEach(b => (b.onclick = () => { const s = Hub.roster.byId(b.dataset.pw); if (s) resetPassword(s); }));
+    $$('[data-del]', root).forEach(b => (b.onclick = () => { const s = Hub.roster.byId(b.dataset.del); if (s) deleteStudent(s, after); }));
+    $$('[data-reset]', root).forEach(b => (b.onclick = () => { const s = Hub.roster.byId(b.dataset.reset); if (s) joinAgain(s); }));
   }
   async function saveNow(msg) { Hub.store.save(true); try { await Hub.store.flush(); if (msg) toast(msg); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); }
   function bind(main) {
@@ -4535,9 +4583,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $$('[data-jnew]', main).forEach(b => (b.onclick = async () => { const g = b.dataset.jnew, had = J().codes[g] && J().codes[g].code; if (had && !(await Hub.ui.confirmBox(`Make a new code for ${esc(classLabel(g))}? The old code stops working. Students who have already joined are not affected.`, 'New code'))) return; J().codes[g] = { code: newCode(), open: true, at: new Date().toISOString() }; Hub.store.log(`New class join code for ${classLabel(g)}`); await saveNow('New code ready.'); }));
     $$('[data-jtoggle]', main).forEach(b => (b.onclick = async () => { const c = J().codes[b.dataset.jtoggle]; c.open = c.open === false; await saveNow(c.open ? 'Joining is open.' : 'Joining is closed for that class.'); }));
     $$('[data-jcopy]', main).forEach(b => (b.onclick = () => { const g = b.dataset.jcopy, c = J().codes[g]; copy(`Join Miss Badmus’ ${classLabel(g)} on the IB Math Hub: open ${joinURL()} , type the class code ${c.code}, your first and last name, and choose a password.`, 'Copied — paste it to your students.'); }));
-    $$('[data-reset]', main).forEach(b => (b.onclick = async () => { const s = Hub.roster.byId(b.dataset.reset); if (!s || !(await Hub.ui.confirmBox(`Reset ${esc(s.name)}’s login? They join again with the class code and choose a new password. Their username (${esc(s.username || '')}) and all their work stay.`, 'Reset login'))) return; delete s.joinedAt; Hub.store.log(`Reset the login for ${s.name}`); await saveNow(`Done. ${s.name} can join again with the class code.`); }));
+    bindManage($('.join-card', main) || main);
   }
-  Hub.join = { page, resume, cardHTML, bind, newCode };
+  Hub.join = { page, resume, cardHTML, bind, newCode, loginCardHTML, bindManage };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/live.js ---- */
