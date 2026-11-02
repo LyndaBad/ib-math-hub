@@ -506,6 +506,7 @@ mark.blank-key { background: var(--hl); padding: 0 4px; border-radius: 4px; }
 .pq-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--orange); font-family: var(--f-head); font-weight: 700; flex: none; }
 .pq-paper { font-family: var(--f-ui); font-size: 9pt; border-radius: 999px; padding: 0 8px; border: 1px solid #999; }
 .pq-paper.p2 { border-color: var(--blue); background: #EEF5FC; }
+.pq-book { font-family: var(--f-ui); font-size: 9pt; border-radius: 999px; padding: 0 8px; border: 1px solid #F6B26B; background: #FFF4E6; }
 .pq-marks { margin-left: auto; font-family: var(--f-ui); font-size: 10pt; }
 .pq-stem { line-height: 1.6; }
 .pp { display: flex; flex-direction: column; gap: 4px; break-inside: avoid; page-break-inside: avoid; }
@@ -691,6 +692,22 @@ body.mp-on { padding-bottom: 76px; }
 .ia-print { max-width: 760px; font-size: 1.05rem; line-height: 1.7; } .ia-print h2 { margin-top: 18px; } .ia-print h3 { font-size: 1rem; margin-top: 10px; }
 @media (max-width: 900px) { .w-grid { grid-template-columns: minmax(0, 1fr); } .w-aside { position: static; } .crit-cols { grid-template-columns: 1fr; } }
 .mnote { text-align: left; } .mnote.empty::before { display: inline-block; }
+
+/* ---------- question graphs (book exercises) ---------- */
+.q-fig { margin: 8px 0; }
+.qplot { max-width: 100%; height: auto; background: #fff; border-radius: 8px; }
+.qplot .pg { stroke: #E9E3DF; stroke-width: .7; }
+.qplot .pa { stroke: #33415C; stroke-width: 1.3; }
+.qplot .pd { stroke: #9FC5E8; stroke-width: 1.3; stroke-dasharray: 5 4; }
+.qplot .pf { fill: none; stroke: #FF9756; stroke-width: 2.4; stroke-linejoin: round; }
+.qplot .pf.dash { stroke-dasharray: 6 4; stroke: #9FC5E8; }
+.qplot .pp { fill: #33415C; }
+.qplot .pt { font: 11px var(--f-ui, sans-serif); fill: #33415C; }
+.bx-qs { display: grid; gap: 6px; margin: 10px 0; max-height: 360px; overflow: auto; padding-right: 4px; }
+.bx-q { display: grid; grid-template-columns: auto auto 1fr auto; gap: 10px; align-items: start; padding: 8px 10px; border: 1.5px solid #FFDDC8; border-radius: 12px; background: #fff; font-size: .92rem; cursor: pointer; }
+.bx-q .q-num { min-width: 26px; height: 26px; font-size: .85rem; }
+.bx-q-t { line-height: 1.45; }
+.bx-nb { margin-top: 8px; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -1228,7 +1245,59 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     }, q);
   }
 
-  Hub.qcore = { rng, F, fr, T, num, round, sf, poly, lin, sgn, paren, comb, factorial, mc, pyF, gcd, reg, registry, build };
+  /* ---------- Book-exercise questions (new questions written for each Oxford exercise; no book text) ----------
+     bx('SL', '1O', {page, sec, skill, paper}, [ {stem, fig, paper, skill, parts: [{c, p, m, a, ms, w, v, h, e, fig, kfig}]} ])
+     a: number | {n, sf|dp|exact, d (display TeX)} | {f: [num, den]} | {mc: ['$right$', '$wrong$', …]} | {t: [...], l: [labels]} | {list: [...]} | 'open' */
+  const bxIndex = {};
+  function bxAnswer(a, R) {
+    if (a === 'open') return { kind: 'open' };
+    if (typeof a === 'number') return { kind: 'num', value: a, exact: true, display: num(a) };
+    if (a.mc) { const m = mc(R, a.mc.map((tex, i) => ({ tex, key: 'k' + i })), 'k0'); return Object.assign(m, { display: a.mc[0].replace(/^\$|\$$/g, '') }); }
+    if (a.f) { const q = fr(a.f[0], a.f[1]); return { kind: 'num', value: q.val(), exact: true, display: a.d || q.tex() }; }
+    if (a.t) return { kind: 'tuple', labels: a.l || a.t.map((_, i) => String.fromCharCode(97 + i)), value: a.t.map(v => Array.isArray(v) ? v[0] / v[1] : v), markEach: !!a.each, exact: a.sf ? false : true, sf: a.sf, display: a.d || a.t.map(v => Array.isArray(v) ? fr(v[0], v[1]).tex() : num(v)).join(',\\ ') };
+    if (a.list) return { kind: 'list', value: a.list.map(v => Array.isArray(v) ? v[0] / v[1] : v), exact: a.sf ? false : true, sf: a.sf, display: a.d || a.list.map(v => Array.isArray(v) ? fr(v[0], v[1]).tex() : num(v)).join(',\\ ') };
+    const out = { kind: 'num', value: a.n, display: a.d || num(a.sf ? sf(a.n, a.sf) : a.dp !== undefined ? round(a.n, a.dp) : a.n) };
+    if (a.sf) out.sf = a.sf; else if (a.dp !== undefined) out.dp = a.dp; else out.exact = true; if (a.int) out.int = true;
+    return out;
+  }
+  function bx(course, ex, meta, list) {
+    const key = course + '-' + ex, ids = [];
+    list.forEach((q, i) => {
+      const id = `bx.${course}.${ex}.${i + 1}`; ids.push(id);
+      reg(id, { skill: q.skill || meta.skill, title: `Exercise ${ex} · Question ${i + 1}`, paper: q.paper || meta.paper || 1, book: { course, ex, n: i + 1, page: meta.page, sec: meta.sec } }, R => ({
+        stem: q.stem || '', fig: q.fig || '', paper: q.paper || meta.paper || 1,
+        parts: q.parts.map((p, j) => ({ label: p.l || (q.parts.length > 1 ? String.fromCharCode(97 + j) : 'a'), command: p.c, prompt: p.p, marks: p.m || 1, answer: bxAnswer(p.a, R),
+          ms: p.ms || [], working: p.w || [], hint: p.h || '', errors: (p.e || []).map(e => Object.assign({ tag: String(e.fb || 'slip').replace(/[.:;,]+$/, '').slice(0, 70) }, e)), verify: p.v || '', fig: p.fig || '', kfig: p.kfig || '' }))
+      }));
+    });
+    bxIndex[key] = Object.assign({ course, ex, qs: ids, title: meta.title || '' }, meta);
+  }
+
+  /* ---------- Small SVG graphs for questions and model answers ----------
+     plot({x:[-6,6], y:[-6,6], f:[{f: x => ..., from, to, dash}], pts:[[x, y, 'label']], vl:[x…], hl:[y…], w, h, labels}) */
+  function plot(o) {
+    const W = o.w || 280, H = o.h || 240, P = 22, [x0, x1] = o.x || [-6, 6], [y0, y1] = o.y || [-6, 6];
+    const X = x => P + (x - x0) / (x1 - x0) * (W - 2 * P), Y = y => H - P - (y - y0) / (y1 - y0) * (H - 2 * P), r1 = v => Math.round(v * 10) / 10;
+    let g = '';
+    const [sx, sy] = o.step || [1, 1];
+    if (o.grid !== false) { for (let i = Math.ceil(x0 / sx) * sx; i <= x1; i += sx) g += `<line x1="${r1(X(i))}" y1="${P}" x2="${r1(X(i))}" y2="${H - P}" class="pg"/>`; for (let j = Math.ceil(y0 / sy) * sy; j <= y1; j += sy) g += `<line x1="${P}" y1="${r1(Y(j))}" x2="${W - P}" y2="${r1(Y(j))}" class="pg"/>`; }
+    if (y0 <= 0 && y1 >= 0) g += `<line x1="${P - 4}" y1="${r1(Y(0))}" x2="${W - P + 6}" y2="${r1(Y(0))}" class="pa"/><text x="${W - P + 8}" y="${r1(Y(0)) + 4}" class="pt">x</text>`;
+    if (x0 <= 0 && x1 >= 0) g += `<line x1="${r1(X(0))}" y1="${H - P + 4}" x2="${r1(X(0))}" y2="${P - 6}" class="pa"/><text x="${r1(X(0)) - 4}" y="${P - 9}" class="pt">y</text>`;
+    (o.vl || []).forEach(v => { g += `<line x1="${r1(X(v))}" y1="${P}" x2="${r1(X(v))}" y2="${H - P}" class="pd"/>`; });
+    (o.hl || []).forEach(v => { g += `<line x1="${P}" y1="${r1(Y(v))}" x2="${W - P}" y2="${r1(Y(v))}" class="pd"/>`; });
+    g += `<g clip-path="url(#c${W}${H})">`;
+    (o.f || []).forEach(c => {
+      const a = c.from ?? x0, b = c.to ?? x1, n = 240; let d = '', pen = false;
+      for (let i = 0; i <= n; i++) { const x = a + (b - a) * i / n, y = c.f(x); if (!Number.isFinite(y) || y < y0 - (y1 - y0) || y > y1 + (y1 - y0)) { pen = false; continue; } d += (pen ? 'L' : 'M') + r1(X(x)) + ' ' + r1(Y(y)); pen = true; }
+      g += `<path d="${d}" class="pf${c.dash ? ' dash' : ''}"/>`;
+    });
+    g += '</g>';
+    (o.pts || []).forEach(([x, y, lab, pos]) => { g += `<circle cx="${r1(X(x))}" cy="${r1(Y(y))}" r="3.2" class="pp"/>`; if (lab) g += `<text x="${r1(X(x)) + (pos === 'l' ? -6 : 6)}" y="${r1(Y(y)) + (pos === 'b' ? 14 : -6)}" class="pt"${pos === 'l' ? ' text-anchor="end"' : ''}>${lab}</text>`; });
+    (o.labels || []).forEach(([x, y, lab]) => { g += `<text x="${r1(X(x))}" y="${r1(Y(y))}" class="pt">${lab}</text>`; });
+    return `<svg class="qplot" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${o.alt || 'Graph'}"><defs><clipPath id="c${W}${H}"><rect x="${P}" y="${P}" width="${W - 2 * P}" height="${H - 2 * P}"/></clipPath></defs>${g}</svg>`;
+  }
+
+  Hub.qcore = { rng, F, fr, T, num, round, sf, poly, lin, sgn, paren, comb, factorial, mc, pyF, gcd, reg, registry, build, bx, bxIndex, plot };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/q_sl.js ---- */
@@ -2986,6 +3055,209 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   });
 })(window.Hub = window.Hub || {});
 
+/* ---- js/q_bx_sl.js ---- */
+/* AA SL — book-exercise questions. NEW questions written for each Oxford AA SL (2019) exercise: same skills,
+   style and level, different numbers, contexts and wording. Labelled with the exercise name only. */
+(function (Hub) {
+  'use strict';
+  const B = Hub.qcore.bx, R = String.raw;
+  const mcv = (ok) => `'k0' if ${ok} else 'bad'`;
+
+  /* ===== 1.5 The binomial theorem ===== */
+  B('SL', '1O', { page: 54, sec: '1.5', title: 'The binomial theorem', skill: 'SL-1.5b', paper: 1 }, [
+    { paper: 2, stem: 'Find the indicated term in each expansion.', parts: [
+      { c: 'Find', p: R`the fourth term of $(2x - 3)^{9}$.`, m: 3, a: { mc: [R`$-145152x^{6}$`, R`$326592x^{5}$`, R`$145152x^{6}$`, R`$-4536x^{6}$`] },
+        ms: [['(M1)', R`the fourth term has $r = 3$`], ['(M1)', R`$\binom{9}{3}(2x)^{6}(-3)^{3}$`], ['A1', R`$-145152x^{6}$`]],
+        w: [R`The fourth term has $r = 3$.`, R`$\binom{9}{3}(2x)^{6}(-3)^{3} = 84 \times 64x^{6} \times (-27)$`, R`$= -145152x^{6}$`], h: 'The term with r = 0 is the first term, so the fourth term has r = 3. Raise the whole of 2x and the whole of −3 to their powers.', v: mcv('expand(binomial(9,3)*(2*x)**6*(-3)**3) == -145152*x**6') },
+      { c: 'Find', p: R`the seventh term of $(x + 4y)^{9}$.`, m: 3, a: { mc: [R`$344064x^{3}y^{6}$`, R`$86016x^{4}y^{5}$`, R`$336x^{3}y^{6}$`, R`$344064x^{6}y^{3}$`] },
+        ms: [['(M1)', R`$r = 6$`], ['(M1)', R`$\binom{9}{6}x^{3}(4y)^{6}$`], ['A1', R`$344064x^{3}y^{6}$`]],
+        w: [R`The seventh term has $r = 6$.`, R`$\binom{9}{6}x^{3}(4y)^{6} = 84 \times 4096\,x^{3}y^{6} = 344064x^{3}y^{6}$`], h: 'The seventh term has r = 6. Remember to raise 4 to the power too.', v: mcv('expand(binomial(9,6)*x**3*(4*y)**6) == 344064*x**3*y**6') },
+      { c: 'Find', p: R`the middle term of $(3 - 2y)^{8}$.`, m: 3, a: { mc: [R`$90720y^{4}$`, R`$-90720y^{4}$`, R`$-72576y^{5}$`, R`$5670y^{4}$`] },
+        ms: [['(M1)', R`there are 9 terms, so the middle term is the fifth, $r = 4$`], ['(M1)', R`$\binom{8}{4}3^{4}(-2y)^{4}$`], ['A1', R`$90720y^{4}$`]],
+        w: [R`$(3 - 2y)^{8}$ has $9$ terms, so the middle term is the fifth term: $r = 4$.`, R`$\binom{8}{4}3^{4}(-2y)^{4} = 70 \times 81 \times 16y^{4} = 90720y^{4}$`], h: 'A power of 8 gives 9 terms. Which term is in the middle?', v: mcv('expand(binomial(8,4)*3**4*(-2*y)**4) == 90720*y**4') },
+      { c: 'Find', p: R`the constant term of $\left(x^{2} - \frac{2}{x}\right)^{6}$.`, m: 3, a: 240,
+        ms: [['(M1)', R`general term $\binom{6}{r}(x^{2})^{6-r}\left(-\frac{2}{x}\right)^{r}$`], ['(M1)', R`$12 - 3r = 0 \Rightarrow r = 4$`], ['A1', R`$240$`]],
+        w: [R`General term: $\binom{6}{r}(x^{2})^{6-r}\left(-\frac{2}{x}\right)^{r} = \binom{6}{r}(-2)^{r}x^{12-3r}$`, R`Constant term when $12 - 3r = 0$, so $r = 4$.`, R`$\binom{6}{4}(-2)^{4} = 15 \times 16 = 240$`],
+        e: [{ value: -160, fb: 'That is the term with r = 3 — check which power of x you need.' }, { value: 15, fb: 'Include (−2) to the power r, not just the binomial coefficient.' }], h: 'Write the general term and collect the powers of x. The constant term has x⁰.', v: 'expand(sum(binomial(6,r)*(x**2)**(6-r)*(-2/x)**r for r in range(7))).coeff(x,0)' },
+      { c: 'Find', p: R`the last term of $\left(3x - \frac{1}{2x}\right)^{5}$.`, m: 2, a: { mc: [R`$-\frac{1}{32x^{5}}$`, R`$\frac{1}{32x^{5}}$`, R`$-\frac{5}{32x^{5}}$`, R`$-\frac{1}{2x^{5}}$`] },
+        ms: [['(M1)', R`$r = 5$, $\left(-\frac{1}{2x}\right)^{5}$`], ['A1', R`$-\frac{1}{32x^{5}}$`]],
+        w: [R`The last term has $r = 5$: $\binom{5}{5}(3x)^{0}\left(-\frac{1}{2x}\right)^{5} = -\frac{1}{32x^{5}}$`], h: 'The last term has r = n, so only the second part of the bracket appears.', v: mcv('simplify((-1/(2*x))**5 + 1/(32*x**5)) == 0') }
+    ] },
+    { stem: R`One row of Pascal’s triangle is $1,\ 5,\ 10,\ 10,\ 5,\ 1$.`, parts: [
+      { c: 'Write down', p: 'the next row of the triangle.', m: 1, a: { t: [1, 6, 15, 20, 15, 6, 1], l: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th'] },
+        ms: [['A1', R`$1,\ 6,\ 15,\ 20,\ 15,\ 6,\ 1$`]], w: [R`Each entry is the sum of the two above it: $1,\ 1+5,\ 5+10,\ 10+10,\ 10+5,\ 5+1,\ 1$`], h: 'Each number is the sum of the two numbers above it. Every row starts and ends with 1.', v: 'tuple(binomial(6,i) for i in range(7))' },
+      { c: 'Hence find', p: R`the coefficient of $x^{3}$ in the expansion of $(2x - 3)^{6}$.`, m: 3, a: -4320,
+        ms: [['(M1)', R`uses $20$ from the row in (a)`], ['(M1)', R`$20(2x)^{3}(-3)^{3}$`], ['A1', R`$-4320$`]],
+        w: [R`The $x^{3}$ term uses the coefficient $20$: $20(2x)^{3}(-3)^{3}$`, R`$= 20 \times 8x^{3} \times (-27) = -4320x^{3}$, so the coefficient is $-4320$`],
+        e: [{ value: 4320, fb: 'Check the sign: (−3)³ is negative.' }, { value: -540, fb: 'Raise 2 to the power 3 as well as x.' }], h: 'The row 1, 6, 15, 20, 15, 6, 1 gives the coefficients for power 6. The x³ term uses the middle number.', v: 'expand((2*x-3)**6).coeff(x,3)' }
+    ] },
+    { stem: R`Consider the expansion of $(x + 2)^{7}$.`, parts: [
+      { c: 'Find', p: R`the coefficient of $x^{4}$.`, m: 2, a: 280, ms: [['(M1)', R`$\binom{7}{3}x^{4}(2)^{3}$`], ['A1', R`$280$`]],
+        w: [R`$\binom{7}{3}x^{4}2^{3} = 35 \times 8x^{4} = 280x^{4}$`], e: [{ value: 35, fb: 'Multiply by 2³ as well.' }, { value: 560, fb: 'Check r: the x⁴ term has 2³, not 2⁴.' }], h: 'For x⁴ you need x⁴ × 2³. Which binomial coefficient goes with it?', v: 'expand((x+2)**7).coeff(x,4)' },
+      { c: 'Hence find', p: R`the coefficient of $x^{6}$ in the expansion of $3x^{2}(x + 2)^{7}$.`, m: 2, a: 840, ms: [['(M1)', R`$3x^{2} \times 280x^{4}$`], ['A1', R`$840$`]],
+        w: [R`Only the $x^{4}$ term of $(x + 2)^{7}$ gives $x^{6}$ when multiplied by $3x^{2}$.`, R`$3x^{2} \times 280x^{4} = 840x^{6}$`], h: 'Which term of (x + 2)⁷ becomes x⁶ when you multiply it by 3x²?', v: 'expand(3*x**2*(x+2)**7).coeff(x,6)' }
+    ] },
+    { parts: [
+      { c: 'Find', p: R`the coefficient of $x^{5}$ in the expansion of $\left(2x^{2} + \frac{1}{x}\right)^{7}$.`, m: 4, a: 560,
+        ms: [['(M1)', R`general term $\binom{7}{r}(2x^{2})^{7-r}\left(\frac{1}{x}\right)^{r}$`], ['(M1)', R`$14 - 3r = 5$`], ['(A1)', R`$r = 3$`], ['A1', R`$560$`]],
+        w: [R`General term: $\binom{7}{r}2^{7-r}x^{14-2r}x^{-r} = \binom{7}{r}2^{7-r}x^{14-3r}$`, R`$14 - 3r = 5 \Rightarrow r = 3$`, R`$\binom{7}{3}2^{4} = 35 \times 16 = 560$`],
+        e: [{ value: 35, fb: 'Include 2 to the power (7 − r).' }, { value: 672, fb: 'That is the x⁸ term. Solve 14 − 3r = 5.' }], h: 'Write the general term with powers of x combined: x to the power (14 − 2r − r). Set it equal to 5.', v: 'expand((2*x**2+1/x)**7).coeff(x,5)' }
+    ] },
+    { parts: [
+      { c: 'Find', p: R`the value of $k$, given that the constant term in the expansion of $\left(x + \frac{k}{x^{2}}\right)^{9}$ is $-672$.`, m: 5, a: -2,
+        ms: [['(M1)', R`general term $\binom{9}{r}x^{9-r}\left(\frac{k}{x^{2}}\right)^{r}$`], ['(M1)', R`$9 - 3r = 0$`], ['(A1)', R`$r = 3$`], ['M1', R`$84k^{3} = -672$`], ['A1', R`$k = -2$`]],
+        w: [R`General term: $\binom{9}{r}k^{r}x^{9-3r}$`, R`Constant term: $9 - 3r = 0 \Rightarrow r = 3$`, R`$\binom{9}{3}k^{3} = 84k^{3} = -672$`, R`$k^{3} = -8 \Rightarrow k = -2$`],
+        e: [{ value: 2, fb: 'k³ = −8, so k is negative.' }, { value: -8, fb: 'That is k³. Take the cube root.' }], h: 'Find r for the constant term first, then set that term equal to −672.', v: '[s for s in solve(84*k**3+672,k) if s.is_real][0]' }
+    ] },
+    { parts: [
+      { c: 'Find', p: R`the possible values of $k$, given that the third term in the expansion of $(3x - k)^{6}$ is $4860x^{4}$.`, m: 4, a: { list: [2, -2], d: R`k = \pm 2` },
+        ms: [['(M1)', R`$\binom{6}{2}(3x)^{4}(-k)^{2}$`], ['(A1)', R`$1215k^{2}x^{4}$`], ['M1', R`$1215k^{2} = 4860$`], ['A1', R`$k = \pm 2$`]],
+        w: [R`Third term ($r = 2$): $\binom{6}{2}(3x)^{4}(-k)^{2} = 15 \times 81k^{2}x^{4} = 1215k^{2}x^{4}$`, R`$1215k^{2} = 4860 \Rightarrow k^{2} = 4 \Rightarrow k = 2$ or $k = -2$`], h: 'The third term has r = 2. Write it in terms of k, then compare with 4860x⁴.', v: 'solve(1215*k**2-4860,k)' }
+    ] },
+    { parts: [
+      { c: 'Find', p: R`the coefficient of $x^{6}y^{3}$ in the expansion of $(x^{2} - 2y)^{6}$.`, m: 3, a: -160,
+        ms: [['(M1)', R`$r = 3$`], ['(M1)', R`$\binom{6}{3}(x^{2})^{3}(-2y)^{3}$`], ['A1', R`$-160$`]],
+        w: [R`$y^{3}$ needs $r = 3$, which gives $(x^{2})^{3} = x^{6}$.`, R`$\binom{6}{3}(x^{2})^{3}(-2y)^{3} = 20 \times (-8)x^{6}y^{3} = -160x^{6}y^{3}$`],
+        e: [{ value: 160, fb: 'Check the sign of (−2y)³.' }, { value: 20, fb: 'Multiply by (−2)³ as well.' }], h: 'y³ means r = 3. Check that this gives x⁶ too.', v: 'expand((x**2-2*y)**6).coeff(x,6).coeff(y,3)' }
+    ] },
+    { parts: [
+      { c: 'Use', p: R`the binomial theorem to estimate $(1.98)^{5}$, giving your answer correct to three decimal places.`, m: 4, a: { n: 30.4316815968, dp: 3, d: '30.432' },
+        ms: [['M1', R`writing $1.98 = 2 - 0.02$`], ['M1', R`expansion with at least three terms: $2^{5} - \binom{5}{1}2^{4}(0.02) + \binom{5}{2}2^{3}(0.02)^{2} - \dots$`], ['(A1)', R`$32 - 1.6 + 0.032 - 0.00032$`], ['A1', R`$30.432$`]],
+        w: [R`$(1.98)^{5} = (2 - 0.02)^{5}$`, R`$= 2^{5} - 5(2^{4})(0.02) + 10(2^{3})(0.02)^{2} - 10(2^{2})(0.02)^{3} + \dots$`, R`$= 32 - 1.6 + 0.032 - 0.00032 + \dots = 30.43168\dots$`, R`$\approx 30.432$ (later terms are too small to change the third decimal place)`],
+        h: 'Write 1.98 as 2 − 0.02.', v: 'Rational(198,100)**5' }
+    ] },
+    { parts: [
+      { c: 'Expand', p: R`$(x + 3)^{4}$.`, m: 2, a: { mc: [R`$x^{4} + 12x^{3} + 54x^{2} + 108x + 81$`, R`$x^{4} + 4x^{3} + 6x^{2} + 4x + 81$`, R`$x^{4} + 12x^{3} + 18x^{2} + 36x + 81$`, R`$x^{4} + 81$`] },
+        ms: [['(M1)', R`uses $1,\ 4,\ 6,\ 4,\ 1$`], ['A1', R`$x^{4} + 12x^{3} + 54x^{2} + 108x + 81$`]],
+        w: [R`$x^{4} + 4x^{3}(3) + 6x^{2}(3^{2}) + 4x(3^{3}) + 3^{4}$`, R`$= x^{4} + 12x^{3} + 54x^{2} + 108x + 81$`], h: 'Use the row 1, 4, 6, 4, 1 and raise 3 to the powers 0 to 4.', v: mcv('expand((x+3)**4) == x**4+12*x**3+54*x**2+108*x+81') },
+      { c: 'Hence find', p: R`the coefficient of $x^{3}$ in the expansion of $(2x - 5)(x + 3)^{4}$.`, m: 3, a: 48,
+        ms: [['(M1)', R`$2x \times 54x^{2}$ and $-5 \times 12x^{3}$`], ['(A1)', R`$108x^{3} - 60x^{3}$`], ['A1', R`$48$`]],
+        w: [R`$x^{3}$ terms: $2x \times 54x^{2} = 108x^{3}$ and $-5 \times 12x^{3} = -60x^{3}$`, R`$108x^{3} - 60x^{3} = 48x^{3}$, so the coefficient is $48$`],
+        e: [{ value: 108, fb: 'There is a second x³ term: −5 × 12x³.' }, { value: -60, fb: 'There is a second x³ term: 2x × 54x².' }, { value: 168, fb: 'Check the sign: −5 × 12x³ = −60x³.' }], h: 'There are two ways to make x³: 2x times an x² term, and −5 times the x³ term.', v: 'expand((2*x-5)*(x+3)**4).coeff(x,3)' }
+    ] },
+    { parts: [
+      { c: 'Show that', p: R`the expansions of $(1 - 3x)^{4}$ and $(-3x + 1)^{4}$ are the same.`, m: 2, a: 'open',
+        ms: [['M1', R`expands one of them, e.g. $1 - 12x + 54x^{2} - 108x^{3} + 81x^{4}$`], ['R1', R`$1 - 3x$ and $-3x + 1$ are the same number for every $x$ (addition is commutative), so their fourth powers are identical`], ['AG', '']],
+        w: [R`$(1 - 3x)^{4} = 1 - 12x + 54x^{2} - 108x^{3} + 81x^{4}$`, R`$(-3x + 1)^{4} = 81x^{4} - 108x^{3} + 54x^{2} - 12x + 1$ — the same terms in the opposite order.`], h: 'Is 1 − 3x the same number as −3x + 1?', v: 'expand((1-3*x)**4) == expand((-3*x+1)**4)' },
+      { c: 'Explain', p: R`whether $(1 - 3x)^{4}$ and $(3x - 1)^{4}$ have the same expansion.`, m: 2, a: 'open',
+        ms: [['R1', R`$3x - 1 = -(1 - 3x)$`], ['R1', R`$(-1)^{4} = 1$, so yes, they are the same (for an even power)`]],
+        w: [R`$(3x - 1)^{4} = \left(-(1 - 3x)\right)^{4} = (-1)^{4}(1 - 3x)^{4} = (1 - 3x)^{4}$`, R`So the expansions are the same. (With an odd power they would differ in sign.)`], h: 'Write 3x − 1 as −(1 − 3x). What is (−1)⁴?', v: 'expand((3*x-1)**4) == expand((1-3*x)**4)' }
+    ] },
+    { parts: [
+      { c: 'Find', p: R`the binomial, in the form $(a + b)^{n}$, whose expansion is $8x^{3} + 36x^{2}y + 54xy^{2} + 27y^{3}$.`, m: 3, a: { mc: [R`$(2x + 3y)^{3}$`, R`$(8x + 27y)^{3}$`, R`$(2x + 9y)^{3}$`, R`$(4x + 3y)^{3}$`] },
+        ms: [['(M1)', R`$n = 3$ (four terms)`], ['(M1)', R`$a^{3} = 8x^{3}$ and $b^{3} = 27y^{3}$`], ['A1', R`$(2x + 3y)^{3}$`]],
+        w: [R`Four terms, so $n = 3$.`, R`First term $8x^{3} = (2x)^{3}$, last term $27y^{3} = (3y)^{3}$.`, R`Check: $3(2x)^{2}(3y) = 36x^{2}y$ ✓, so $(2x + 3y)^{3}$`], h: 'Count the terms to find n. The first and last terms are a³ and b³.', v: mcv('expand((2*x+3*y)**3) == 8*x**3+36*x**2*y+54*x*y**2+27*y**3') }
+    ] },
+    { parts: [
+      { c: 'Show that', p: R`$\binom{n}{0} + \binom{n}{1} + \binom{n}{2} + \dots + \binom{n}{n} = 2^{n}$ by considering the expansion of $(1 + x)^{n}$.`, m: 2, a: 'open',
+        ms: [['M1', R`$(1 + x)^{n} = \binom{n}{0} + \binom{n}{1}x + \dots + \binom{n}{n}x^{n}$`], ['M1', R`substituting $x = 1$: $2^{n} = \binom{n}{0} + \binom{n}{1} + \dots + \binom{n}{n}$`], ['AG', '']],
+        w: [R`$(1 + x)^{n} = \binom{n}{0} + \binom{n}{1}x + \binom{n}{2}x^{2} + \dots + \binom{n}{n}x^{n}$`, R`Let $x = 1$: $(1 + 1)^{n} = 2^{n} = \binom{n}{0} + \binom{n}{1} + \dots + \binom{n}{n}$`], h: 'What happens to (1 + x)ⁿ and to each term of its expansion when x = 1?', v: 'all(sum(binomial(m,i) for i in range(m+1)) == 2**m for m in range(1,12))' },
+      { c: 'Hence find', p: R`the value of $\binom{8}{1} + \binom{8}{2} + \dots + \binom{8}{7}$.`, m: 2, a: 254,
+        ms: [['M1', R`$2^{8} - \binom{8}{0} - \binom{8}{8}$`], ['A1', R`$254$`]],
+        w: [R`The full sum is $2^{8} = 256$; leave out $\binom{8}{0} = 1$ and $\binom{8}{8} = 1$.`, R`$256 - 2 = 254$`], e: [{ value: 256, fb: 'The sum starts at 8C1 and stops at 8C7 — remove the two 1s.' }], h: 'Use part (a) with n = 8, then remove the terms you do not need.', v: 'sum(binomial(8,i) for i in range(1,8))' }
+    ] }
+  ]);
+
+  /* ===== 1.6 Proofs ===== */
+  const proof = (lhs, rhs, steps, v) => ({ c: 'Prove', p: 'that $' + lhs + ' = ' + rhs + '$.', m: 3, a: 'open', h: 'Start with the LHS only. Expand or use a common denominator, simplify, and finish with LHS = RHS.',
+    ms: [['M1', 'works on one side only (the LHS), e.g. expanding the brackets or using a common denominator'], ['A1', steps[steps.length - 2]], ['A1', 'reaches the RHS and writes a concluding statement (LHS = RHS)']], w: steps.concat(['LHS = RHS ∎']), v });
+  B('SL', '1P', { page: 56, sec: '1.6', title: 'Proofs', skill: 'SL-1.6', paper: 1 }, [
+    { parts: [proof(R`3(2b + 5) - 4(b - 1) + 2(b - 6)`, R`4b + 7`, [R`$\text{LHS} = 6b + 15 - 4b + 4 + 2b - 12$`, R`$= (6b - 4b + 2b) + (15 + 4 - 12)$`, R`$= 4b + 7 = \text{RHS}$`], 'expand(3*(2*k+5)-4*(k-1)+2*(k-6)) == 4*k+7')] },
+    { parts: [proof(R`(x + 4)^{2} - 7`, R`x^{2} + 8x + 9`, [R`$\text{LHS} = x^{2} + 8x + 16 - 7$`, R`$= x^{2} + 8x + 9$`, R`$= \text{RHS}$`], 'expand((x+4)**2-7) == x**2+8*x+9')] },
+    { parts: [proof(R`\frac{1}{n} - \frac{1}{n + 2}`, R`\frac{2}{n(n + 2)}`, [R`$\text{LHS} = \frac{n + 2}{n(n + 2)} - \frac{n}{n(n + 2)}$`, R`$= \frac{n + 2 - n}{n(n + 2)}$`, R`$= \frac{2}{n(n + 2)} = \text{RHS}$`], 'simplify(1/n - 1/(n+2) - 2/(n*(n+2))) == 0')] },
+    { stem: R`Consider the statement $\frac{x^{2} - x - 6}{x^{2} - 9} \equiv \frac{x + 2}{x + 3}$.`, parts: [
+      { c: 'Prove', p: 'that the statement is true for all values of $x$ for which both sides are defined.', m: 3, a: 'open',
+        ms: [['M1', R`factorizes: $\frac{(x - 3)(x + 2)}{(x - 3)(x + 3)}$`], ['A1', R`cancels the common factor $(x - 3)$`], ['A1', R`$= \frac{x + 2}{x + 3} = \text{RHS}$ with a concluding statement`]],
+        w: [R`$\text{LHS} = \frac{(x - 3)(x + 2)}{(x - 3)(x + 3)}$`, R`$= \frac{x + 2}{x + 3}$ (for $x \neq 3$)`, R`$= \text{RHS}$ ∎`], h: 'Factorize the numerator and the denominator of the LHS.', v: 'simplify((x**2-x-6)/(x**2-9) - (x+2)/(x+3)) == 0' },
+      { c: 'Write down', p: 'the values of $x$ for which the statement does not hold.', m: 2, a: { list: [3, -3], d: R`x = 3,\ x = -3` },
+        ms: [['A1', R`$x = 3$`], ['A1', R`$x = -3$`]], w: [R`The LHS is undefined when $x^{2} - 9 = 0$, i.e. $x = \pm 3$.`, R`So the statement does not hold for $x = 3$ or $x = -3$.`], h: 'When is a fraction undefined?', v: 'solve(x**2-9, x)' }
+    ] },
+    { parts: [proof(R`(2n + 1)^{2} - (2n - 1)^{2}`, R`8n`, [R`$\text{LHS} = (4n^{2} + 4n + 1) - (4n^{2} - 4n + 1)$`, R`$= 4n^{2} + 4n + 1 - 4n^{2} + 4n - 1$`, R`$= 8n = \text{RHS}$`], 'expand((2*n+1)**2-(2*n-1)**2) == 8*n')] }
+  ]);
+})(window.Hub = window.Hub || {});
+
+/* ---- js/q_bx_hl.js ---- */
+/* AA HL — book-exercise questions. NEW questions written for each Oxford AA HL (2019) exercise: same skills,
+   style and level, different numbers, contexts and wording. Labelled with the exercise name only. */
+(function (Hub) {
+  'use strict';
+  const B = Hub.qcore.bx, plot = Hub.qcore.plot, R = String.raw;
+  const mcv = ok => `'k0' if ${ok} else 'bad'`;
+  const neg = v => String(v).replace('-', '−');
+  const pt = (x, y, pos) => [x, y, `(${neg(x)}, ${neg(y)})`, pos];
+
+  /* ===== 2.2 Quadratic functions ===== */
+  // [f, a, h, k, tex, plot window, step]
+  const QF = [
+    [x => x * x - 8 * x + 12, 1, 4, -4, R`y = x^{2} - 8x + 12`, [-1, 9], [-6, 14], [1, 2], 'x**2-8*x+12'],
+    [x => 6 + 4 * x - x * x, -1, 2, 10, R`y = 6 + 4x - x^{2}`, [-3, 7], [-6, 12], [1, 2], '6+4*x-x**2'],
+    [x => 2 * x * x + 12 * x + 7, 2, -3, -11, R`y = 2x^{2} + 12x + 7`, [-8, 2], [-14, 10], [1, 2], '2*x**2+12*x+7'],
+    [x => 5 - 6 * x - 3 * x * x, -3, -1, 8, R`y = 5 - 6x - 3x^{2}`, [-4, 2], [-8, 10], [1, 2], '5-6*x-3*x**2']
+  ];
+  const q1parts = QF.flatMap(([f, a, h, k, tex, xr, yr, st, py], i) => {
+    const L = 'abcd'[i], up = a > 0, b = -2 * a * h, rng = up ? R`y \ge ${k}` : R`y \le ${k}`;
+    const ineq = up ? R`\ge` : R`\le`, wrongIneq = up ? R`\le` : R`\ge`;
+    return [
+      { l: `${L}(i)`, c: 'Find', p: R`for $${tex}$, the equation of the axis of symmetry.`, m: 2, a: { n: h, d: R`x = ${h}` },
+        ms: [['(M1)', R`$x = -\frac{b}{2a} = -\frac{${b}}{2(${a})}$`], ['A1', R`$x = ${h}$`]], w: [R`$x = -\frac{b}{2a} = -\frac{${b}}{2(${a})} = ${h}$`],
+        h: 'The axis of symmetry passes through the vertex: x = −b ÷ 2a.', e: [{ value: -h, fb: 'Check the sign: x = −b ÷ 2a.' }], v: `solve(diff(${py},x),x)[0]` },
+      { l: `${L}(ii)`, c: 'Find', p: 'the coordinates of the vertex.', m: 2, h: 'Substitute your x from part (i) into the function.', a: { t: [h, k], l: ['x', 'y'] },
+        ms: [['(M1)', R`substitutes $x = ${h}$`], ['A1', R`$(${h},\ ${k})$`]], w: [R`$y = ${tex.slice(4).replace(/x/g, `(${h})`)} = ${k}$`, R`Vertex $(${h},\ ${k})$`],
+        kfig: plot({ x: xr, y: yr, step: st, f: [{ f }], vl: [h], pts: [pt(h, k, up ? 'b' : null)], alt: 'Sketch of the parabola with its vertex and axis of symmetry' }), v: `(solve(diff(${py},x),x)[0], (${py}).subs(x, solve(diff(${py},x),x)[0]))` },
+      { l: `${L}(iii)`, c: 'State', p: 'its concavity, domain and range.', m: 2, h: 'The sign of a decides the concavity. The range starts or stops at the y-coordinate of the vertex.',
+        a: { mc: [R`Concave ${up ? 'up' : 'down'}; domain $x \in \mathbb{R}$; range $${rng}$`, R`Concave ${up ? 'down' : 'up'}; domain $x \in \mathbb{R}$; range $y ${wrongIneq} ${k}$`, R`Concave ${up ? 'up' : 'down'}; domain $x ${ineq} ${h}$; range $y \in \mathbb{R}$`, R`Concave ${up ? 'up' : 'down'}; domain $x \in \mathbb{R}$; range $y ${ineq} ${h}$`] },
+        ms: [['A1', R`concave ${up ? 'up' : 'down'} because $a ${up ? '>' : '<'} 0$`], ['A1', R`domain $x \in \mathbb{R}$, range $${rng}$`]],
+        w: [R`$a = ${a} ${up ? '>' : '<'} 0$, so the graph is concave ${up ? 'up (it opens upwards)' : 'down (it opens downwards)'}.`, R`Domain: $x \in \mathbb{R}$. The vertex is a ${up ? 'minimum' : 'maximum'}, so the range is $${rng}$.`], v: mcv(`(Poly(${py},x).LC() > 0) == ${up ? 'True' : 'False'} and maximum(${py}, x) == ${k}`.replace(up ? 'maximum' : '#', 'minimum')) }
+    ];
+  });
+  // [a, b, c, info TeX, best-form working, plot window, step, points]
+  const QG = [
+    [1, -6, 7, R`The vertex is $(3, -2)$ and the graph passes through $(0, 7)$.`, [R`Vertex form: $y = a(x - 3)^{2} - 2$`, R`$(0, 7)$: $7 = 9a - 2 \Rightarrow a = 1$`, R`$y = (x - 3)^{2} - 2 = x^{2} - 6x + 7$`], [-1, 7], [-4, 10], [1, 2], [pt(3, -2, 'b'), pt(0, 7)]],
+    [2, -8, -10, R`The $x$-intercepts are $-1$ and $5$, and the $y$-intercept is $-10$.`, [R`Factorized form: $y = a(x + 1)(x - 5)$`, R`$(0, -10)$: $-10 = a(1)(-5) \Rightarrow a = 2$`, R`$y = 2(x + 1)(x - 5) = 2x^{2} - 8x - 10$`], [-3, 7], [-20, 10], [1, 5], [pt(-1, 0, 'l'), pt(5, 0), pt(0, -10)]],
+    [-2, -8, -3, R`The vertex is $(-2, 5)$ and the graph passes through $(1, -13)$.`, [R`Vertex form: $y = a(x + 2)^{2} + 5$`, R`$(1, -13)$: $-13 = 9a + 5 \Rightarrow a = -2$`, R`$y = -2(x + 2)^{2} + 5 = -2x^{2} - 8x - 3$`], [-6, 3], [-16, 8], [1, 2], [pt(-2, 5), pt(1, -13)]],
+    [-2, 16, -24, R`The $x$-intercepts are $2$ and $6$, and the graph passes through $(4, 8)$.`, [R`Factorized form: $y = a(x - 2)(x - 6)$`, R`$(4, 8)$: $8 = a(2)(-2) \Rightarrow a = -2$`, R`$y = -2(x - 2)(x - 6) = -2x^{2} + 16x - 24$`], [-1, 9], [-8, 10], [1, 2], [pt(2, 0, 'b'), pt(6, 0, 'b'), pt(4, 8)]],
+    [3, 18, 27, R`The graph touches the $x$-axis at $x = -3$ and passes through $(-1, 12)$.`, [R`A repeated root at $x = -3$: $y = a(x + 3)^{2}$`, R`$(-1, 12)$: $12 = 4a \Rightarrow a = 3$`, R`$y = 3(x + 3)^{2} = 3x^{2} + 18x + 27$`], [-7, 1], [-2, 16], [1, 2], [pt(-3, 0, 'b'), pt(-1, 12)]],
+    [2, -3, 4, R`The graph passes through $(0, 4)$, $(1, 3)$ and $(2, 6)$.`, [R`General form: $y = ax^{2} + bx + c$; $(0, 4)$ gives $c = 4$`, R`$(1, 3)$: $a + b + 4 = 3$; $(2, 6)$: $4a + 2b + 4 = 6$`, R`$a + b = -1$ and $2a + b = 1 \Rightarrow a = 2,\ b = -3$`, R`$y = 2x^{2} - 3x + 4$`], [-2, 3], [-1, 9], [1, 1], [pt(0, 4, 'l'), pt(1, 3, 'b'), pt(2, 6)]]
+  ];
+  const q2parts = QG.map(([a, b, c, info, w, xr, yr, st, pts], i) => ({
+    l: 'abcdef'[i], c: 'Find', h: 'Vertex given → y = a(x − h)² + k. Both x-intercepts given → y = a(x − p)(x − q). Then use another point to find a.', p: `the equation of the quadratic function shown. ${info} Choose the most suitable form, then give your answer in the form $y = ax^{2} + bx + c$.`, m: 3,
+    fig: plot({ x: xr, y: yr, step: st, f: [{ f: x => a * x * x + b * x + c }], pts, alt: 'Graph of a parabola with labelled points' }),
+    a: { t: [a, b, c], l: ['a', 'b', 'c'], d: R`y = ${a === 1 ? '' : a === -1 ? '-' : a}x^{2} ${b < 0 ? '-' : '+'} ${Math.abs(b)}x ${c < 0 ? '-' : '+'} ${Math.abs(c)}` },
+    ms: [['M1', w[0]], ['M1', w[1]], ['A1', w[w.length - 1]]], w,
+    v: `tuple(Poly(${a}*x**2+(${b})*x+(${c}),x).all_coeffs())` }));
+  B('HL', '2B', { page: 85, sec: '2.2', title: 'Quadratic functions', skill: 'HL-2.2a', paper: 1 }, [
+    { stem: 'For each quadratic function, find (i) the equation of the axis of symmetry and (ii) the coordinates of the vertex, and (iii) state its concavity, domain and range.', parts: q1parts },
+    { stem: 'Use the information shown on each graph to write the equation of the quadratic function it represents.', parts: q2parts }
+  ]);
+
+  /* ===== 2.2 Rational functions (ax + b)/(cx + d) ===== */
+  // [tex, f, VA [num, den], HA [num, den], plot window]
+  const RF = [
+    [R`y = \frac{x + 1}{x - 3}`, x => (x + 1) / (x - 3), [3, 1], [1, 1], [-4, 10], [-6, 8], '(x+1)/(x-3)'],
+    [R`y = \frac{2x - 5}{x + 4}`, x => (2 * x - 5) / (x + 4), [-4, 1], [2, 1], [-12, 4], [-6, 10], '(2*x-5)/(x+4)'],
+    [R`y = \frac{1 - 3x}{2x - 6}`, x => (1 - 3 * x) / (2 * x - 6), [3, 1], [-3, 2], [-4, 10], [-8, 5], '(1-3*x)/(2*x-6)'],
+    [R`y = \frac{4}{5 - 2x}`, x => 4 / (5 - 2 * x), [5, 2], [0, 1], [-4, 9], [-6, 6], '4/(5-2*x)'],
+    [R`y = \frac{3x + 2}{4 - x}`, x => (3 * x + 2) / (4 - x), [4, 1], [-3, 1], [-4, 12], [-12, 6], '(3*x+2)/(4-x)'],
+    [R`y = 3 + \frac{x - 1}{2x + 1}`, x => 3 + (x - 1) / (2 * x + 1), [-1, 2], [7, 2], [-7, 6], [-3, 9], '3+(x-1)/(2*x+1)']
+  ];
+  const frx = ([n, d]) => d === 1 ? String(n) : (n < 0 ? R`-\frac{${-n}}{${d}}` : R`\frac{${n}}{${d}}`);
+  const rfQ = ([tex, f, va, ha, xr, yr, py], i) => {
+    const V = frx(va), H = frx(ha), vx = va[0] / va[1], hy = ha[0] / ha[1];
+    const why = i === 5 ? [R`Write as one fraction: $3 + \frac{x - 1}{2x + 1} = \frac{3(2x + 1) + x - 1}{2x + 1} = \frac{7x + 2}{2x + 1}$`] : [];
+    return { stem: R`Consider the function $${tex}$.`, parts: [
+      { c: 'Write down', p: 'the equations of the vertical and horizontal asymptotes of the graph.', m: 2, h: 'Vertical: where the denominator is 0. Horizontal: what y approaches as x gets very large.', a: { t: [va, ha], l: ['vertical asymptote x =', 'horizontal asymptote y ='], d: R`x = ${V},\ y = ${H}` },
+        ms: [['A1', R`$x = ${V}$`], ['A1', R`$y = ${H}$`]],
+        w: why.concat([R`Vertical asymptote where the denominator is $0$: $x = ${V}$.`, ha[0] === 0 ? R`The degree of the numerator is less than the degree of the denominator, so $y \to 0$: horizontal asymptote $y = 0$.` : R`Horizontal asymptote: ratio of the coefficients of $x$, $y = ${H}$.`]),
+        kfig: plot({ x: xr, y: yr, step: [1, 1], f: [{ f, from: xr[0], to: vx - 1e-3 }, { f, from: vx + 1e-3, to: xr[1] }], vl: [vx], hl: [hy], alt: 'Graph with its vertical and horizontal asymptotes dashed' }),
+        v: `(solve(fraction(together(${py}))[1], x)[0], limit(${py}, x, oo))` },
+      { c: 'State', p: 'the domain and range of the function.', m: 2, h: 'Which x-value is not allowed? Which y-value is never reached?', a: { mc: [R`domain $x \neq ${V}$; range $y \neq ${H}$`, R`domain $x \neq ${H}$; range $y \neq ${V}$`, R`domain $x \in \mathbb{R}$; range $y \neq ${H}$`, R`domain $x \neq ${V}$; range $y \in \mathbb{R}$`] },
+        ms: [['A1', R`domain $x \in \mathbb{R},\ x \neq ${V}$`], ['A1', R`range $y \in \mathbb{R},\ y \neq ${H}$`]],
+        w: [R`The function is undefined at the vertical asymptote: domain $x \neq ${V}$.`, R`The graph never reaches the horizontal asymptote: range $y \neq ${H}$.`], v: mcv(`len(solve(Eq(${py}, limit(${py}, x, oo)), x)) == 0`) }
+    ] };
+  };
+  B('HL', '2C', { page: 89, sec: '2.2', title: 'Rational functions', skill: 'HL-2.2a', paper: 1 }, RF.map(rfQ));
+})(window.Hub = window.Hub || {});
+
 /* ---- js/curriculum.js ---- */
 /* Curriculum map: four teaching groups (A/B day), lesson-level skills with prerequisites, the 2026–27
    pacing calendars (pacing.js), IA checkpoints and Oxford 2019 section references (mapping only). */
@@ -3074,7 +3346,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   ];
   const SKILL = Object.fromEntries(SKILLS.map(s => [s.id, s]));
   // Any generator registered for a skill (e.g. the IB exam-style files q_*_exam*.js) joins that skill automatically.
-  Object.values((Hub.qcore || {}).registry || {}).forEach(r => { const s = SKILL[r.skill]; if (s && !s.gens.includes(r.id)) s.gens.push(r.id); });
+  Object.values((Hub.qcore || {}).registry || {}).forEach(r => { if (r.book) return; const s = SKILL[r.skill]; if (s && !s.gens.includes(r.id)) s.gens.push(r.id); });
   const skillsFor = course => SKILLS.filter(s => s.course === course);
 
   /* Calendar rows for a group (A or B day), annotated with the skills each lesson introduces. */
@@ -3385,7 +3657,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     (part.errors || []).forEach(e => { const v = Array.isArray(e.value) ? e.value[0] : e.value; if (Number.isFinite(v) && !vals.some(x => Math.abs(x - v) < 1e-9)) vals.push(v); });
     const tweak = [k => -k, k => k + 1, k => k - 1, k => 2 * k, k => k / 2, k => k + 2];
     for (let g = 0; vals.length < 4 && g < 40; g++) { const v = R.pick(tweak)(key); if (Number.isFinite(v) && !vals.some(x => Math.abs(x - v) < 1e-9)) vals.push(v); }
-    const opts = vals.slice(0, 4).map((v, i) => ({ tex: '$' + (i === 0 && part.answer.display && !/[a-z]{3,}|=|\\le|\\ge|<|>/i.test(part.answer.display) ? part.answer.display : valueTex(v)) + '$', key: 'v' + i, v }));
+    const pre = ((part.answer.display || '').match(/^[a-zA-Z] = /) || [''])[0];
+    const opts = vals.slice(0, 4).map((v, i) => ({ tex: '$' + (i === 0 && part.answer.display && !/[a-z]{3,}|=|\\le|\\ge|<|>/i.test(part.answer.display) ? part.answer.display : pre + valueTex(v)) + '$', key: 'v' + i, v }));
     const m = Hub.qcore.mc(R, opts, 'v0');
     const errors = (part.errors || []).map(e => { const v = Array.isArray(e.value) ? e.value[0] : e.value; const k = opts.find(o => Math.abs(o.v - v) < 1e-9); return k ? { choice: m.keys.indexOf(k.key), tag: e.tag, fb: e.fb } : null; }).filter(Boolean);
     return Object.assign({}, part, { answer: Object.assign(m, { display: part.answer.display }), errors, wasNumeric: true });
@@ -3770,14 +4043,16 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
 
   /* ---------- questions ---------- */
+  /** Part label: (a), or (a)(i) for a sub-part labelled a(i). */
+  const plab = l => /^\w+\(\w+\)$/.test(l) ? '(' + l.replace('(', ')(') : `(${l})`;
   /** mode: 'answer' (inputs), 'preview' (read-only student view), 'teacher' (with key + markscheme), 'feedback' (with results). */
   function question(q, i, opts = {}) {
     const mode = opts.mode || 'preview', responses = (opts.responses || {})[q.id] || {}, results = opts.results || {};
-    const head = `<div class="q-head"><span class="q-num">${opts.number || i + 1}</span><div class="q-meta">${skillChip(q.skill)} ${paperBadge(q.paper)} ${q.challenge ? pill('Challenge', 'gold') : ''} ${q.preview ? pill('Preview · does not count', 'blue') : ''} ${opts.slot ? pill(opts.slot, 'pink') : ''}${q.paper === 2 && (mode === 'answer' || opts.calc) ? '<button type="button" class="btn small ghost calc-q" data-calc title="Open the NumWorks calculator">▦ NumWorks</button>' : ''}</div><span class="q-marks">[${q.marks} mark${q.marks > 1 ? 's' : ''}]</span></div>`;
-    const stem = q.stem ? `<div class="q-stem">${M(q.stem)}</div>` : '';
+    const head = `<div class="q-head"><span class="q-num">${opts.number || i + 1}</span><div class="q-meta">${q.bookRef ? pill(q.bookRef, 'amber') + ' ' : ''}${skillChip(q.skill)} ${paperBadge(q.paper)} ${q.challenge ? pill('Challenge', 'gold') : ''} ${q.preview ? pill('Preview · does not count', 'blue') : ''} ${opts.slot ? pill(opts.slot, 'pink') : ''}${q.paper === 2 && (mode === 'answer' || opts.calc) ? '<button type="button" class="btn small ghost calc-q" data-calc title="Open the NumWorks calculator">▦ NumWorks</button>' : ''}</div><span class="q-marks">[${q.marks} mark${q.marks > 1 ? 's' : ''}]</span></div>`;
+    const stem = (q.stem ? `<div class="q-stem">${M(q.stem)}</div>` : '') + (q.fig ? `<div class="q-fig">${q.fig}</div>` : '');
     const parts = q.parts.map(p => {
       const r = results[q.id + '|' + p.id], fin = opts.final ? opts.final[q.id + '|' + p.id] : undefined;
-      let body = `<div class="part" data-part="${p.id}"><div class="part-q"><span class="part-l">(${p.label})</span><div class="part-text">${cmd(p.command)} ${M(p.prompt)}</div><span class="part-m">[${p.marks}]</span></div>`;
+      let body = `<div class="part" data-part="${p.id}"><div class="part-q"><span class="part-l">${plab(p.label)}</span><div class="part-text">${cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="part-m">[${p.marks}]</span></div>`;
       if (mode === 'answer') body += inputFor(q, p, responses[p.id], opts) + (opts.hints && p.hint ? `<details class="hint" data-hint="${q.id}|${p.id}"><summary>💡 Need a hint?</summary><p>${M(p.hint)}</p>${numworks(p.numworks)}</details>` : '');
       if (mode === 'teacher') body += teacherKey(p);
       if (mode === 'feedback') body += feedback(q, p, responses[p.id], r, fin, opts);
@@ -3790,7 +4065,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function teacherKey(p) {
     return `<div class="key"><div class="key-row"><span class="key-lab">Answer</span><span>${answerDisplay(p)}</span><span class="tiny muted">${accuracyText(p.answer)}</span></div>
       <div class="ms"><span class="key-lab">Markscheme</span>${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>
-      <details class="working"><summary>Worked solution</summary><div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${numworks(p.numworks)}</details>
+      <details class="working"><summary>Worked solution</summary><div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${p.kfig ? `<div class="q-fig">${p.kfig}</div>` : ''}${numworks(p.numworks)}</details>
       ${p.errors && p.errors.length ? `<div class="tiny muted">Detects: ${p.errors.map(e => esc(Hub.mastery.tagText(e.tag))).join(' · ')}</div>` : ''}</div>`;
   }
   function respText(p, resp) {
@@ -3809,7 +4084,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ${showKey ? `<div class="fb-row"><span class="key-lab">Answer</span><span>${answerDisplay(p)}</span></div>` : ''}
       ${r.feedback ? `<div class="sticky"><b>Spotted:</b> ${M(r.feedback)}</div>` : ''}
       ${r.error && r.verdict === 'invalid' ? `<div class="tiny muted">${esc(r.error)}</div>` : ''}
-      ${showKey ? `<details class="working" ${r.verdict !== 'correct' ? 'open' : ''}><summary>Worked solution</summary><div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${numworks(p.numworks)}</details>` : ''}
+      ${showKey ? `<details class="working" ${r.verdict !== 'correct' ? 'open' : ''}><summary>Worked solution</summary><div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${p.kfig ? `<div class="q-fig">${p.kfig}</div>` : ''}${numworks(p.numworks)}</details>` : ''}
       ${opts.teacher ? `<div class="ms small">${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>` : ''}</div>`;
   }
 
@@ -3884,7 +4159,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const lessonOpts = C().lessons(group).filter(l => l.skills.length).map(l => `<option value="${l.date}" ${nl && l.date === nl.date ? 'selected' : ''}>${fmtDate(l.date)} · ${esc(l.activity.slice(0, 70))}</option>`).join('');
     const list = S().assessments.filter(a => status === 'all' ? a.status !== 'archived' : a.status === status);
     main.innerHTML = U.heading('TEACHER WORKSPACE', 'Assessment Studio', 'Original IB-style questions with markschemes. Every question must be reviewed before you can approve, and you choose when and to whom it is published.') +
-      `<section class="card builder"><h2 class="bar-head green">Build a new draft</h2><form id="build" class="form-grid">
+      `${Hub.bookex ? Hub.bookex.studioCard(group) : ''}<section class="card builder"><h2 class="bar-head green">Build a new draft</h2><form id="build" class="form-grid">
         <label>Group<select id="b-group">${U.groupOptions(group)}</select></label>
         <label>Lesson (from the ${C().GROUPS[group].label} calendar)<select id="b-lesson"><option value="">— choose skills instead —</option>${lessonOpts}</select></label>
         <label>Type<select id="b-type">${Object.keys(Hub.assess.TYPES).map(t => `<option ${t === 'Exit Ticket' ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
@@ -3906,6 +4181,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const r = Hub.assess.createDraft({ course, type: $('#b-type').value, skills, paper: $('#b-paper').value, style: $('#b-style').value, rigour: $('#b-rigour').value, count: $('#b-count').value, lessonDate: $('#b-lesson').value || null, groups: [group] });
       if (!r.ok) return toast(r.error, 'error'); toast('Draft ready — review each question.'); go('#/edit/' + r.assessment.id);
     };
+    if (Hub.bookex) Hub.bookex.bindStudio(main, group);
     bindLibActions(main);
   }
   const STATUS_TXT = { draft: ['Draft', 'grey'], approved: ['Approved', 'green'], published: ['Published', 'blue'], closed: ['Closed', 'amber'], archived: ['Archived', 'grey'] };
@@ -3965,7 +4241,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <div class="form-grid"><label>Marks<input type="number" min="1" max="20" data-f="marks" data-q="${q.id}" data-p="${p.id}" value="${p.marks}"></label>${answerEditor(q, p)}</div>
         <label>Markscheme (one line each: <code>M1 | text</code>)<textarea data-f="ms" data-q="${q.id}" data-p="${p.id}" rows="${Math.max(2, p.ms.length)}">${esc(p.ms.map(m => m[0] + ' | ' + m[1]).join('\n'))}</textarea></label>
         <label>Worked solution (one line each)<textarea data-f="working" data-q="${q.id}" data-p="${p.id}" rows="${Math.max(2, p.working.length)}">${esc(p.working.join('\n'))}</textarea></label></fieldset>`).join('')}</details>`;
-    const footer = `<div class="q-foot">${locked ? '' : `<button class="btn small ghost" data-regen="${q.id}" title="Same skill, new numbers">↻ New numbers</button>${a.questions.length > 1 ? `<button class="btn small ghost danger" data-rm="${q.id}">Remove</button>` : ''}`}
+    const footer = `<div class="q-foot">${locked ? '' : `${/^bx\./.test(q.gen || '') ? '' : `<button class="btn small ghost" data-regen="${q.id}" title="Same skill, new numbers">↻ New numbers</button>`}${a.questions.length > 1 ? `<button class="btn small ghost danger" data-rm="${q.id}">Remove</button>` : ''}`}
       <label class="review-tick ${reviewed ? 'on' : ''}"><input type="checkbox" data-review="${q.id}" ${reviewed ? 'checked' : ''} ${locked ? 'disabled' : ''}> ${reviewed ? 'Reviewed ✓' : 'I have checked this question, answer and markscheme'}</label></div>` + editForm;
     return U.question(q, i, { mode: 'teacher', footer, cls: reviewed ? 'reviewed' : 'unreviewed' });
   }
@@ -4778,13 +5054,13 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function keyBlock(p, o) {
     return `<div class="pk"><div class="pk-row"><span class="pk-lab">Answer</span><span class="pk-ans">${keyAnswer(p, o)}</span><span class="tiny muted">${p.wasNumeric && !o.mc ? 'Written answer' : U.accuracyText(p.answer)}</span></div>
       ${p.ms.length ? `<div class="pk-ms">${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>` : ''}
-      ${p.working.length ? `<div class="hand pk-hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>` : ''}${p.numworks ? `<div class="pk-nw">${U.numworks(p.numworks)}</div>` : ''}</div>`;
+      ${p.working.length ? `<div class="hand pk-hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>` : ''}${p.kfig ? `<div class="q-fig">${p.kfig}</div>` : ''}${p.numworks ? `<div class="pk-nw">${U.numworks(p.numworks)}</div>` : ''}</div>`;
   }
   function paperTag(q) { const s = SECTION[q.paper] || SECTION[1]; return `<span class="pq-paper p${q.paper || 1}">Paper ${q.paper || 1} · ${s[2]}</span>`; }
   function question(q, n, o, inSection) {
-    return `<article class="pq${o.key ? ' pq-key' : ''}"><div class="pq-head"><span class="pq-n">${n}</span>${inSection ? '' : paperTag(q)}<span class="pq-marks">[${q.marks} mark${q.marks === 1 ? '' : 's'}]</span></div>
-      ${q.stem ? `<div class="pq-stem">${M(q.stem)}</div>` : ''}
-      ${q.parts.map(p => `<div class="pp"><div class="pp-q">${q.parts.length > 1 || p.label !== 'a' ? `<span class="pp-l">(${esc(p.label)})</span>` : ''}<div class="pp-t">${U.cmd(p.command)} ${M(p.prompt)}</div><span class="pp-m">[${p.marks}]</span></div>
+    return `<article class="pq${o.key ? ' pq-key' : ''}"><div class="pq-head"><span class="pq-n">${n}</span>${inSection ? '' : paperTag(q)}${q.bookRef ? `<span class="pq-book">${esc(q.bookRef)}</span>` : ''}<span class="pq-marks">[${q.marks} mark${q.marks === 1 ? '' : 's'}]</span></div>
+      ${q.stem ? `<div class="pq-stem">${M(q.stem)}</div>` : ''}${q.fig ? `<div class="q-fig">${q.fig}</div>` : ''}
+      ${q.parts.map(p => `<div class="pp"><div class="pp-q">${q.parts.length > 1 || p.label !== 'a' ? `<span class="pp-l">${esc(/^\w+\(\w+\)$/.test(p.label) ? '(' + p.label.replace('(', ')(') : '(' + p.label + ')')}</span>` : ''}<div class="pp-t">${U.cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="pp-m">[${p.marks}]</span></div>
         ${showOptions(p, o) ? options(p) : ''}${o.key ? keyBlock(p, o) : workBox(p, o)}</div>`).join('')}</article>`;
   }
   /** Group questions into Sections A/B/C by paper (tests always; quizzes when they mix papers). */
@@ -4889,6 +5165,115 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return `${BOOK[course]} · Example${ns.length > 1 ? 's' : ''} ${ns.length > 1 ? ns[0] + '–' + ns[ns.length - 1] : ns[0]} · ${ps[0] === ps[ps.length - 1] ? 'p. ' + ps[0] : 'pp. ' + ps[0] + '–' + ps[ps.length - 1]}`;
   }
   Hub.textbook = { cards, summary, has: id => !!(R[id] && R[id].length) };
+})(window.Hub = window.Hub || {});
+
+/* ---- js/bookex.js ---- */
+/* Book exercises: for every exercise in the Oxford AA SL / HL books (2019) the Hub carries NEW questions written
+   for the same skills, in the same style and at the same level, with full IB markschemes. Only the exercise names
+   and page numbers come from the books — no textbook questions are stored or shown.
+   Questions live in q_bx_*.js (registered through Hub.qcore.bx); this file holds the exercise list and the
+   teacher tools: Studio card, notebook shortcut and homework drafts. */
+(function (Hub) {
+  'use strict';
+  const { esc, uid } = Hub.core;
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const S = () => Hub.store.state, C = () => Hub.curriculum, toast = (m, k) => Hub.core.toast(m, k);
+  const BOOK = { SL: 'Oxford AA SL', HL: 'Oxford AA HL' };
+  /* Exercise → printed page, from the books' own exercise headings. */
+  const PAGES = {
+    SL: '1A:8 1B:10 1C:12 1D:15 1E:16 1F:19 1G:20 1H:21 1I:28 1J:33 1K:34 1L:39 1M:43 1N:52 1O:54 1P:56 2A:68 2B:73 2C:76 2D:82 2E:84 2F:89 2G:90 2H:92 2I:96 2J:99 3A:113 3B:115 3C:119 3D:122 3E:123 3F:125 3G:125 3H:126 3I:129 3J:136 3K:140 3L:143 3M:149 3N:151 3O:153 3P:156 3Q:157 3R:159 3S:163 3T:164 3U:166 3V:169 3W:172 3X:176 4A:187 4B:191 4C:195 4D:199 4E:206 5A:219 5B:221 5C:227 5D:229 5E:231 5F:233 5G:236 5H:238 5I:239 5J:240 5K:243 5L:246 5M:249 5N:255 5O:257 5P:259 5Q:264 5R:267 6A:282 6B:286 6C:289 6D:292 6E:294 6F:297 6G:300 6H:303 6I:307 6J:309 7A:324 7B:327 7C:332 7D:335 7E:339 7F:342 8A:357 8B:361 8C:368 8D:370 8E:371 8F:373 8G:376 8H:379 8I:385 9A:398 9B:400 9C:401 9D:404 9E:406 9F:409 9G:411 9H:414 9I:415 9J:416 9K:417 9L:420 9M:424 10A:435 10B:437 10C:439 10D:441 10E:443 10F:445 10G:449 10H:452 10I:454 10J:458 10K:459 11A:470 11B:473 11C:479 11D:481 11E:483 11F:485 11G:489 11H:491 11I:493 12A:511 12B:512 12C:517 12D:519 12E:520 12F:522 12G:525 12H:527 12I:529 12J:532 13A:548 13B:548 13C:551 13D:555 13E:558 13F:560 13G:563 13H:566 13I:571 13J:574 13K:576 14A:587 14B:590 14C:596 14D:598 14E:599 14F:600 14G:602 14H:609 14I:612 14J:612 14K:615 14L:616 14M:619',
+    HL: '1A:9 1B:15 1C:26 1D:31 1E:40 1F:44 1G:50 1H:57 1I:61 1J:65 2A:80 2B:85 2C:89 2D:90 2E:91 2F:93 2G:95 2H:98 2I:100 2J:101 2K:105 2L:108 2M:111 2N:116 2O:118 2P:120 2Q:126 2R:134 2S:139 3A:149 3B:152 3C:156 3D:159 3E:160 3F:166 3G:171 3H:174 3I:179 3J:181 3K:184 3L:190 3M:194 3N:196 3O:200 3P:203 3Q:205 3R:210 4A:223 4B:227 4C:232 4D:235 4E:241 4F:243 4G:248 4H:252 4I:254 4J:256 4K:258 4L:261 4M:264 4N:268 4O:273 4P:274 4Q:277 4R:281 4S:283 4T:287 4U:290 4V:294 5A:311 5B:313 5C:323 5D:331 5E:333 5F:339 5G:342 5H:346 5I:355 6A:374 6B:377 6C:380 6D:383 6E:390 6F:391 6G:393 6H:396 6I:398 6J:400 6K:403 6L:404 6M:408 6N:414 6O:417 6P:420 6Q:421 6R:423 6S:425 6T:426 6U:428 6V:431 6W:432 7A:450 7B:459 7C:464 7D:472 7E:481 7F:487 7G:495 7H:499 7I:503 7J:507 7K:508 7L:509 8A:522 8B:523 8C:527 8D:532 8E:535 8F:539 8G:543 8H:545 8I:549 8J:553 8K:556 8L:562 9A:581 9B:585 9C:592 9D:596 9E:604 9F:610 9G:613 9H:620 9I:628 9J:630 9K:633 9L:638 10A:655 10B:659 10C:663 10D:667 10E:671 10F:674 11A:687 11B:692 11C:695 11D:699 11E:701 11F:705 11G:708 11H:711 11I:717 11J:722 11K:724'
+  };
+  const idx = Hub.qcore.bxIndex;
+  /** Section (e.g. '1.5') an exercise belongs to: the last section of its chapter that starts on or before its page. */
+  function secOf(course, ex, page) {
+    const ch = ex.slice(0, -1), secs = Object.entries(C().OXFORD[course] || {}).filter(([s]) => s.split('.')[0] === ch && C().OXFORD[course][s][1] <= page).sort((a, b) => a[1][1] - b[1][1]);
+    return secs.length ? secs[secs.length - 1][0] : null;
+  }
+  let cache = null;
+  /** Every exercise in both books, with section, title and how many new questions the Hub has for it. */
+  function all() {
+    if (cache) return cache;
+    cache = {};
+    for (const course of ['SL', 'HL']) cache[course] = PAGES[course].split(' ').map(t => { const [ex, p] = t.split(':'), page = Number(p), have = idx[course + '-' + ex];
+      const sec = (have && have.sec) || secOf(course, ex, page), title = (have && have.title) || (sec && C().OXFORD[course][sec] ? C().OXFORD[course][sec][0] : `Chapter ${ex.slice(0, -1)}`);
+      return { course, ex, page, sec, title, key: course + '-' + ex, qs: have ? have.qs : [], ready: !!(have && have.qs.length) }; });
+    return cache;
+  }
+  const get = (course, ex) => (all()[course] || []).find(e => e.ex === ex) || null;
+  /** Exercises for the sections a lesson's calendar text mentions (e.g. "2.2 … and 2.3 …"). */
+  function forLesson(course, text) {
+    const secs = [...String(text || '').matchAll(/\b(\d{1,2}\.\d{1,2})\b/g)].map(m => m[1]);
+    return (all()[course] || []).filter(e => e.sec && secs.includes(e.sec));
+  }
+  const marksOf = e => e.qs.reduce((s, id) => { try { const q = Hub.qcore.build(id, 1); return s + q.marks; } catch (_) { return s; } }, 0);
+
+  /* ---------- homework draft ---------- */
+  const SELF = 'I have written my answer on paper — show me the model answer';
+  function selfCheck(p) { return Object.assign({}, p, { answer: { kind: 'mc', choices: [SELF], keys: ['done'], correct: 0, display: 'Model answer' }, selfCheck: true }); }
+  function buildQ(id, mcOnly) {
+    const seed = Math.floor(Math.random() * 1e6) + 1, q = Hub.qcore.build(id, seed);
+    if (mcOnly) q.parts = q.parts.map((p, i) => p.answer.kind === 'open' ? selfCheck(p) : p.answer.kind === 'num' ? Hub.assess.toMC(p, seed + i) : p);
+    q.marks = q.parts.reduce((s, p) => s + p.marks, 0); q.bookRef = `Exercise ${q.gen.split('.')[2]} · Q${q.gen.split('.')[3]}`; return q;
+  }
+  /** Homework assessment (a review draft) from an exercise. groups: the days it goes to. */
+  function draft(course, ex, opts = {}) {
+    const e = get(course, ex); if (!e || !e.ready) return { ok: false, error: 'There are no questions for that exercise yet.' };
+    const ids = opts.only && opts.only.length ? e.qs.filter(id => opts.only.includes(id)) : e.qs; if (!ids.length) return { ok: false, error: 'Tick at least one question.' };
+    const qs = ids.map(id => buildQ(id, opts.mc !== false)), skills = [...new Set(qs.map(q => q.skill))];
+    const a = { id: uid('a'), course, title: `Exercise ${ex} · ${e.title}`, type: 'Homework', lessonDate: opts.lessonDate || null, skills, paper: 'Mixed', rigour: 'standard', book: { course, ex, page: e.page },
+      questions: qs, reviewed: {}, status: 'draft', version: 1, groups: opts.groups || [course + '-A', course + '-B'], uploadRequired: opts.upload !== false, release: 'auto', minutes: 45, due: null, retestOf: null, cap: null, createdAt: new Date().toISOString(),
+      history: [{ at: new Date().toISOString(), who: Hub.auth.who(), what: `Draft made from ${BOOK[course]} Exercise ${ex} (new questions)` }] };
+    S().assessments.unshift(a); Hub.store.log(`Made homework draft “${a.title}”`); Hub.store.save(); return { ok: true, assessment: a };
+  }
+
+  /* ---------- Studio card ---------- */
+  function options(course, pick) {
+    const list = all()[course] || [], bySec = [];
+    list.forEach(e => { const k = e.sec ? `${e.sec} ${e.title}` : e.title; let g = bySec.find(x => x[0] === k); if (!g) bySec.push(g = [k, []]); g[1].push(e); });
+    return bySec.map(([k, es]) => `<optgroup label="${esc(k)}">${es.map(e => `<option value="${e.ex}" ${e.ex === pick ? 'selected' : ''} ${e.ready ? '' : 'disabled'}>Exercise ${e.ex} · p. ${e.page}${e.ready ? ` · ${e.qs.length} question${e.qs.length > 1 ? 's' : ''}` : ' · coming soon'}</option>`).join('')}</optgroup>`).join('');
+  }
+  function qList(e) {
+    if (!e || !e.ready) return '<p class="tiny muted">New questions for this exercise are coming soon.</p>';
+    return `<div class="bx-qs">${e.qs.map((id, i) => { let q; try { q = Hub.qcore.build(id, 7); } catch (_) { return ''; } const first = q.parts[0];
+      return `<label class="bx-q"><input type="checkbox" value="${id}" checked><span class="q-num">${i + 1}</span><span class="bx-q-t">${Hub.math.render(((q.stem ? q.stem + ' ' : '') + (first.command ? first.command + ' ' : '') + first.prompt).slice(0, 170))}${q.parts.length > 1 ? ` <span class="tiny muted">(${q.parts.length} parts)</span>` : ''}</span><span class="tiny muted">${q.marks} marks</span></label>`; }).join('')}</div>`;
+  }
+  function studioCard(group) {
+    const g = C().GROUPS[group], course = g.course, nl = C().nextLesson(group, Hub.mastery.asOf()), sug = nl ? forLesson(course, nl.activity).find(e => e.ready) : null;
+    const first = sug || (all()[course] || []).find(e => e.ready), ready = (all()[course] || []).filter(e => e.ready).length;
+    return `<section class="card bx-card"><h2 class="bar-head amber">Homework from a book exercise</h2>
+      <p class="small">New questions for each exercise in the ${BOOK[course]} book — the same skills, style and level, with new numbers and wording, full M/A/R markschemes and model answers. Students see the exercise name (e.g. “Exercise ${first ? first.ex : '1O'}”). ${ready} exercise${ready === 1 ? '' : 's'} ready so far; more are being added.</p>
+      <div class="form-grid"><label>Exercise<select id="bx-ex">${options(course, first && first.ex)}</select></label>
+      <label>Goes to<select id="bx-days"><option value="both">${course} A day and B day (one assignment)</option><option value="${course}-A">${course} A day only</option><option value="${course}-B">${course} B day only</option></select></label></div>
+      ${sug ? `<p class="tiny">Suggested for the next lesson (${Hub.core.fmtDate(nl.date)}): <b>${forLesson(course, nl.activity).filter(e => e.ready).map(e => 'Exercise ' + e.ex).join(', ')}</b></p>` : ''}
+      <div id="bx-list">${qList(first)}</div>
+      <div class="actions"><button class="btn primary" id="bx-make" type="button" ${first ? '' : 'disabled'}>Make homework draft →</button><span class="tiny muted">Numerical answers become multiple choice (Canvas style); “show that” and sketch parts become self-check with the model answer; students upload a photo of their working.</span></div></section>`;
+  }
+  function bindStudio(main, group) {
+    const card = $('.bx-card', main); if (!card) return;
+    const course = C().GROUPS[group].course, sel = $('#bx-ex', card);
+    sel.onchange = () => { $('#bx-list', card).innerHTML = qList(get(course, sel.value)); };
+    $('#bx-make', card).onclick = () => {
+      const days = $('#bx-days', card).value, only = $$('#bx-list input:checked', card).map(c => c.value);
+      const r = draft(course, sel.value, { groups: days === 'both' ? [course + '-A', course + '-B'] : [days], only });
+      if (!r.ok) return toast(r.error, 'error'); toast('Homework draft ready — review each question, then approve and publish.'); location.hash = '#/edit/' + r.assessment.id;
+    };
+  }
+
+  /* ---------- notebook shortcut (Lessons & notebooks → Homework) ---------- */
+  function notebookButtons(L) {
+    const es = forLesson(L.course, L.title).filter(e => e.ready); if (!es.length) return '';
+    return `<p class="small bx-nb">Book exercise homework (new questions): ${es.map(e => `<button class="btn small ghost" data-bxnb="${e.ex}" type="button">Make homework from Exercise ${e.ex}</button>`).join(' ')}</p>`;
+  }
+  function bindNotebook(main, L, after) {
+    $$('[data-bxnb]', main).forEach(b => (b.onclick = () => {
+      const r = draft(L.course, b.dataset.bxnb, { lessonDate: (L.dates || {}).A || null }); if (!r.ok) return toast(r.error, 'error');
+      L.homeworkId = r.assessment.id; if (!(L.homework || '').trim()) L.homework = `Exercise ${b.dataset.bxnb} — on the Hub`; if (after) after(L);
+      toast(`Homework draft “${r.assessment.title}” made and linked. Review and publish it in the Assessment Studio.`); Hub.app.render();
+    }));
+  }
+
+  Hub.bookex = { all, get, forLesson, draft, studioCard, bindStudio, notebookButtons, bindNotebook, marksOf, SELF, BOOK };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/notes.js ---- */
@@ -5638,9 +6023,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <div class="actions"><button class="btn small" id="my-add" type="button">+ Type an example</button></div></details></section>
       <section class="card"><h2 class="bar-head amber">Your turn <span class="tiny muted">· optional practice, not graded · students check it themselves</span></h2><div id="yt-list">${qList('tasks', L.tasks || [])}</div>${gens.length ? `<div class="add-row"><select id="yt-gen">${genOpts}</select><label class="inline-check"><input type="checkbox" id="yt-ch"> Challenge</label><button class="btn small" id="yt-add">+ Add question</button></div>` : ''}</section>
       <section class="card"><h2 class="bar-head pink">Exit Ticket <span class="tiny muted">· assigned</span></h2><label>Link an Exit Ticket from the studio<select data-f="exitTicketId"><option value="">— none —</option>${ets.map(a => `<option value="${a.id}" ${a.id === L.exitTicketId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students see it here once it is published to their day. <a href="#/studio?group=${L.course}-A">Build an Exit Ticket →</a></p></section>
-      <section class="card"><h2 class="bar-head green">Homework <span class="tiny muted">· assigned</span></h2><label>Link homework from the studio<select data-f="homeworkId"><option value="">— none —</option>${S().assessments.filter(a => a.type === 'Homework' && a.course === L.course && a.status !== 'archived').map(a => `<option value="${a.id}" ${a.id === L.homeworkId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students get a button to start it once it is published to their day. <a href="#/studio?group=${L.course}-A">Build homework →</a></p><div class="form-grid"><label>What to do<input data-f="homework" value="${esc(L.homework || '')}" placeholder="IB Exercise 2A — on Canvas"></label><label>Link (optional)<input data-f="homeworkUrl" value="${esc(L.homeworkUrl || '')}" placeholder="https://…"></label></div></section>
+      <section class="card"><h2 class="bar-head green">Homework <span class="tiny muted">· assigned</span></h2><label>Link homework from the studio<select data-f="homeworkId"><option value="">— none —</option>${S().assessments.filter(a => a.type === 'Homework' && a.course === L.course && a.status !== 'archived').map(a => `<option value="${a.id}" ${a.id === L.homeworkId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students get a button to start it once it is published to their day. <a href="#/studio?group=${L.course}-A">Build homework →</a></p>${Hub.bookex ? Hub.bookex.notebookButtons(L) : ''}<div class="form-grid"><label>What to do<input data-f="homework" value="${esc(L.homework || '')}" placeholder="IB Exercise 2A — on Canvas"></label><label>Link (optional)<input data-f="homeworkUrl" value="${esc(L.homeworkUrl || '')}" placeholder="https://…"></label></div></section>
       <section class="card danger-zone"><div class="row-between"><span class="tiny muted">Created ${fmtDateTime(L.createdAt)} · last change ${fmtDateTime(L.updatedAt)}</span><button class="btn small ghost danger" id="nb-del">Delete this notebook</button></div></section>`;
     bindEdit(main, L);
+    if (Hub.bookex) Hub.bookex.bindNotebook(main, L, put);
   }
   function deckPreview(d) {
     if (!d) return '<p class="tiny muted">No slides linked yet.</p>';
