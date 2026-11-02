@@ -574,6 +574,15 @@ mark.blank-key { background: var(--hl); padding: 0 4px; border-radius: 4px; }
 .mine-add { margin-top: 8px; }
 .ex.ref-only { grid-template-columns: minmax(0, 1fr); }
 .ex.ref-only .ex-q { border-right: 0; }
+.gc-missing { background: var(--bad-bg); border-radius: var(--r-s); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.gc-missing > b { font-family: var(--f-ui); color: var(--bad); }
+.gc-ok { color: var(--ok); }
+.gc-open { align-self: flex-start; }
+.group-card h3 a { text-decoration: none; }
+.register .miss-item { border-top: 1px dashed var(--line); padding: 8px 0; }
+.register .miss-item:first-of-type { border-top: 0; }
+.miss-names { font-family: var(--f-ui); font-weight: 600; font-size: 1.05rem; margin-top: 4px; }
+.sub-h { font-family: var(--f-head); font-size: 1rem; margin-top: 6px; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -3711,10 +3720,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const cards = Object.values(C().GROUPS).map(g => {
       const nl = C().nextLesson(g.id, asOf), dn = S().donow[g.id], dnCur = dn && nl && dn.lessonDate === nl.date;
       const ia = C().iaSchedule(g.id).find(s => s.date && s.date >= asOf);
-      return `<section class="card group-card ${g.course.toLowerCase()}"><div class="gc-head"><h3>${g.label}</h3><span class="tiny muted">${g.block} · ${Hub.roster.inGroup(g.id).length} students</span></div>
+      return `<section class="card group-card ${g.course.toLowerCase()}"><div class="gc-head"><h3><a href="#/class/${g.id}">${g.label}</a></h3><span class="tiny muted">${g.block} · ${Hub.roster.inGroup(g.id).length} students</span></div>
         ${nl ? `<p class="gc-date">${fmtDate(nl.date, true)}</p><p class="gc-lesson">${esc(nl.activity)}</p><div class="chips">${nl.skills.map(s => U.skillChip(s)).join('')}</div>` : '<p>No more lessons in the calendar.</p>'}
         <div class="gc-actions">${nl && Hub.lessons.idFor(g.id, nl.date) ? `<a class="btn small ghost" href="#/lesson/${encodeURIComponent(Hub.lessons.idFor(g.id, nl.date))}">▣ Notebook</a>` : ''}<a class="btn small" href="#/studio?group=${g.id}">✎ Exit Ticket</a><a class="btn small ${dnCur && dn.status === 'published' ? 'ghost' : 'pink'}" href="#/donow?group=${g.id}">${dnCur ? (dn.status === 'published' ? '✓ Do Now published' : 'Approve Do Now') : '☀ Plan Do Now'}</a></div>
-        ${ia ? `<p class="tiny gc-ia">IA · ${esc(ia.short)} due ${fmtDate(ia.date)}</p>` : ''}</section>`;
+        ${ia ? `<p class="tiny gc-ia">IA · ${esc(ia.short)} due ${fmtDate(ia.date)}</p>` : ''}
+        ${Hub.classdash ? Hub.classdash.cardSnippet(g.id) : ''}<a class="btn small primary gc-open" href="#/class/${g.id}">Class dashboard →</a></section>`;
     }).join('');
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
     main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', 'Inquirers. Thinkers. Reflective Learners.', `<img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo">`) +
@@ -5239,6 +5249,70 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.lessons = { list, edit, student, calendar, idFor, all, get, create, setRelease, visibleTo, deckFrom, notesHTML, blanksOf, blankOK, summary, latestFor, notebookHTML };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/classdash.js ---- */
+/* Class dashboards (#/class/<group>) and the "missing work" lists used on the main dashboard.
+   Missing work = Homework and Exit Tickets published to the group whose due date FOR THAT GROUP has passed,
+   with the active students in the group who have not submitted — ready to read out while taking the register. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, fmtDate, fmtDateTime, toast, addDays } = Hub.core;
+  const U = Hub.ui, C = () => Hub.curriculum, S = () => Hub.store.state;
+  const TYPES = ['Homework', 'Exit Ticket'];
+  const asOf = () => Hub.mastery.asOf();
+  const firstName = n => String(n || '').split(' ')[0];
+
+  /** [{a, due, missing:[students], done, total}] for work due before today (newest due first). days: how far back to look. */
+  function missing(groupId, days = 21) {
+    const today = asOf(), from = addDays(today, -days), studs = Hub.roster.inGroup(groupId);
+    return S().assessments.filter(a => TYPES.includes(a.type) && ['published', 'closed'].includes(a.status) && a.groups.includes(groupId))
+      .map(a => ({ a, due: Hub.assess.dueFor(a, groupId) })).filter(x => x.due && x.due < today && x.due >= from)
+      .map(x => { const miss = studs.filter(s => !Hub.assess.attemptsFor(x.a.id, s.id).length); return Object.assign(x, { missing: miss, done: studs.length - miss.length, total: studs.length }); })
+      .sort((p, q) => q.due.localeCompare(p.due));
+  }
+  /** Work due today or later for the group, with how many have submitted. */
+  function upcoming(groupId) {
+    const today = asOf(), studs = Hub.roster.inGroup(groupId);
+    return S().assessments.filter(a => a.status === 'published' && a.groups.includes(groupId))
+      .map(a => ({ a, due: Hub.assess.dueFor(a, groupId) })).filter(x => !x.due || x.due >= today)
+      .map(x => Object.assign(x, { done: studs.filter(s => Hub.assess.attemptsFor(x.a.id, s.id).length).length, total: studs.length }))
+      .sort((p, q) => String(p.due || '9').localeCompare(String(q.due || '9')));
+  }
+  /** Compact block for a dashboard group card. */
+  function cardSnippet(groupId) {
+    const m = missing(groupId, 14).filter(x => x.missing.length);
+    if (!m.length) return '<p class="tiny gc-ok">✓ No missing homework or Exit Tickets</p>';
+    return `<div class="gc-missing"><b>Missing work</b>${m.slice(0, 3).map(x => `<div class="tiny"><span class="pill ${x.a.type === 'Homework' ? 'amber' : 'pink'}">${x.a.type === 'Homework' ? 'HW' : 'ET'}</span> ${esc(x.a.title.replace(/^(SL|HL) · /, '').slice(0, 38))} <span class="muted">due ${fmtDate(x.due)}</span><br>${x.missing.map(s => esc(s.name)).join(', ')}</div>`).join('')}${m.length > 3 ? `<div class="tiny muted">+ ${m.length - 3} more</div>` : ''}</div>`;
+  }
+  const ragCounts = (L, studs) => { const c = { red: 0, amber: 0, green: 0, opened: 0 }; studs.forEach(s => { const p = S().progress[s.id + '|nb:' + L.id]; if (p) { c.opened++; const r = (p.responses || {}).rag; if (c[r] !== undefined) c[r]++; } }); return c; };
+
+  function view(main, params) {
+    const g = C().GROUPS[params.id] ? params.id : 'SL-A', G = C().GROUPS[g], studs = Hub.roster.inGroup(g), today = asOf();
+    const nl = C().nextLesson(g, today), lid = nl && Hub.lessons ? Hub.lessons.idFor(g, nl.date) : null, nb = lid ? Hub.lessons.get(lid) : null;
+    const miss = missing(g), up = upcoming(g), dn = S().donow[g], dnCur = dn && nl && dn.lessonDate === nl.date;
+    const recentNb = Hub.lessons ? Hub.lessons.all().filter(L => L.course === G.course && Hub.lessons.visibleTo(L, g)).sort((a, b) => String(b.dates[G.day] || '').localeCompare(String(a.dates[G.day] || '')))[0] : null;
+    const missBy = {}; miss.forEach(x => x.missing.forEach(s => { (missBy[s.id] = missBy[s.id] || []).push(x); }));
+    const skills = C().skillsFor(G.course).filter(k => C().isTaught(k.id, g, today)).map(k => [k, Hub.mastery.groupSkill(g, k.id).avg]).filter(x => x[1] !== null).sort((a, b) => a[1] - b[1]).slice(0, 4);
+    const ia = C().iaSchedule(g).find(s => s.date && s.date >= today);
+    const tabs = `<div class="tabs">${Object.values(C().GROUPS).map(x => `<a class="tab ${x.id === g ? 'on' : ''}" href="#/class/${x.id}">${x.label.replace('AA ', '')}</a>`).join('')}</div>`;
+    main.innerHTML = `<a class="back" href="#/home">← Dashboard</a>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
+      `<div class="grid g2">
+      <section class="card register"><div class="row-between"><h2 class="bar-head pink">While you take the register</h2>${miss.some(x => x.missing.length) ? '<button class="btn small ghost" id="copy-missing" type="button">Copy list</button>' : ''}</div>
+        ${miss.length ? miss.map(x => `<div class="miss-item"><div class="row-between"><span><span class="pill ${x.a.type === 'Homework' ? 'amber' : 'pink'}">${esc(x.a.type)}</span> <a href="#/edit/${x.a.id}">${esc(x.a.title)}</a></span><span class="tiny muted">due ${fmtDate(x.due)} · ${x.done}/${x.total} done</span></div>${x.missing.length ? `<p class="miss-names">${x.missing.map(s => `<a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a>`).join(', ')}</p>` : '<p class="tiny gc-ok">✓ Everyone has done it</p>'}</div>`).join('') : '<p class="tiny muted">No homework or Exit Tickets have passed their due date in the last three weeks.</p>'}
+        <p class="tiny muted">Homework and Exit Tickets whose due date for ${esc(G.label)} has passed (last 3 weeks).</p></section>
+      <section class="card"><h2 class="bar-head blue">Due next</h2>${up.length ? up.map(x => `<div class="row-between small"><span><span class="pill">${esc(x.a.type)}</span> <a href="#/edit/${x.a.id}">${esc(x.a.title)}</a></span><span class="tiny muted">${x.due ? 'due ' + fmtDate(x.due) : 'no due date'} · ${x.done}/${x.total} done</span></div>`).join('') : '<p class="tiny muted">Nothing open right now.</p>'}
+        <div class="actions"><a class="btn small" href="#/studio?group=${g}">✎ Build an Exit Ticket or homework</a></div></section>
+      <section class="card"><h2 class="bar-head green">Lesson notebook</h2>${nb ? `<p><b>${esc(nb.title)}</b> · next lesson</p><p class="tiny">${Hub.lessons.visibleTo(nb, g) ? 'Released to this class' : 'Not released to this class yet'}</p>` : nl ? '<p class="tiny muted">No notebook for the next lesson yet.</p>' : ''}<div class="actions">${lid ? `<a class="btn small" href="#/lesson/${encodeURIComponent(lid)}">${nb ? 'Open notebook' : '+ Create notebook'}</a>` : ''}</div>
+        ${recentNb ? (() => { const c = ragCounts(recentNb, studs), qs = studs.map(s => [s, ((S().progress[s.id + '|nb:' + recentNb.id] || {}).responses || {}).question]).filter(x => x[1] && x[1].trim()); return `<h3 class="sub-h">Latest released: ${esc(recentNb.title.slice(0, 60))}</h3><p class="small">${c.opened}/${studs.length} opened · <span class="rag-chip green">Got it ${c.green}</span> <span class="rag-chip amber">Getting there ${c.amber}</span> <span class="rag-chip red">Stuck ${c.red}</span></p>${qs.length ? `<div class="sticky"><b>Questions from students</b><ul>${qs.slice(0, 6).map(([s, q]) => `<li><b>${esc(firstName(s.name))}:</b> ${esc(q)}</li>`).join('')}</ul></div>` : ''}<a class="btn small ghost" href="#/lesson/${encodeURIComponent(recentNb.id)}?view=responses">All responses</a>`; })() : ''}</section>
+      <section class="card"><h2 class="bar-head amber">Do Now · skills · IA</h2><p class="small">${dnCur ? (dn.status === 'published' ? '✓ Do Now published for the next lesson' : 'Do Now drafted — approve it') : 'No Do Now planned for the next lesson'} <a class="btn small ghost" href="#/donow?group=${g}">Do Now</a></p>
+        ${skills.length ? `<p class="tiny"><b>Lowest class mastery:</b></p>${skills.map(([k, v]) => `<div class="snap"><span class="small">${esc(k.name)}</span><span>${v}%</span>${U.bar(v, v < 60 ? 'low' : '')}</div>`).join('')}` : '<p class="tiny muted">Not enough marked work yet for mastery.</p>'}<a class="btn small ghost" href="#/mastery?group=${g}">Mastery</a>
+        ${ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)}</p>` : ''}</section></div>
+      <section class="card scroll"><h2 class="bar-head blue">Students</h2><table class="tbl"><thead><tr><th>Student</th><th>Missing (3 weeks)</th><th>Overall mastery</th><th>Latest notebook</th></tr></thead><tbody>${studs.map(s => { const m = missBy[s.id] || [], p = recentNb && S().progress[s.id + '|nb:' + recentNb.id], r = p && (p.responses || {}).rag;
+        return `<tr><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${m.length ? `<span class="pill red">${m.length}</span> <span class="tiny">${m.map(x => esc(x.a.type === 'Homework' ? 'HW' : 'ET') + ' ' + fmtDate(x.due)).join(', ')}</span>` : '<span class="tiny muted">—</span>'}</td><td>${Hub.mastery.overall(s.id) ?? '—'}${Hub.mastery.overall(s.id) !== null ? '%' : ''}</td><td>${recentNb ? (p ? (r ? `<span class="rag-chip ${r}">${{ red: 'Stuck', amber: 'Getting there', green: 'Got it' }[r]}</span>` : 'opened') + ` <a class="tiny" href="#/lesson/${encodeURIComponent(recentNb.id)}?view=responses&sid=${encodeURIComponent(s.id)}">open</a>` : '<span class="tiny muted">not opened</span>') : ''}</td></tr>`; }).join('') || '<tr><td colspan="4">No students in this class yet.</td></tr>'}</tbody></table></section>`;
+    const cp = $('#copy-missing'); if (cp) cp.onclick = async () => { const txt = miss.filter(x => x.missing.length).map(x => `${x.a.type} – ${x.a.title} (due ${fmtDate(x.due)}): ${x.missing.map(s => s.name).join(', ')}`).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Copied.'); } catch (e) { toast('Could not copy here.', 'error'); } };
+  }
+  Hub.classdash = { view, missing, upcoming, cardSnippet };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/app.js ---- */
 /* App shell: sign-in, navigation, routing (#/page/param?query), preview banner, re-rendering. */
 (function (Hub) {
@@ -5255,7 +5329,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.shared.iaTeacher(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.shared.iaTeacher(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
     student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: m => Hub.shared.iaStudent(m), course: (m, p) => Hub.shared.course(m, p) }
   };
   function shell() {
@@ -5288,7 +5362,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const key = sess.email + '|' + Hub.auth.role() + '|' + (Hub.auth.sid() || '') + '|' + Hub.assess.queue().length;
     if (shellFor !== key || !$('#main')) { shell(); shellFor = key; }
     const { page, params } = parse(), role = Hub.auth.role(), routes = ROUTES[role], fn = routes[page] || routes.home;
-    $$('[data-nav]').forEach(a => { const on = a.dataset.nav === page || (['edit', 'preview', 'print', 'analysis'].includes(page) && a.dataset.nav === 'studio') || (page === 'lesson' && a.dataset.nav === 'lessons') || (page === 'mark' && a.dataset.nav === 'marking') || (['task', 'result'].includes(page) && a.dataset.nav === 'home'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    $$('[data-nav]').forEach(a => { const on = a.dataset.nav === page || (['edit', 'preview', 'print', 'analysis'].includes(page) && a.dataset.nav === 'studio') || (page === 'lesson' && a.dataset.nav === 'lessons') || (page === 'mark' && a.dataset.nav === 'marking') || (page === 'class' && a.dataset.nav === 'home') || (['task', 'result'].includes(page) && a.dataset.nav === 'home'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     const main = $('#main');
     if (Hub.calc) Hub.calc.setAllowed(true);
     try { fn(main, params); } catch (e) { console.error(e); main.innerHTML = U.empty('Something went wrong showing this page. Your data is safe.', `<pre class="tiny">${esc(e.message)}</pre><a class="btn" href="#/home">Go home</a>`); }
