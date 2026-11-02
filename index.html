@@ -557,6 +557,14 @@ mark.blank-key { background: var(--hl); padding: 0 4px; border-radius: 4px; }
 }
 .sheet .cmd { border-bottom: 0; text-decoration: none; cursor: default; }
 .sheet .cmd::after { display: none !important; }
+.due-set { display: flex; flex-direction: column; gap: 8px; }
+.due-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.due-row input[type=date] { width: auto; }
+.due-list { margin: 0; padding-left: 1.2em; }
+.due-edit summary { cursor: pointer; font-family: var(--f-ui); font-weight: 600; }
+.my-ex { border: 2px dashed var(--line); border-radius: var(--r-s); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+.my-ex + .my-ex { margin-top: 10px; }
+.gen-extra summary { cursor: pointer; font-family: var(--f-ui); font-weight: 600; margin-top: 6px; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -3293,18 +3301,32 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const a = A(aid); if (!a || a.status !== 'approved') return { ok: false, error: 'Approve the assessment before publishing.' };
     if (!o.groups || !o.groups.length) return { ok: false, error: 'Choose at least one group.' };
     if (o.groups.some(g => Hub.curriculum.GROUPS[g].course !== a.course)) return { ok: false, error: `This is a ${a.course} assessment: publish it to ${a.course} groups only.` };
-    Object.assign(a, { groups: o.groups.slice(), due: o.due || null, uploadRequired: !!o.uploadRequired, release: o.release === 'auto' ? 'auto' : 'hold', minutes: Number(o.minutes) || a.minutes, status: 'published', publishedAt: new Date().toISOString() });
+    // One assignment for several groups, each with its own due date (e.g. A day Wed, B day Thu).
+    const dueBy = {}; o.groups.forEach(g => { const d = (o.dueBy && o.dueBy[g]) || o.due || null; if (d) dueBy[g] = d; });
+    const dues = Object.values(dueBy).sort();
+    Object.assign(a, { groups: o.groups.slice(), dueBy, due: dues[0] || null, uploadRequired: !!o.uploadRequired, release: o.release === 'auto' ? 'auto' : 'hold', minutes: Number(o.minutes) || a.minutes, status: 'published', publishedAt: new Date().toISOString() });
     hist(a, `Published to ${o.groups.map(g => Hub.curriculum.GROUPS[g].label).join(', ')}`); Hub.store.log(`Published “${a.title}”`); Hub.store.save(true); return { ok: true };
   }
   /* Assignments close automatically 10 days after their due date (Miss Badmus can close them any time before). */
   const CLOSE_AFTER_DAYS = 10;
-  const closesOn = a => a && a.due ? Hub.core.addDays(a.due, CLOSE_AFTER_DAYS) : null;
-  const pastClose = a => !!closesOn(a) && Hub.core.todayISO() > closesOn(a);
-  const isOpen = a => !!a && a.status === 'published' && !pastClose(a);
+  /** Due date for one group (falls back to the single due date of older assignments). */
+  const dueFor = (a, g) => !a ? null : (a.dueBy && g && a.dueBy[g]) || (a.dueBy && !g ? Object.values(a.dueBy).sort()[0] : null) || a.due || null;
+  const closesOn = (a, g) => { const d = dueFor(a, g); return d ? Hub.core.addDays(d, CLOSE_AFTER_DAYS) : null; };
+  const pastClose = (a, g) => !!closesOn(a, g) && Hub.core.todayISO() > closesOn(a, g);
+  /** Open for a group: published and not 10 days past THAT group's due date. Without a group: open for at least one group. */
+  const isOpen = (a, g) => !!a && a.status === 'published' && (g ? !pastClose(a, g) : (a.groups.length ? a.groups.some(x => !pastClose(a, x)) : !pastClose(a)));
+  /** Change due dates after publishing (re-opens work that closed automatically if the new date allows). */
+  function setDue(aid, dueBy) {
+    const a = A(aid); if (!a || !['published', 'closed'].includes(a.status)) return { ok: false, error: 'Publish it first.' };
+    a.dueBy = Object.assign({}, a.dueBy || {}); Object.entries(dueBy).forEach(([g, d]) => { if (a.groups.includes(g)) { if (d) a.dueBy[g] = d; else delete a.dueBy[g]; } });
+    a.due = Object.values(a.dueBy).sort()[0] || null;
+    if (a.status === 'closed' && a.autoClosed && a.groups.some(g => !pastClose(a, g))) { a.status = 'published'; a.autoClosed = false; hist(a, 'Re-opened: due dates changed'); }
+    hist(a, 'Due dates: ' + a.groups.map(g => Hub.curriculum.GROUPS[g].label + ' ' + (a.dueBy[g] || 'none')).join(', ')); Hub.store.save(true); return { ok: true };
+  }
   /** Close every published assignment whose 10 days after the due date have passed. Returns how many closed. */
   function autoClose() {
     let n = 0; const now = new Date().toISOString();
-    S().assessments.forEach(a => { if (a.status === 'published' && pastClose(a)) { a.status = 'closed'; a.closedAt = now; a.autoClosed = true; hist(a, `Closed automatically ${CLOSE_AFTER_DAYS} days after the due date`); n++; } });
+    S().assessments.forEach(a => { if (a.status === 'published' && (a.groups.length ? a.groups.every(g => pastClose(a, g)) : pastClose(a))) { a.status = 'closed'; a.closedAt = now; a.autoClosed = true; hist(a, `Closed automatically ${CLOSE_AFTER_DAYS} days after the due date`); n++; } });
     if (n) { Hub.store.log(`${n} assignment${n > 1 ? 's' : ''} closed automatically (${CLOSE_AFTER_DAYS} days after due)`); Hub.store.save(); }
     return n;
   }
@@ -3319,7 +3341,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       S().evidence.forEach(e => { if (orig.has(e.attemptId)) e.superseded = false; });
     }
     Object.keys(S().progress).forEach(k => { if (k.endsWith('|' + aid)) delete S().progress[k]; });
-    Object.keys(S().settings || {}).forEach(k => { const L = S().settings[k]; if (k.startsWith('lesson:') && L && L.exitTicketId === aid) L.exitTicketId = null; });
+    Object.keys(S().settings || {}).forEach(k => { const L = S().settings[k]; if (k.startsWith('lesson:') && L) { if (L.exitTicketId === aid) L.exitTicketId = null; if (L.homeworkId === aid) L.homeworkId = null; } });
     S().assessments = S().assessments.filter(x => x.id !== aid);
     Hub.store.log(`Deleted “${a.title}” (${a.status}${gone.length ? `, ${gone.length} submission${gone.length > 1 ? 's' : ''}` : ''})`); Hub.store.save(true);
     return { ok: true, submissions: gone.length };
@@ -3343,7 +3365,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /** Published assessments a student can see now. Retests appear only for students below 80 % on the original. */
   function forStudent(sid) {
     const st = Hub.roster.byId(sid); if (!st) return [];
-    return S().assessments.filter(a => isOpen(a) && a.groups.includes(st.group)).filter(a => {
+    return S().assessments.filter(a => a.groups.includes(st.group) && isOpen(a, st.group)).filter(a => {
       if (a.type !== 'Retest' || !a.retestOf) return true;
       const orig = attemptsFor(a.retestOf, sid).filter(t => t.status === 'released').pop(); return !!orig && score(orig).pct < 80;
     });
@@ -3364,8 +3386,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const preview = Hub.auth.isPreview() || opts.preview;
     const existing = !preview && data.token && S().attempts.find(t => t.token === data.token); if (existing) return { ok: true, attempt: existing, duplicate: true };
     if (!opts.assessment && !preview) {
-      if (!isOpen(a)) return { ok: false, error: a.status === 'published' ? `This closed ${CLOSE_AFTER_DAYS} days after its due date.` : 'This assessment is not open.' };
       const st = Hub.roster.byId(sid); if (!st || !a.groups.includes(st.group)) return { ok: false, error: 'This assessment is not assigned to your group.' };
+      if (!isOpen(a, st.group)) return { ok: false, error: a.status === 'published' ? `This closed ${CLOSE_AFTER_DAYS} days after its due date.` : 'This assessment is not open.' };
       if (attemptsFor(aid, sid).length && a.type !== 'Practice') return { ok: false, error: 'You have already submitted this. Your teacher can allow a retest.' };
       if (a.uploadRequired && !(data.uploads || []).length) return { ok: false, error: 'Upload a photo of your working first (required for this task).' };
       if (a.type === 'Retest' && !data.proof) return { ok: false, error: 'Confirm your proof of studying before starting the retest.' };
@@ -3432,7 +3454,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     });
     return toCSV(rows);
   }
-  Hub.assess = { CLOSE_AFTER_DAYS, closesOn, isOpen, autoClose, destroy, TYPES, createDraft, updatePart, updateStem, regenerate, removeQ, addQ, setReviewed, setAllReviewed, problems, approve, publish, unpublish, close, archive, duplicate, remove, forStudent, attemptsFor, saveProgress, getProgress, submit, autoMark, release, releaseAuto, queue, itemAnalysis, gradebookCSV, score, questionsOf, toMC, valueTex, buildQ, byId: A };
+  Hub.assess = { CLOSE_AFTER_DAYS, dueFor, closesOn, isOpen, setDue, autoClose, destroy, TYPES, createDraft, updatePart, updateStem, regenerate, removeQ, addQ, setReviewed, setAllReviewed, problems, approve, publish, unpublish, close, archive, duplicate, remove, forStudent, attemptsFor, saveProgress, getProgress, submit, autoMark, release, releaseAuto, queue, itemAnalysis, gradebookCSV, score, questionsOf, toMC, valueTex, buildQ, byId: A };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/donow.js ---- */
@@ -3733,7 +3755,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const STATUS_TXT = { draft: ['Draft', 'grey'], approved: ['Approved', 'green'], published: ['Published', 'blue'], closed: ['Closed', 'amber'], archived: ['Archived', 'grey'] };
   function libRow(a) {
     const subs = S().attempts.filter(t => t.aid === a.id), waiting = subs.filter(t => t.status === 'submitted').length, rev = a.questions.filter(q => a.reviewed[q.id]).length;
-    return `<div class="lib-row"><div class="lib-main"><a href="#/edit/${a.id}" class="lib-title">${esc(a.title)}</a><div class="tiny muted">${a.course} · ${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · ${a.questions.reduce((s, q) => s + q.marks, 0)} marks · ${a.paper}${a.groups.length && a.status !== 'draft' ? ' · ' + a.groups.map(g => C().GROUPS[g].label.replace('AA ', '')).join(', ') : ''}${a.status === 'draft' ? ` · reviewed ${rev}/${a.questions.length}` : ''}${a.status === 'published' && a.due ? ` · due ${Hub.core.fmtDate(a.due)} · closes ${Hub.core.fmtDate(Hub.assess.closesOn(a))}` : ''}${a.autoClosed && a.status === 'closed' ? ' · closed automatically' : ''}${subs.length ? ` · ${subs.length} submitted${waiting ? `, <b>${waiting} to mark</b>` : ''}` : ''}</div></div>
+    return `<div class="lib-row"><div class="lib-main"><a href="#/edit/${a.id}" class="lib-title">${esc(a.title)}</a><div class="tiny muted">${a.course} · ${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · ${a.questions.reduce((s, q) => s + q.marks, 0)} marks · ${a.paper}${a.groups.length && a.status !== 'draft' ? ' · ' + a.groups.map(g => C().GROUPS[g].label.replace('AA ', '')).join(', ') : ''}${a.status === 'draft' ? ` · reviewed ${rev}/${a.questions.length}` : ''}${['published', 'closed'].includes(a.status) && dueText(a) ? ' · ' + dueText(a) : ''}${a.autoClosed && a.status === 'closed' ? ' · closed automatically' : ''}${subs.length ? ` · ${subs.length} submitted${waiting ? `, <b>${waiting} to mark</b>` : ''}` : ''}</div></div>
       <span class="pill ${STATUS_TXT[a.status][1]}">${STATUS_TXT[a.status][0]}</span>
       <div class="lib-act"><a class="btn small" href="#/edit/${a.id}">${a.status === 'draft' ? 'Review' : 'Open'}</a><a class="btn small ghost" href="#/print/${a.id}" title="Printable worksheet and answer key">🖨 Print</a>${subs.length ? `<a class="btn small ghost" href="#/analysis/${a.id}">Analysis</a>` : ''}<button class="btn small ghost" data-dup="${a.id}">Duplicate</button>${['published', 'closed'].includes(a.status) && a.type !== 'Retest' ? `<button class="btn small ghost" data-retest="${a.id}">Retest</button>` : ''}${!['draft', 'archived'].includes(a.status) ? `<button class="btn small ghost" data-arch="${a.id}">Archive</button>` : ''}<button class="btn small ghost danger" data-destroy="${a.id}">Delete</button></div></div>`;
   }
@@ -3798,20 +3820,24 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     if (a.kind === 'mc') return `<fieldset class="span2"><legend>Correct option</legend>${a.choices.map((c, i) => `<label class="inline-radio"><input type="radio" name="mc-${q.id}-${p.id}" data-f="ans-mc" ${at} value="${i}" ${i === a.correct ? 'checked' : ''}> ${'ABCDEF'[i]}: ${M(c)}</label>`).join('')}</fieldset>`;
     return '<p class="tiny muted">Teacher-marked from uploaded working.</p>';
   }
+  /** Default due dates per day from the paired A/B calendar row of the assignment's lesson. */
+  function defaultDue(a) { const r = a.lessonDate && Hub.lessons ? Hub.lessons.calendar(a.course).find(x => x.dates.A === a.lessonDate || x.dates.B === a.lessonDate) : null; return r ? { A: r.dates.A, B: r.dates.B } : { A: a.lessonDate, B: a.lessonDate }; }
+  const dueText = a => a.groups.map(g => Hub.assess.dueFor(a, g) ? `${C().GROUPS[g].day} day due ${fmtDate(Hub.assess.dueFor(a, g))}` : '').filter(Boolean).join(' · ');
   function approvePanel(a, probs, rev) {
     if (a.status === 'draft') return `<h2 class="bar-head green">Approve</h2><p>${rev}/${a.questions.length} questions reviewed.</p>${probs.length ? `<ul class="problems">${probs.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : '<p class="ok-text">Everything is reviewed and valid.</p>'}<div class="actions">${rev < a.questions.length ? `<button class="btn" id="review-all-btn">✓ I’ve checked all ${a.questions.length} — tick them all</button>` : ''}<button class="btn primary" id="approve" ${probs.length ? 'disabled aria-disabled="true"' : ''}>Approve this assessment</button><button class="btn ghost" id="preview-st">👁 Preview as a student</button></div><p class="tiny muted">Students never see drafts or approved-but-unpublished work. Previews are never recorded.</p>`;
     if (a.status === 'approved') {
       const t = Hub.assess.TYPES[a.type] || {};
       return `<h2 class="bar-head blue">Publish</h2><p class="ok-text">Approved ${fmtDateTime(a.approvedAt)}. Choose who gets it and how results are released.</p><form id="pub" class="form-grid">
-        <fieldset class="span2"><legend>Groups</legend>${Object.values(C().GROUPS).filter(g => g.course === a.course).map(g => `<label class="inline-check"><input type="checkbox" name="g" value="${g.id}" ${a.groups.includes(g.id) ? 'checked' : ''}> ${g.label}</label>`).join('')}</fieldset>
-        <label>Due date<input type="date" id="p-due" value="${a.due || a.lessonDate || ''}"><span class="tiny muted">Closes automatically ${Hub.assess.CLOSE_AFTER_DAYS} days after this date. You can close it sooner.</span></label><label>Suggested minutes<input type="number" id="p-min" min="1" max="120" value="${a.minutes || t.minutes || 10}"></label>
+        <fieldset class="span2 due-set"><legend>Groups and due dates <span class="tiny muted">· one assignment for both days, each with its own due date</span></legend>${Object.values(C().GROUPS).filter(g => g.course === a.course).map(g => { const dd = defaultDue(a); return `<div class="due-row"><label class="inline-check"><input type="checkbox" name="g" value="${g.id}" checked> ${g.label}</label><label class="inline">Due <input type="date" data-due="${g.id}" value="${(a.dueBy && a.dueBy[g.id]) || dd[g.day] || ''}"></label></div>`; }).join('')}<span class="tiny muted">Each day closes automatically ${Hub.assess.CLOSE_AFTER_DAYS} days after its own due date. You can close it sooner.</span></fieldset>
+        <label>Suggested minutes<input type="number" id="p-min" min="1" max="120" value="${a.minutes || t.minutes || 10}"></label>
         <label class="inline-check span2"><input type="checkbox" id="p-up" ${a.uploadRequired ? 'checked' : ''}> Students must upload a photo of their working (0 marks, no upload = cannot submit)</label>
         <label class="span2">Results<select id="p-rel"><option value="hold" ${a.release === 'hold' ? 'selected' : ''}>Hold for my review in the marking queue, then release</option><option value="auto" ${a.release === 'auto' ? 'selected' : ''}>Release auto-marked results immediately</option></select></label>
         <div class="actions span2"><button class="btn primary" type="submit">Publish to students</button><button class="btn ghost" type="button" id="preview-st">👁 Preview as a student</button></div></form>`;
     }
     const subs = S().attempts.filter(t => t.aid === a.id);
-    return `<h2 class="bar-head blue">${a.status === 'published' ? 'Published' : a.status[0].toUpperCase() + a.status.slice(1)}</h2><p>${a.groups.map(g => C().GROUPS[g].label).join(', ')}${a.due ? ` · due ${fmtDate(a.due)}` : ''}${a.status === 'published' ? (a.due ? ` · <b>closes automatically ${fmtDate(Hub.assess.closesOn(a), true)}</b>` : ' · no due date, so it stays open until you close it') : a.status === 'closed' ? (a.autoClosed ? ' · closed automatically 10 days after the due date' : ' · closed') : ''} · ${a.uploadRequired ? 'upload required' : 'no upload'} · results ${a.release === 'auto' ? 'released automatically' : 'held for review'} · ${subs.length} submission${subs.length === 1 ? '' : 's'}</p>
-      <div class="actions">${subs.length ? `<a class="btn" href="#/analysis/${a.id}">Item analysis</a><button class="btn ghost" id="csv">Gradebook CSV</button>` : ''}${a.status === 'published' ? `<button class="btn ghost" id="close">Close now</button>${subs.length ? '' : '<button class="btn ghost" id="unpub">Unpublish</button>'}` : ''}<button class="btn ghost" id="preview-st">👁 Preview as a student</button></div>`;
+    return `<h2 class="bar-head blue">${a.status === 'published' ? 'Published' : a.status[0].toUpperCase() + a.status.slice(1)}</h2><ul class="due-list">${a.groups.map(g => { const d = Hub.assess.dueFor(a, g); return `<li><b>${C().GROUPS[g].label}</b> · ${d ? 'due ' + fmtDate(d, true) : 'no due date'}${a.status === 'published' ? (d ? (Hub.assess.isOpen(a, g) ? ` · closes automatically ${fmtDate(Hub.assess.closesOn(a, g), true)}` : ' · <b>closed</b> (10 days after due)') : ' · stays open until you close it') : ''}</li>`; }).join('')}</ul><p>${a.status === 'closed' ? (a.autoClosed ? 'Closed automatically 10 days after the due dates · ' : 'Closed · ') : ''}${a.uploadRequired ? 'upload required' : 'no upload'} · results ${a.release === 'auto' ? 'released automatically' : 'held for review'} · ${subs.length} submission${subs.length === 1 ? '' : 's'}</p>
+      <div class="actions">${subs.length ? `<a class="btn" href="#/analysis/${a.id}">Item analysis</a><button class="btn ghost" id="csv">Gradebook CSV</button>` : ''}${a.status === 'published' ? `<button class="btn ghost" id="close">Close now</button>${subs.length ? '' : '<button class="btn ghost" id="unpub">Unpublish</button>'}` : ''}<button class="btn ghost" id="preview-st">👁 Preview as a student</button></div>
+      ${['published', 'closed'].includes(a.status) ? `<details class="due-edit"><summary>Change due dates</summary><div class="due-set">${a.groups.map(g => `<div class="due-row"><span>${C().GROUPS[g].label}</span><label class="inline">Due <input type="date" data-due="${g}" value="${Hub.assess.dueFor(a, g) || ''}"></label></div>`).join('')}<button class="btn small" id="due-save" type="button">Save due dates</button></div></details>` : ''}`;
   }
   function bindEditor(main, a, locked) {
     const rerenderApprove = () => { $('#approve-card').innerHTML = approvePanel(a, Hub.assess.problems(a), a.questions.filter(q => a.reviewed[q.id]).length); bindApprove(main, a); const bar = $('#review-all-bar'); if (bar) { bar.innerHTML = reviewAllBar(a); bindAll(); } };
@@ -3851,8 +3877,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function bindApprove(main, a) {
     const rab = $('#review-all-btn'); if (rab) rab.onclick = () => { Hub.assess.setAllReviewed(a.id, true); toast('Every question is marked as reviewed.'); Hub.app.render(); };
     const ap = $('#approve'); if (ap) ap.onclick = () => { const r = Hub.assess.approve(a.id); if (!r.ok) return toast(r.error, 'error'); toast('Approved. Now choose groups and publish.'); Hub.app.render(); };
-    const pub = $('#pub'); if (pub) pub.onsubmit = e => { e.preventDefault(); const groups = $$('input[name="g"]:checked', pub).map(x => x.value); const r = Hub.assess.publish(a.id, { groups, due: $('#p-due').value, uploadRequired: $('#p-up').checked, release: $('#p-rel').value, minutes: $('#p-min').value }); if (!r.ok) return toast(r.error, 'error'); toast('Published. Students in those groups can see it now.'); Hub.app.render(); };
+    const pub = $('#pub'); if (pub) pub.onsubmit = e => { e.preventDefault(); const groups = $$('input[name="g"]:checked', pub).map(x => x.value); const dueBy = Object.fromEntries(groups.map(g => [g, ($(`[data-due="${g}"]`, pub) || {}).value || null])); const r = Hub.assess.publish(a.id, { groups, dueBy, uploadRequired: $('#p-up').checked, release: $('#p-rel').value, minutes: $('#p-min').value }); if (!r.ok) return toast(r.error, 'error'); toast('Published. Students in those groups can see it now.'); Hub.app.render(); };
     const pv = $('#preview-st'); if (pv) pv.onclick = () => go('#/preview/' + a.id);
+    const ds = $('#due-save'); if (ds) ds.onclick = () => { const box = ds.closest('.due-set'); const r = Hub.assess.setDue(a.id, Object.fromEntries($$('[data-due]', box).map(i => [i.dataset.due, i.value || null]))); if (!r.ok) return toast(r.error, 'error'); toast('Due dates saved.'); Hub.app.render(); };
     const csv = $('#csv'); if (csv) csv.onclick = () => download(a.title.replace(/[^\w]+/g, '_') + '_gradebook.csv', Hub.assess.gradebookCSV(a.id), 'text/csv');
     const cl = $('#close'); if (cl) cl.onclick = async () => { if (await U.confirmBox('Close to new submissions? Existing results are kept.', 'Close')) { Hub.assess.close(a.id); Hub.app.render(); } };
     const un = $('#unpub'); if (un) un.onclick = () => { const r = Hub.assess.unpublish(a.id); if (!r.ok) return toast(r.error || 'Could not unpublish.', 'error'); Hub.app.render(); };
@@ -4013,7 +4040,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <div class="grid g2">
         <section class="card donow-card"><h2 class="bar-head amber">☀ Today’s Do Now</h2>${dn ? (dn.done ? `<p>Done — <b>${Hub.assess.score(dn.done).earned}/${dn.done.max}</b>.</p><a class="btn small" href="#/result/${dn.done.id}">See feedback</a>` : `<p>Five questions picked just for you for ${fmtDate(dn.rec.lessonDate, true)}.</p><a class="btn primary" href="#/donow">Start my Do Now →</a>`) : '<p>Your Do Now appears here once Miss Badmus publishes it.</p>'}</section>
         ${(L => L ? `<section class="card"><h2 class="bar-head blue">▣ Lesson notebook</h2><p><b>${esc(L.title)}</b></p><a class="btn primary" href="#/notebook/${encodeURIComponent(L.id)}">Open today’s notebook →</a></section>` : '')(Hub.lessons && Hub.lessons.latestFor(s))}
-        <section class="card"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${a.due ? ` · due ${fmtDate(a.due)}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
+        <section class="card"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
         <section class="card"><h2 class="bar-head blue">Feedback</h2>${returned.length ? returned.map(t => `<div class="todo"><div><b>${esc(t.inline ? t.inline.title : (Hub.assess.byId(t.aid) || {}).title || t.type)}</b><div class="tiny muted">${fmtDate(t.date)} · ${Hub.assess.score(t).earned}/${t.max}${t.comment ? ' · 💬 comment from Miss Badmus' : ''}</div></div><a class="btn small ghost" href="#/result/${t.id}">Open</a></div>`).join('') : '<p>Marked work will appear here.</p>'}${tasks.filter(x => x.t && x.t.status === 'submitted').map(({ a, t }) => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">Submitted ${fmtDateTime(t.at)} · waiting for Miss Badmus</div></div><a class="btn small ghost" href="#/result/${t.id}">View</a></div>`).join('')}</section>
         <section class="card"><h2 class="bar-head pink">Next to work on</h2>${stats.length ? stats.slice(0, 3).map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small ghost" href="#/practice?skill=${x.skill}">Practise</a></div>`).join('') : '<p>Complete some work to see your next steps.</p>'}${ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)} (${daysBetween(asOf, ia.date)} days) — <a href="#/ia">open my IA studio</a></p>` : ''}</section>
       </div>`;
@@ -4024,7 +4051,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const s = me(), key = a.id, prog = opts.preview ? null : Hub.assess.getProgress(s ? s.id : 'x', key) || {};
     const responses = (prog && prog.responses) || {}, uploads = (prog && prog.uploads) || [];
     const token = uid('tok');
-    main.innerHTML = (opts.back || `<a class="back" href="#/home">← My day</a>`) + U.heading(`${a.type.toUpperCase()}${a.course ? ' · AA ' + a.course : ''}`, esc(a.title), `${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · ${a.questions.reduce((x, q) => x + q.marks, 0)} marks${a.minutes ? ` · about ${a.minutes} minutes` : ''}${a.due ? ` · due ${fmtDate(a.due)}` : ''}`) +
+    main.innerHTML = (opts.back || `<a class="back" href="#/home">← My day</a>`) + U.heading(`${a.type.toUpperCase()}${a.course ? ' · AA ' + a.course : ''}`, esc(a.title), `${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · ${a.questions.reduce((x, q) => x + q.marks, 0)} marks${a.minutes ? ` · about ${a.minutes} minutes` : ''}${Hub.assess.dueFor(a, s ? s.group : null) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s ? s.group : null))}` : ''}`) +
       (opts.preview ? '<div class="notice preview">Preview — nothing you enter here is saved or marked into anyone’s record.</div>' : '') +
       `<form id="take" novalidate>${a.questions.map((q, i) => U.question(q, i, { mode: 'answer', responses, hints: opts.hints, slot: opts.slots ? opts.slots[i] : '' })).join('')}
       ${a.uploadRequired || opts.allowUpload ? `<section class="card upload-card"><h2 class="bar-head amber">📷 Upload your working ${a.uploadRequired ? '<span class="pill red">required · 0 marks</span>' : '<span class="pill">optional</span>'}</h2><p class="small">Take a clear photo of every page (all questions). On a Chromebook use the camera or choose a file. No upload means you cannot submit.</p><label class="file-btn btn"><input type="file" id="up" accept="image/*,application/pdf" multiple capture="environment"> Add photo or PDF</label><ul id="up-list" class="up-list"></ul></section>` : ''}
@@ -4517,7 +4544,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function create(row) {
     const gens = gensFor(row.skills);
     const L = { id: row.id, course: row.course, title: row.title, dates: row.dates, eq: '', skills: row.skills.slice(), deck: null, doNow: true, keyIdeas: '',
-      examples: gens.slice(0, 2).map(g => ({ gen: g, seed: newSeed() })),
+      examples: [], myExamples: [], homeworkId: null,
       tasks: gens.length ? [0, 1, 2].map(i => ({ gen: gens[i % gens.length], seed: newSeed() })) : [],
       exitTicketId: null, homework: '', homeworkUrl: '', reflect: true, release: {}, createdAt: nowISO() };
     put(L); Hub.store.log(`Created lesson notebook “${L.title}”`); return L;
@@ -4582,6 +4609,22 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ${showAll ? '' : `<div class="actions"><button type="button" class="btn small primary" data-next="${q.id}">Show next step</button><button type="button" class="btn small ghost" data-allsteps="${q.id}">Show all</button></div>`}</div></article>`;
   }
 
+  /** A worked example typed by Miss Badmus (e.g. the textbook example used on her slides): question left, steps revealed one line at a time. */
+  function myExampleHTML(e, i, showAll) {
+    const steps = String(e.steps || '').split('\n').map(x => x.trim()).filter(Boolean).map(w => `<div class="step">${M(w)}</div>`);
+    return `<article class="ex" data-ex="my${i}"><div class="ex-q"><div class="q-head"><span class="q-num">${i + 1}</span>${e.ref ? `<div class="q-meta"><span class="pill blue">${esc(e.ref)}</span></div>` : ''}</div><div class="q-stem">${M(e.q || '')}</div></div>
+      <div class="ex-sol"><div class="hand ex-steps">${steps.map(x => showAll ? x : x.replace('class="step', 'hidden class="step')).join('')}</div>${showAll || !steps.length ? '' : `<div class="actions"><button type="button" class="btn small primary" data-next="my${i}">Show next step</button><button type="button" class="btn small ghost" data-allsteps="my${i}">Show all</button></div>`}</div></article>`;
+  }
+  /** Exit Ticket / homework from the Assessment Studio, as a link that works for students (their own day's due date) and in the teacher's preview. */
+  function linkedTask(a, label, ctx, sid) {
+    if (!a) return ctx.teacher ? `<p class="muted">The ${label} linked here no longer exists.</p>` : '';
+    const meta = `<b>${esc(a.title)}</b> · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''}`;
+    if (ctx.preview || ctx.teacher || !sid) return `<p>${meta}${a.status === 'published' ? '' : ' · <span class="pill amber">not published yet</span>'}</p><a class="btn primary" href="#/preview/${a.id}">Open the ${label} →</a><p class="tiny muted">${a.status === 'published' ? 'Students start it from this button.' : 'Students can start it here once you publish it.'}</p>`;
+    const st = Hub.roster.byId(sid), t = Hub.assess.attemptsFor(a.id, sid).pop(), open = Hub.assess.forStudent(sid).some(x => x.id === a.id), due = Hub.assess.dueFor(a, st && st.group);
+    if (t) return `<p>${meta} · done ✓</p><a class="btn ghost" href="#/result/${t.id}">See my feedback →</a>`;
+    if (open) return `<p>${meta}${due ? ' · due ' + fmtDate(due, true) : ''}</p><a class="btn primary" href="#/task/${a.id}">Start the ${label} →</a>`;
+    return `<p class="muted">The ${label} opens here when Miss Badmus publishes it.</p>`;
+  }
   /* ================= the notebook page (student view; also teacher preview and read-only response view) ================= */
   function sectionCard(n, title, cls, body) { return `<section class="card nb-sec ${cls}" id="nb-${cls}"><h2 class="nb-sec-h"><span class="nb-n">${n}</span>${title}</h2>${body}</section>`; }
   function notebookHTML(L, ctx) {
@@ -4600,18 +4643,13 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const nb = blanksOf(L.keyIdeas).length;
       add('Key ideas', 'notes', `<div class="nb-notes" id="nb-notes">${notesHTML(L.keyIdeas, (r.blanks || {}), { dis, key: ctx.key })}</div>${nb && !ctx.key ? `<div class="actions"><button type="button" class="btn small" id="check-notes" ${dis}>Check my notes</button><button type="button" class="btn small ghost" id="show-notes" ${r.notesChecked || ctx.readOnly ? '' : 'hidden'}>Show the answers</button><span class="tiny muted" id="notes-score"></span></div>` : ''}`);
     }
-    const ex = examplesOf(L);
-    if (ex.length) add('Worked examples', 'examples', `<p class="tiny muted">Try each one in your head first. Then reveal the solution one line at a time.</p>${ex.map((q, i) => exampleHTML(q, i + 1, ctx.key)).join('')}`);
+    const ex = examplesOf(L), mine = (L.myExamples || []).filter(e => (e.q || '').trim() || (e.steps || '').trim());
+    if (ex.length || mine.length) add('Worked examples', 'examples', `<p class="tiny muted">Try each one in your head first. Then reveal the solution one line at a time.</p>${mine.map((e, i) => myExampleHTML(e, i, ctx.key)).join('')}${ex.map((q, i) => exampleHTML(q, mine.length + i + 1, ctx.key)).join('')}`);
     const ts = tasksOf(L);
     if (ts.length) add('Your turn', 'yourturn', `<p class="tiny muted">Practice for you — checked straight away, never graded. Type fractions as 3/4, roots as sqrt(5).</p><form id="yt-form" novalidate>${ts.map((q, i) => U.question(q, i, { mode: ctx.key ? 'teacher' : 'answer', responses: r.tasks || {}, hints: !ctx.readOnly, disabled: ctx.readOnly, footer: ctx.key ? '' : `<div class="yt-foot"><button type="button" class="btn small" data-check="${q.id}" ${dis}>Check my answer</button><button type="button" class="btn small ghost" data-sol="${q.id}" ${(r.checked || {})[q.id] || ctx.readOnly ? '' : 'hidden'}>Show the solution</button></div><div class="yt-fb" id="fb-${q.id}"></div><div class="yt-sol" id="sol-${q.id}" hidden></div>` })).join('')}</form>`);
-    if (L.exitTicketId) {
-      const a = Hub.assess.byId(L.exitTicketId); let body = '';
-      if (!a) body = ctx.teacher ? '<p class="muted">The Exit Ticket linked here no longer exists.</p>' : '';
-      else if (ctx.preview || !sid) body = `<p><b>${esc(a.title)}</b> · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''}. ${a.status === 'published' ? 'Published.' : 'Not published yet — students see it here once you publish it.'}</p>`;
-      else { const t = Hub.assess.attemptsFor(a.id, sid).pop(), open = Hub.assess.forStudent(sid).some(x => x.id === a.id); body = t ? `<p>Done ✓ <a class="btn small ghost" href="#/result/${t.id}">See feedback</a></p>` : open ? `<p><b>${esc(a.title)}</b> · about ${a.minutes || 8} minutes</p><a class="btn primary" href="#/task/${a.id}">Start the Exit Ticket →</a>` : '<p class="muted">Your Exit Ticket opens here when Miss Badmus publishes it.</p>'; }
-      add('Exit Ticket', 'exit', body);
-    }
-    if ((L.homework || '').trim() || L.homeworkUrl) add('Homework', 'homework', `${L.homework ? `<p class="hw">${M(L.homework)}</p>` : ''}${/^https:\/\//.test(L.homeworkUrl || '') ? `<p><a class="btn small" href="${esc(L.homeworkUrl)}" target="_blank" rel="noopener">Open the homework ↗</a> <code class="link-text">${esc(L.homeworkUrl.replace(/^https?:\/\//, ''))}</code></p>` : ''}`);
+    if (L.exitTicketId) add('Exit Ticket', 'exit', linkedTask(Hub.assess.byId(L.exitTicketId), 'Exit Ticket', ctx, sid));
+    const hwA = L.homeworkId ? Hub.assess.byId(L.homeworkId) : null;
+    if (hwA || L.homeworkId || (L.homework || '').trim() || L.homeworkUrl) add('Homework', 'homework', `${L.homeworkId ? linkedTask(hwA, 'homework', ctx, sid) : ''}${L.homework ? `<p class="hw">${M(L.homework)}</p>` : ''}${/^https:\/\//.test(L.homeworkUrl || '') ? `<p><a class="btn small" href="${esc(L.homeworkUrl)}" target="_blank" rel="noopener">Open the homework ↗</a> <code class="link-text">${esc(L.homeworkUrl.replace(/^https?:\/\//, ''))}</code></p>` : ''}`);
     if (L.reflect !== false) add('Reflection', 'reflect', `<fieldset class="rag"><legend>How confident do you feel about today’s lesson?</legend>${[['red', 'I’m stuck'], ['amber', 'Getting there'], ['green', 'I’ve got it']].map(([v, t]) => `<label class="rag-opt ${v}"><input type="radio" name="rag" value="${v}" ${r.rag === v ? 'checked' : ''} ${dis}> ${t}</label>`).join('')}</fieldset>
       <label>One thing I learned today<textarea id="nb-learned" rows="2" ${dis}>${esc(r.learned || '')}</textarea></label><label>A question I still have <span class="tiny muted">(Miss Badmus reads these)</span><textarea id="nb-question" rows="2" ${dis}>${esc(r.question || '')}</textarea></label>`);
     const eq = L.eq ? `<div class="eq-strip"><span class="eq-tag">Essential question</span> ${M(L.eq)}</div>` : '';
@@ -4715,10 +4753,13 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <div class="grid g2"><label>Notes<textarea data-f="keyIdeas" rows="12" placeholder="## Key idea&#10;A function maps each input to [[exactly one]] output.&#10;- The set of inputs is the [[domain]].&#10;- $f(x)=x^2$: $f(3)=$ [[9]]">${esc(L.keyIdeas || '')}</textarea></label>
         <div><span class="key-lab">Students see</span><div class="nb-notes pv-box" id="notes-pv">${notesHTML(L.keyIdeas, {}, { dis: 'disabled' })}</div></div></div>
         <p class="tiny muted"><b>[[answer]]</b> makes a blank (several accepted answers: [[domain|the domain]]). Maths in $…$, e.g. $\\frac{1}{2}$ (keep blanks outside the $…$). <b>## </b> starts a heading, <b>- </b> a bullet. Students check their blanks themselves.</p></section>
-      <section class="card"><h2 class="bar-head blue">Worked examples <span class="tiny muted">· solution revealed one line at a time</span></h2><div id="ex-list">${qList('examples', L.examples || [])}</div>${gens.length ? `<div class="add-row"><select id="ex-gen">${genOpts}</select><button class="btn small" id="ex-add">+ Add example</button></div>` : ''}</section>
+      <section class="card"><h2 class="bar-head blue">Worked examples <span class="tiny muted">· the examples from your slides · revealed one line at a time</span></h2>
+        <div id="my-list">${(L.myExamples || []).map((e, i) => `<fieldset class="my-ex"><legend>Example ${i + 1}</legend><label>Reference (shown to students)<input data-my="${i}" data-k="ref" value="${esc(e.ref || '')}" placeholder="e.g. Example 31"></label><label>Question<textarea data-my="${i}" data-k="q" rows="2" placeholder="Type the question; maths in $…$">${esc(e.q || '')}</textarea></label><label>Solution steps (one line each, revealed one at a time)<textarea data-my="${i}" data-k="steps" rows="5">${esc(e.steps || '')}</textarea></label><button class="btn small ghost danger" type="button" data-mydel="${i}">Remove</button></fieldset>`).join('') || '<p class="tiny muted">None yet. Add the worked examples you use on your slides, so the notebook matches your lesson.</p>'}</div>
+        <div class="actions"><button class="btn small" id="my-add" type="button">+ Add a worked example</button></div>
+        <details class="gen-extra"><summary>Extra examples with new numbers (optional)</summary><div id="ex-list">${qList('examples', L.examples || [])}</div>${gens.length ? `<div class="add-row"><select id="ex-gen">${genOpts}</select><button class="btn small" id="ex-add">+ Add example</button></div>` : ''}</details></section>
       <section class="card"><h2 class="bar-head amber">Your turn <span class="tiny muted">· self-check, never graded</span></h2><div id="yt-list">${qList('tasks', L.tasks || [])}</div>${gens.length ? `<div class="add-row"><select id="yt-gen">${genOpts}</select><label class="inline-check"><input type="checkbox" id="yt-ch"> Challenge</label><button class="btn small" id="yt-add">+ Add question</button></div>` : ''}</section>
       <section class="card"><h2 class="bar-head pink">Exit Ticket</h2><label>Link an Exit Ticket from the studio<select data-f="exitTicketId"><option value="">— none —</option>${ets.map(a => `<option value="${a.id}" ${a.id === L.exitTicketId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students see it here once it is published to their day. <a href="#/studio?group=${L.course}-A">Build an Exit Ticket →</a></p></section>
-      <section class="card"><h2 class="bar-head green">Homework</h2><div class="form-grid"><label>What to do<input data-f="homework" value="${esc(L.homework || '')}" placeholder="IB Exercise 2A — on Canvas"></label><label>Link (optional)<input data-f="homeworkUrl" value="${esc(L.homeworkUrl || '')}" placeholder="https://…"></label></div></section>
+      <section class="card"><h2 class="bar-head green">Homework</h2><label>Link homework from the studio<select data-f="homeworkId"><option value="">— none —</option>${S().assessments.filter(a => a.type === 'Homework' && a.course === L.course && a.status !== 'archived').map(a => `<option value="${a.id}" ${a.id === L.homeworkId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students get a button to start it once it is published to their day. <a href="#/studio?group=${L.course}-A">Build homework →</a></p><div class="form-grid"><label>What to do<input data-f="homework" value="${esc(L.homework || '')}" placeholder="IB Exercise 2A — on Canvas"></label><label>Link (optional)<input data-f="homeworkUrl" value="${esc(L.homeworkUrl || '')}" placeholder="https://…"></label></div></section>
       <section class="card danger-zone"><div class="row-between"><span class="tiny muted">Created ${fmtDateTime(L.createdAt)} · last change ${fmtDateTime(L.updatedAt)}</span><button class="btn small ghost danger" id="nb-del">Delete this notebook</button></div></section>`;
     bindEdit(main, L);
   }
@@ -4734,7 +4775,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const f = el.dataset.f;
       if (f === 'deck') { L.deck = deckFrom(el.value); $('#deck-pv').innerHTML = deckPreview(L.deck); if (L.deck && L.deck.error) L.deck = Object.assign({}, L.deck, { embed: null }); }
       else if (f === 'doNow' || f === 'reflect') L[f] = el.checked;
-      else if (f === 'exitTicketId') L.exitTicketId = el.value || null;
+      else if (f === 'exitTicketId' || f === 'homeworkId') L[f] = el.value || null;
       else if (f === 'homeworkUrl') { const v = el.value.trim(); el.setCustomValidity(v && !/^https:\/\//.test(v) ? 'Use a link that starts with https://' : ''); el.reportValidity(); L.homeworkUrl = v; }
       else L[f] = el.value;
       if (f === 'keyIdeas') $('#notes-pv').innerHTML = notesHTML(L.keyIdeas, {}, { dis: 'disabled' });
@@ -4746,6 +4787,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const spec = s => { const [k, i] = s.split(':'); return [k, Number(i)]; };
     $$('[data-reseed]', main).forEach(b => (b.onclick = () => { const [k, i] = spec(b.dataset.reseed); L[k][i] = Object.assign({}, L[k][i], { seed: newSeed() }); put(L); Hub.app.render(); }));
     $$('[data-del]', main).forEach(b => (b.onclick = () => { const [k, i] = spec(b.dataset.del); L[k].splice(i, 1); put(L); Hub.app.render(); }));
+    const myTimers = {};
+    $$('[data-my]', main).forEach(el => el.addEventListener('input', () => { const i = Number(el.dataset.my), k = el.dataset.k, key = i + k; clearTimeout(myTimers[key]); myTimers[key] = setTimeout(() => { L.myExamples = L.myExamples || []; L.myExamples[i] = Object.assign({}, L.myExamples[i], { [k]: el.value }); put(L); }, 500); }));
+    $$('[data-mydel]', main).forEach(b => (b.onclick = () => { L.myExamples.splice(Number(b.dataset.mydel), 1); put(L); Hub.app.render(); }));
+    const ma = $('#my-add'); if (ma) ma.onclick = () => { (L.myExamples = L.myExamples || []).push({ ref: '', q: '', steps: '' }); put(L); Hub.app.render(); };
     const ea = $('#ex-add'); if (ea) ea.onclick = () => { (L.examples = L.examples || []).push({ gen: $('#ex-gen').value, seed: newSeed() }); put(L); Hub.app.render(); };
     const ya = $('#yt-add'); if (ya) ya.onclick = () => { (L.tasks = L.tasks || []).push({ gen: $('#yt-gen').value, seed: newSeed(), challenge: $('#yt-ch').checked }); put(L); Hub.app.render(); };
     $('#nb-del').onclick = async () => { if (await U.confirmBox('Delete this notebook? Students lose access to it. Their saved notebook answers stay in your data.', 'Delete notebook', { danger: true })) { remove(L.id); toast('Notebook deleted.'); go('#/lessons?course=' + L.course); } };
