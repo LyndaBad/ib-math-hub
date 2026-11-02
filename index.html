@@ -475,13 +475,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 (function(Hub){
  'use strict';
  const cfg=window.HUB_CONFIG, clone=x=>JSON.parse(JSON.stringify(x));
+ const activation=/type=(invite|recovery)/.test(location.hash);
  const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  async function call(action,data={}){
   const {data:{session}}=await client.auth.getSession();if(!session)throw Error('Please sign in again.');
   const r=await fetch(cfg.supabaseUrl+'/functions/v1/hub',{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.supabaseKey,Authorization:'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
   const body=await r.json();if(!r.ok)throw Error(body.error||'Could not reach the Hub.');return body;
  }
- Hub.cloud={client,call,clone};
+ Hub.cloud={client,call,clone,activation};
 })(window.Hub=window.Hub||{});
 
 /* ---- js/math.js ---- */
@@ -3137,7 +3138,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <div class="actions sticky-actions"><button class="btn primary" id="submit" type="submit">Submit</button><span id="autosave" class="tiny muted">${prog && prog.updatedAt ? 'Answers saved ' + fmtDateTime(prog.updatedAt) : 'Your answers save as you type.'}</span></div></form>`;
     const form = $('#take'); let ups = uploads.slice(); const hints = {};
     const listUps = () => { const ul = $('#up-list'); if (ul) ul.innerHTML = ups.map((u, i) => `<li>📄 ${esc(u.name)} <span class="tiny muted">${Math.round(u.size / 1024)} KB</span> <button type="button" class="btn small ghost" data-rmup="${i}">Remove</button></li>`).join(''); $$('[data-rmup]').forEach(b => (b.onclick = () => { ups.splice(Number(b.dataset.rmup), 1); listUps(); persist(); })); };
-    const persist = debounce(() => { if (opts.preview || !s || opts.noProgress) return; Hub.assess.saveProgress(s.id, key, { responses: U.readResponses(form, a.questions), uploads: ups, reflection: $('#reflection') ? $('#reflection').value : '' }); const el = $('#autosave'); if (el) el.textContent = 'Saving answers to cloud…'; }, 500);
+    const persist = () => { if (opts.preview || !s || opts.noProgress) return; Hub.assess.saveProgress(s.id, key, { responses: U.readResponses(form, a.questions), uploads: ups, reflection: $('#reflection') ? $('#reflection').value : '' }); const el = $('#autosave'); if (el) el.textContent = 'Saving answers to cloud…'; };
     U.bindPreviews(form, persist); listUps();
     $$('details.hint', form).forEach(d => d.addEventListener('toggle', () => { if (d.open) hints[d.dataset.hint] = true; }));
     const up = $('#up'); if (up) up.onchange = async () => { for (const f of up.files) { try { const meta = await Hub.uploads.add(f); ups.push(meta); toast('Added ' + f.name); } catch (e) { toast(e.message, 'error'); } } up.value = ''; listUps(); persist(); };
@@ -3434,7 +3435,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#setup-password').onsubmit=async e=>{e.preventDefault();if($('#new-password').value!==$('#repeat-password').value){$('#setup-error').textContent='Passwords do not match.';return;}const {error}=await Hub.cloud.client.auth.updateUser({password:$('#new-password').value});if(error){$('#setup-error').textContent=error.message;return;}location.hash='#/home';location.reload();};
   }
   async function boot() {
-    const hash=location.hash, activation=/type=(invite|recovery)/.test(hash);
+    const activation=Hub.cloud.activation;
     try {
       await Hub.cloud.client.auth.getSession();
       if(activation){passwordSetup();return;}
