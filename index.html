@@ -832,7 +832,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const OPS = {
     times: '×', cdot: '·', div: '÷', pm: '±', mp: '∓', le: '≤', leq: '≤', ge: '≥', geq: '≥', ne: '≠', neq: '≠', approx: '≈', equiv: '≡',
     in: '∈', notin: '∉', subset: '⊂', cup: '∪', cap: '∩', circ: '∘', to: '→', rightarrow: '→', Rightarrow: '⇒', Leftrightarrow: '⇔', iff: '⇔',
-    therefore: '∴', ldots: '…', cdots: '⋯', infty: '∞', prime: '′', lvert: '|', rvert: '|', mid: '|', partial: '∂', forall: '∀', exists: '∃', neg: '¬',
+    therefore: '∴', ldots: '…', dots: '…', cdots: '⋯', mapsto: '↦', geqslant: '≥', leqslant: '≤', subseteq: '⊆', setminus: '∖', infty: '∞', prime: '′', lvert: '|', rvert: '|', mid: '|', partial: '∂', forall: '∀', exists: '∃', neg: '¬',
     emptyset: '∅', lt: '<', gt: '>', langle: '⟨', rangle: '⟩', degree: '°', sum: '∑', prod: '∏', int: '∫', star: '*', ast: '∗'
   };
   const FUNCS = ['sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'arcsin', 'arccos', 'arctan', 'ln', 'log', 'exp', 'lim', 'max', 'min', 'det', 'Re', 'Im', 'arg'];
@@ -3084,7 +3084,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         w: [R`The last term has $r = 5$: $\binom{5}{5}(3x)^{0}\left(-\frac{1}{2x}\right)^{5} = -\frac{1}{32x^{5}}$`], h: 'The last term has r = n, so only the second part of the bracket appears.', v: mcv('simplify((-1/(2*x))**5 + 1/(32*x**5)) == 0') }
     ] },
     { stem: R`One row of Pascal’s triangle is $1,\ 5,\ 10,\ 10,\ 5,\ 1$.`, parts: [
-      { c: 'Write down', p: 'the next row of the triangle.', m: 1, a: { t: [1, 6, 15, 20, 15, 6, 1], l: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th'] },
+      { c: 'Write down', p: 'the next row of the triangle.', m: 1, a: { t: [1, 6, 15, 20, 15, 6, 1], l: ['\\text{1st}', '\\text{2nd}', '\\text{3rd}', '\\text{4th}', '\\text{5th}', '\\text{6th}', '\\text{7th}'] },
         ms: [['A1', R`$1,\ 6,\ 15,\ 20,\ 15,\ 6,\ 1$`]], w: [R`Each entry is the sum of the two above it: $1,\ 1+5,\ 5+10,\ 10+10,\ 10+5,\ 5+1,\ 1$`], h: 'Each number is the sum of the two numbers above it. Every row starts and ends with 1.', v: 'tuple(binomial(6,i) for i in range(7))' },
       { c: 'Hence find', p: R`the coefficient of $x^{3}$ in the expansion of $(2x - 3)^{6}$.`, m: 3, a: -4320,
         ms: [['(M1)', R`uses $20$ from the row in (a)`], ['(M1)', R`$20(2x)^{3}(-3)^{3}$`], ['A1', R`$-4320$`]],
@@ -3245,7 +3245,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const V = frx(va), H = frx(ha), vx = va[0] / va[1], hy = ha[0] / ha[1];
     const why = i === 5 ? [R`Write as one fraction: $3 + \frac{x - 1}{2x + 1} = \frac{3(2x + 1) + x - 1}{2x + 1} = \frac{7x + 2}{2x + 1}$`] : [];
     return { stem: R`Consider the function $${tex}$.`, parts: [
-      { c: 'Write down', p: 'the equations of the vertical and horizontal asymptotes of the graph.', m: 2, h: 'Vertical: where the denominator is 0. Horizontal: what y approaches as x gets very large.', a: { t: [va, ha], l: ['vertical asymptote x =', 'horizontal asymptote y ='], d: R`x = ${V},\ y = ${H}` },
+      { c: 'Write down', p: 'the equation of the vertical asymptote, $x = \\dots$, and the equation of the horizontal asymptote, $y = \\dots$, of the graph.', m: 2, h: 'Vertical: where the denominator is 0. Horizontal: what y approaches as x gets very large.', a: { t: [va, ha], l: ['x', 'y'], d: R`x = ${V},\ y = ${H}` },
         ms: [['A1', R`$x = ${V}$`], ['A1', R`$y = ${H}$`]],
         w: why.concat([R`Vertical asymptote where the denominator is $0$: $x = ${V}$.`, ha[0] === 0 ? R`The degree of the numerator is less than the degree of the denominator, so $y \to 0$: horizontal asymptote $y = 0$.` : R`Horizontal asymptote: ratio of the coefficients of $x$, $y = ${H}$.`]),
         kfig: plot({ x: xr, y: yr, step: [1, 1], f: [{ f, from: xr[0], to: vx - 1e-3 }, { f, from: vx + 1e-3, to: xr[1] }], vl: [vx], hl: [hy], alt: 'Graph with its vertical and horizontal asymptotes dashed' }),
@@ -3256,6 +3256,390 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     ] };
   };
   B('HL', '2C', { page: 89, sec: '2.2', title: 'Rational functions', skill: 'HL-2.2a', paper: 1 }, RF.map(rfQ));
+})(window.Hub = window.Hub || {});
+
+/* ---- js/q_bx_sl2.js ---- */
+/* AA SL — book-exercise questions, Chapter 1 (1N) and Chapter 2 part 1 (2A–2D).
+   NEW questions for each Oxford AA SL (2019) exercise: same skills, style and level; own numbers, contexts and wording. */
+(function (Hub) {
+  'use strict';
+  const B = Hub.qcore.bx, plot = Hub.qcore.plot, R = String.raw;
+  const mcv = ok => `'k0' if ${ok} else 'bad'`;
+  const neg = v => String(v).replace('-', '−');
+  const pt = (x, y, pos) => [x, y, `(${neg(x)}, ${neg(y)})`, pos];
+
+  /* ===== 1N · 1.5 Expanding with the binomial theorem ===== */
+  const ex = (tex, coeffs, lab, form, py, w) => ({ c: 'Expand', p: R`$${tex}$, giving the coefficients ${lab.map(l => '$' + l + '$').join(', ')} in $${form}$.`, m: 3,
+    a: { t: coeffs, l: lab },
+    ms: [['(M1)', R`uses the binomial coefficients (Pascal’s triangle, row $${coeffs.length - 1}$)`], ['(M1)', 'correct powers of both terms in every term, with the signs'], ['A1', R`all coefficients correct: $${coeffs.join(',\ ')}$`]],
+    w, h: 'Write down the row of Pascal’s triangle first, then raise each term in the bracket to its power — including the numbers and the minus signs.', v: py });
+  B('SL', '1N', { page: 52, sec: '1.5', title: 'The binomial theorem', skill: 'SL-1.5a', paper: 1 }, [
+    { stem: 'Use the binomial theorem to expand each expression.', parts: [
+      ex(R`(x + 3)^{4}`, [1, 12, 54, 108, 81], ['a_{4}', 'a_{3}', 'a_{2}', 'a_{1}', 'a_{0}'], R`a_{4}x^{4} + a_{3}x^{3} + a_{2}x^{2} + a_{1}x + a_{0}`, "tuple(Poly(expand((x+3)**4),x).all_coeffs())",
+        [R`Row 4: $1,\ 4,\ 6,\ 4,\ 1$`, R`$x^{4} + 4x^{3}(3) + 6x^{2}(3)^{2} + 4x(3)^{3} + 3^{4}$`, R`$= x^{4} + 12x^{3} + 54x^{2} + 108x + 81$`]),
+      ex(R`(3 - y)^{5}`, [243, -405, 270, -90, 15, -1], ['a_{0}', 'a_{1}', 'a_{2}', 'a_{3}', 'a_{4}', 'a_{5}'], R`a_{0} + a_{1}y + a_{2}y^{2} + a_{3}y^{3} + a_{4}y^{4} + a_{5}y^{5}`, "tuple(reversed(Poly(expand((3-y)**5),y).all_coeffs()))",
+        [R`Row 5: $1,\ 5,\ 10,\ 10,\ 5,\ 1$`, R`$3^{5} + 5(3^{4})(-y) + 10(3^{3})(-y)^{2} + 10(3^{2})(-y)^{3} + 5(3)(-y)^{4} + (-y)^{5}$`, R`$= 243 - 405y + 270y^{2} - 90y^{3} + 15y^{4} - y^{5}$`]),
+      ex(R`(2x - 3)^{4}`, [16, -96, 216, -216, 81], ['a_{4}', 'a_{3}', 'a_{2}', 'a_{1}', 'a_{0}'], R`a_{4}x^{4} + a_{3}x^{3} + a_{2}x^{2} + a_{1}x + a_{0}`, "tuple(Poly(expand((2*x-3)**4),x).all_coeffs())",
+        [R`Row 4: $1,\ 4,\ 6,\ 4,\ 1$`, R`$(2x)^{4} + 4(2x)^{3}(-3) + 6(2x)^{2}(-3)^{2} + 4(2x)(-3)^{3} + (-3)^{4}$`, R`$= 16x^{4} - 96x^{3} + 216x^{2} - 216x + 81$`]),
+      ex(R`(x + 2y)^{5}`, [1, 10, 40, 80, 80, 32], ['a_{5}', 'a_{4}', 'a_{3}', 'a_{2}', 'a_{1}', 'a_{0}'], R`a_{5}x^{5} + a_{4}x^{4}y + a_{3}x^{3}y^{2} + a_{2}x^{2}y^{3} + a_{1}xy^{4} + a_{0}y^{5}`, "tuple(Poly(expand((x+2*y)**5),x).all_coeffs()[i].coeff(y,i) for i in range(6))",
+        [R`Row 5: $1,\ 5,\ 10,\ 10,\ 5,\ 1$`, R`$x^{5} + 5x^{4}(2y) + 10x^{3}(2y)^{2} + 10x^{2}(2y)^{3} + 5x(2y)^{4} + (2y)^{5}$`, R`$= x^{5} + 10x^{4}y + 40x^{3}y^{2} + 80x^{2}y^{3} + 80xy^{4} + 32y^{5}$`]),
+      ex(R`(5x - y)^{3}`, [125, -75, 15, -1], ['a_{3}', 'a_{2}', 'a_{1}', 'a_{0}'], R`a_{3}x^{3} + a_{2}x^{2}y + a_{1}xy^{2} + a_{0}y^{3}`, "tuple(Poly(expand((5*x-y)**3),x).all_coeffs()[i].coeff(y,i) for i in range(4))",
+        [R`Row 3: $1,\ 3,\ 3,\ 1$`, R`$(5x)^{3} + 3(5x)^{2}(-y) + 3(5x)(-y)^{2} + (-y)^{3}$`, R`$= 125x^{3} - 75x^{2}y + 15xy^{2} - y^{3}$`]),
+      ex(R`(2x + 3y)^{4}`, [16, 96, 216, 216, 81], ['a_{4}', 'a_{3}', 'a_{2}', 'a_{1}', 'a_{0}'], R`a_{4}x^{4} + a_{3}x^{3}y + a_{2}x^{2}y^{2} + a_{1}xy^{3} + a_{0}y^{4}`, "tuple(Poly(expand((2*x+3*y)**4),x).all_coeffs()[i].coeff(y,i) for i in range(5))",
+        [R`Row 4: $1,\ 4,\ 6,\ 4,\ 1$`, R`$(2x)^{4} + 4(2x)^{3}(3y) + 6(2x)^{2}(3y)^{2} + 4(2x)(3y)^{3} + (3y)^{4}$`, R`$= 16x^{4} + 96x^{3}y + 216x^{2}y^{2} + 216xy^{3} + 81y^{4}$`])
+    ] }
+  ]);
+
+  /* ===== 2A · 2.1 What is a function? ===== */
+  const YES = 'Function — every input has exactly one output', NOIN = inp => `Not a function — the input ${inp} has more than one output`;
+  const VYES = 'Function — every vertical line meets the graph at most once', VNO = 'Not a function — a vertical line meets the graph more than once';
+  const isF = (l, p, yes, inp, v, h, w, fig) => ({ l, c: 'Determine', p, m: 1, fig, a: { mc: yes ? [YES, NOIN('$x$'), 'Not a function — two inputs have the same output'] : [NOIN(inp), YES, 'Not a function — two inputs have the same output'] },
+    ms: [['A1', yes ? 'function, with a reason' : `not a function: ${inp} has two outputs`]], w, h: h || 'Can any input be paired with two different outputs?', v: mcv(v) });
+  const isG = (l, p, yes, fig, v, w) => ({ l, c: 'Determine', p, m: 1, fig, a: { mc: yes ? [VYES, VNO] : [VNO, VYES] }, ms: [['A1', yes ? 'function (passes the vertical line test)' : 'not a function (fails the vertical line test)']], w, h: 'Imagine a vertical line sliding across the graph.', v: mcv(v) });
+  B('SL', '2A', { page: 68, sec: '2.1', title: 'What is a function?', skill: 'SL-2.1', paper: 1 }, [
+    { stem: 'Determine whether each relation is a function. If it is not a function, the answer you choose must give the reason.', parts: [
+      isF('a', 'The number of hours a car is parked and the parking charge, when parking costs £3 per hour.', true, '', 'True', 'Each number of hours gives one charge.', ['Each input (hours) gives exactly one charge: $C = 3h$.', 'So it is a function.']),
+      isF('b', 'A student’s age in whole years and their height.', false, 'age 16', 'True', 'Think about two different students of the same age.', ['Two 16-year-olds can have different heights, so one input has two outputs.', 'Not a function.']),
+      isF('c', 'The radius of a circle and the area of the circle.', true, '', 'pi*3**2 == pi*9', 'Does one radius ever give two different areas?', [R`Each radius $r$ gives one area $A = \pi r^{2}$.`, 'So it is a function.']),
+      isF('d', R`$\{(1, 4),\ (2, 5),\ (3, 6),\ (4, 7),\ \dots\}$`, true, '', 'len({p[0] for p in [(1,4),(2,5),(3,6),(4,7)]}) == 4', 'Look at the first numbers: does any repeat?', ['No first coordinate repeats; each $x$ has one $y$ (here $y = x + 3$).', 'Function.']),
+      isF('e', R`$\{(2, 1),\ (2, 3),\ (5, 1),\ (6, 0)\}$`, false, '$2$', 'len({p[0] for p in [(2,1),(2,3),(5,1),(6,0)]}) < 4', null, ['The input $2$ is paired with both $1$ and $3$.', 'Not a function.']),
+      isF('f', R`The table: $x$-values $1,\ 3,\ 3,\ 6$ with $y$-values $2,\ 5,\ 8,\ 2$ respectively.`, false, '$3$', 'len({1,3,6}) < 4', null, ['The input $3$ has outputs $5$ and $8$.', 'Not a function.']),
+      isF('g', R`A mapping diagram with arrows $-1 \to 4$, $1 \to 4$, $2 \to 9$ and $3 \to 9$.`, true, '', 'len({-1,1,2,3}) == 4', 'Two inputs sharing an output is allowed.', ['Each input has exactly one arrow leaving it (two inputs may share an output).', 'Function.']),
+      isF('h', R`$y = 3x - 5$`, true, '', 'len(solve(y-(3*x-5), y)) == 1', 'For one value of x, how many values of y are there?', [R`Each $x$ gives one value of $y = 3x - 5$.`, 'Function.']),
+      isF('i', R`$x = -2$`, false, '$-2$', 'True', 'Draw it: it is a vertical line.', [R`$x = -2$ is a vertical line: the input $-2$ is paired with every $y$.`, 'Not a function.']),
+      isF('j', R`$y^{2} = x$`, false, '$4$', 'len(solve(y**2-4, y)) == 2', 'Try x = 4. How many values of y work?', [R`When $x = 4$, $y = 2$ or $y = -2$.`, 'Not a function.']),
+      isG('k', 'The graph below.', true, plot({ x: [-3, 3], y: [-3, 3], f: [{ f: x => x * x * x / 4 - x }], alt: 'A cubic curve' }), 'len(solve(y-(x**3/4-x), y)) == 1', ['Every vertical line crosses the curve once.', 'Function.']),
+      isG('l', 'The graph below.', false, plot({ x: [-4, 4], y: [-4, 4], f: [{ f: x => Math.sqrt(9 - x * x), from: -3, to: 3 }, { f: x => -Math.sqrt(9 - x * x), from: -3, to: 3 }], alt: 'A circle centred at the origin' }), 'len(solve((x**2+y**2-9).subs(x,0), y)) == 2', [R`The line $x = 0$ meets the circle at $(0, 3)$ and $(0, -3)$.`, 'Not a function.']),
+      isG('m', 'The graph below.', true, plot({ x: [-5, 5], y: [-3, 4], f: [{ f: x => Math.abs(x) - 2 }], alt: 'A V-shaped graph' }), 'len(solve(y-(Abs(x)-2), y)) == 1', ['Each vertical line meets the V-shape once.', 'Function.'])
+    ] },
+    { stem: R`For each type of relation, give an example that is **not** a function.`, parts: [
+      { l: 'a', c: 'Write down', p: 'a table of values.', m: 1, a: 'open', ms: [['A1', 'a table in which one $x$-value appears with two different $y$-values']], w: [R`e.g. $x$: $1,\ 1,\ 2$ and $y$: $3,\ 4,\ 5$ — the input $1$ has two outputs.`], h: 'Repeat an x-value with a different y-value.', v: 'len({1,1,2}) < 3' },
+      { l: 'b', c: 'Write down', p: 'a mapping diagram (describe the arrows).', m: 1, a: 'open', ms: [['A1', 'one input with two arrows']], w: [R`e.g. $5 \to 1$, $5 \to 2$, $6 \to 3$ — the input $5$ has two outputs.`], h: 'Give one input two arrows.', v: 'True' },
+      { l: 'c', c: 'Write down', p: 'an equation.', m: 1, a: 'open', ms: [['A1', R`e.g. $x^{2} + y^{2} = 16$ or $x = 7$`]], w: [R`e.g. $x^{2} + y^{2} = 16$: when $x = 0$, $y = 4$ or $y = -4$.`], h: 'Which equations give two y-values for one x?', v: 'len(solve((x**2+y**2-16).subs(x,0), y)) == 2' },
+      { l: 'd', c: 'Sketch', p: 'a graph.', m: 1, a: 'open', ms: [['A1', 'any graph that a vertical line meets more than once']], w: ['e.g. the sideways parabola below: the line $x = 2$ meets it twice.'],
+        kfig: plot({ x: [-1, 6], y: [-3, 3], f: [{ f: x => Math.sqrt(x), from: 0 }, { f: x => -Math.sqrt(x), from: 0 }], vl: [2], alt: 'A sideways parabola with a vertical line meeting it twice' }), h: 'Think of a curve that bends back on itself.', v: 'len(solve(y**2-2, y)) == 2' }
+    ] },
+    { stem: 'Each statement is about relations and functions.', parts: [
+      { l: 'a(i)', c: 'State', p: 'whether this statement is true or false: “Every function is a relation.”', m: 1, a: { mc: ['True', 'False'] }, ms: [['A1', 'true']], w: ['A function is a relation with an extra condition (one output per input), so every function is a relation.'], h: 'A function is a special kind of relation.', v: mcv('True') },
+      { l: 'a(ii)', c: 'State', p: 'whether this statement is true or false: “Every relation is a function.”', m: 1, a: { mc: ['False', 'True'] }, ms: [['A1', 'false']], w: [R`A relation such as $x = y^{2}$ pairs one input with two outputs, so it is not a function.`], h: 'Can you think of a relation that fails the vertical line test?', v: mcv('len(solve(y**2-1, y)) == 2') },
+      { l: 'a(iii)', c: 'State', p: 'whether this statement is true or false: “In a function, two different inputs can have the same output.”', m: 1, a: { mc: ['True', 'False'] }, ms: [['A1', 'true']], w: [R`e.g. $f(x) = x^{2}$: $f(-3) = f(3) = 9$, and $f$ is still a function.`], h: 'Think of f(x) = x² at x = 3 and x = −3.', v: mcv('(-3)**2 == 3**2') },
+      { l: 'b', c: 'Justify', p: 'your answer to part (a)(ii) with a counterexample.', m: 2, a: 'open', ms: [['R1', 'a correct counterexample, e.g. $\\{(1, 2), (1, 5)\\}$'], ['R1', 'states that one input has two outputs, so it is a relation but not a function']], w: [R`$\{(1, 2),\ (1, 5)\}$ is a relation (a set of ordered pairs),`, R`but the input $1$ has two outputs, so it is not a function.`], h: 'One example where it fails is enough.', v: 'len({1,1}) < 2' }
+    ] }
+  ]);
+
+  /* ===== 2B · 2.2 Functional notation ===== */
+  B('SL', '2B', { page: 73, sec: '2.2', title: 'Functional notation', skill: 'SL-2.2', paper: 1 }, [
+    { stem: 'Calculate each value.', parts: [
+      { l: 'a', c: 'Calculate', p: R`$g(-3)$ for $g(x) = 3 - 2x^{2}$.`, m: 2, a: -15, ms: [['(M1)', R`$3 - 2(-3)^{2}$`], ['A1', R`$-15$`]], w: [R`$g(-3) = 3 - 2(-3)^{2} = 3 - 2(9) = -15$`], h: 'Square −3 first (use brackets), then multiply by 2.', e: [{ value: 21, fb: R`$(-3)^{2} = 9$, so $-2 \times 9 = -18$.` }, { value: -33, fb: R`$-2(-3)^{2}$ is $-18$, not $-36$.` }], v: '(3-2*x**2).subs(x,-3)' },
+      { l: 'b', c: 'Calculate', p: R`$f(-6)$ for $f: x \mapsto 7 - 4x$.`, m: 1, a: 31, ms: [['A1', R`$31$`]], w: [R`$f(-6) = 7 - 4(-6) = 7 + 24 = 31$`], h: 'Replace x with (−6).', e: [{ value: -17, fb: R`$-4 \times (-6) = +24$.` }], v: '(7-4*x).subs(x,-6)' },
+      { l: 'c', c: 'Calculate', p: R`$C(40)$ for $C(n) = 15n + 120$.`, m: 1, a: 720, ms: [['A1', R`$720$`]], w: [R`$C(40) = 15(40) + 120 = 720$`], h: 'Replace n with 40.', v: '(15*n+120).subs(n,40)' },
+      { l: 'd', c: 'Calculate', p: R`$h(-2)$ for $h(x) = 9$.`, m: 1, a: 9, ms: [['A1', R`$9$`]], w: [R`$h$ is a constant function: every input gives $9$, so $h(-2) = 9$.`], h: 'There is no x in the rule.', e: [{ value: -18, fb: 'h(x) = 9 does not multiply anything by x — every output is 9.' }], v: 'Integer(9)' },
+      { l: 'e', c: 'Calculate', p: R`$f(5)$ for the mapping diagram with arrows $1 \to 6$, $3 \to 2$, $5 \to 8$, $7 \to 2$.`, m: 1, a: 8, ms: [['A1', R`$8$`]], w: [R`Follow the arrow from $5$: it goes to $8$, so $f(5) = 8$.`], h: 'Find the input 5 and follow its arrow.', v: 'dict([(1,6),(3,2),(5,8),(7,2)])[5]' },
+      { l: 'f', c: 'Calculate', p: R`$f(2)$ for the function shown by the points below.`, m: 1, a: 3, fig: plot({ x: [-4, 5], y: [-3, 5], pts: [pt(-3, 1), pt(-1, 4), pt(0, -2, 'b'), pt(2, 3), pt(4, 3, 'b')], alt: 'Five plotted points' }),
+        ms: [['A1', R`$3$`]], w: [R`The point with $x = 2$ is $(2, 3)$, so $f(2) = 3$.`], h: 'Find the point whose x-coordinate is 2.', e: [{ value: 4, fb: 'That is f(−1). Read the point above x = 2.' }], v: 'dict([(-3,1),(-1,4),(0,-2),(2,3),(4,3)])[2]' },
+      { l: 'g', c: 'Calculate', p: R`$f(3)$ for the graph of $y = f(x)$ below.`, m: 1, a: 2, fig: plot({ x: [-2, 4], y: [-3, 5], f: [{ f: x => (x - 1) * (x - 1) - 2 }], pts: [pt(1, -2, 'b'), pt(3, 2)], alt: 'A parabola with vertex (1, −2) through (3, 2)' }),
+        ms: [['A1', R`$2$`]], w: [R`Go up from $x = 3$ to the curve: the point is $(3, 2)$, so $f(3) = 2$.`], h: 'Go up (or down) from x = 3 to the curve and read across.', v: '((x-1)**2-2).subs(x,3)' }
+    ] },
+    { stem: R`$f(x) = 2x^{2} - 3$, $g(x) = 5 - 3x$ and $h(x) = -4$.`, parts: [
+      { l: 'a', c: 'Find', p: R`$f(-2)$.`, m: 1, a: 5, ms: [['A1', R`$5$`]], w: [R`$2(-2)^{2} - 3 = 8 - 3 = 5$`], h: 'Square first.', v: '(2*x**2-3).subs(x,-2)' },
+      { l: 'b', c: 'Find', p: R`$g(12)$.`, m: 1, a: -31, ms: [['A1', R`$-31$`]], w: [R`$5 - 3(12) = -31$`], h: 'Replace x with 12.', v: '(5-3*x).subs(x,12)' },
+      { l: 'c', c: 'Find', p: R`$f(2) + g(-1)$.`, m: 2, a: 13, ms: [['(M1)', R`$f(2) = 5$ and $g(-1) = 8$`], ['A1', R`$13$`]], w: [R`$f(2) = 2(4) - 3 = 5$`, R`$g(-1) = 5 + 3 = 8$`, R`$5 + 8 = 13$`], h: 'Work out each value separately, then add.', v: '(2*x**2-3).subs(x,2)+(5-3*x).subs(x,-1)' },
+      { l: 'd', c: 'Find', p: R`$h(7)$.`, m: 1, a: -4, ms: [['A1', R`$-4$`]], w: [R`$h$ is constant, so $h(7) = -4$.`], h: 'Is there an x in h?', v: 'Integer(-4)' },
+      { l: 'e', c: 'Find', p: R`$f(x + 1)$, giving your answer in the form $ax^{2} + bx + c$.`, m: 3, a: { t: [2, 4, -1], l: ['a', 'b', 'c'], d: R`2x^{2} + 4x - 1` },
+        ms: [['M1', R`replaces $x$ with $(x + 1)$: $2(x + 1)^{2} - 3$`], ['(A1)', R`$2(x^{2} + 2x + 1) - 3$`], ['A1', R`$2x^{2} + 4x - 1$`]], w: [R`$f(x + 1) = 2(x + 1)^{2} - 3$`, R`$= 2(x^{2} + 2x + 1) - 3$`, R`$= 2x^{2} + 4x - 1$`], h: 'Put (x + 1) wherever there is an x, then expand.', v: 'tuple(Poly(expand((2*x**2-3).subs(x,x+1)),x).all_coeffs())' },
+      { l: 'f', c: 'Find', p: R`$g(3t)$, giving your answer in the form $p + qt$.`, m: 2, a: { t: [5, -9], l: ['p', 'q'], d: R`5 - 9t` }, ms: [['M1', R`$5 - 3(3t)$`], ['A1', R`$5 - 9t$`]], w: [R`$g(3t) = 5 - 3(3t) = 5 - 9t$`], h: 'Replace x with 3t.', v: '(Integer(5), Integer(-9)) if expand((5-3*x).subs(x,3*t)) == 5-9*t else None' },
+      { l: 'g', c: 'Find', p: R`$f(3) \times h(0)$.`, m: 2, a: -60, ms: [['(M1)', R`$f(3) = 15$`], ['A1', R`$-60$`]], w: [R`$f(3) = 2(9) - 3 = 15$, $h(0) = -4$`, R`$15 \times (-4) = -60$`], h: 'h(0) is still −4.', v: '(2*x**2-3).subs(x,3)*(-4)' },
+      { l: 'h', c: 'Find', p: R`$f(x - 1) \times g(x + 2)$, giving your answer in the form $ax^{3} + bx^{2} + cx + d$.`, m: 4, a: { t: [-6, 10, 7, 1], l: ['a', 'b', 'c', 'd'], d: R`-6x^{3} + 10x^{2} + 7x + 1` },
+        ms: [['M1', R`$f(x - 1) = 2x^{2} - 4x - 1$`], ['M1', R`$g(x + 2) = -3x - 1$`], ['M1', 'multiplies the two brackets'], ['A1', R`$-6x^{3} + 10x^{2} + 7x + 1$`]],
+        w: [R`$f(x - 1) = 2(x - 1)^{2} - 3 = 2x^{2} - 4x - 1$`, R`$g(x + 2) = 5 - 3(x + 2) = -3x - 1$`, R`$(2x^{2} - 4x - 1)(-3x - 1) = -6x^{3} - 2x^{2} + 12x^{2} + 4x + 3x + 1$`, R`$= -6x^{3} + 10x^{2} + 7x + 1$`], h: 'Find each bracket first, then multiply every term by every term.', v: 'tuple(Poly(expand((2*x**2-3).subs(x,x-1)*(5-3*x).subs(x,x+2)),x).all_coeffs())' }
+    ] },
+    { stem: R`A delivery van is driving towards its depot. Its distance from the depot, $d$ km, after $t$ hours is given by $d = 240 - 64t$.`, parts: [
+      { l: 'a', c: 'Determine', p: 'whether this relation is a function, with a reason.', m: 1, a: { mc: ['Function — each time t gives exactly one distance d', 'Not a function — the van can be at two distances at once', 'Not a function — d decreases as t increases'] }, ms: [['A1', 'function, each $t$ gives one $d$']], w: ['At any one time the van is at one distance from the depot, so each $t$ gives one $d$.'], h: 'Can the van be in two places at the same time?', v: mcv("len(solve(Symbol('d')-(240-64*t), Symbol('d'))) == 1") },
+      { l: 'b', c: 'Write down', p: 'the equation in functional notation.', m: 1, a: { mc: [R`$d(t) = 240 - 64t$`, R`$t(d) = 240 - 64d$`, R`$d(240) = 64t$`, R`$t(t) = 240 - 64d$`] }, ms: [['A1', R`$d(t) = 240 - 64t$`]], w: [R`$d$ depends on $t$, so write $d(t) = 240 - 64t$.`], h: 'The output is d; the input is t.', v: mcv('True') },
+      { l: 'c', c: 'Find', p: 'how far the van was from the depot at the start of the journey.', m: 1, a: { n: 240, d: R`240\text{ km}` }, ms: [['A1', R`$d(0) = 240$ km`]], w: [R`At the start $t = 0$: $d(0) = 240 - 64(0) = 240$ km`], h: 'What is t at the start?', v: '240-64*0' },
+      { l: 'd', c: 'Find', p: R`the values of $t$ for which the model makes sense. Give your answer as $a \le t \le b$.`, m: 2, a: { t: [0, [15, 4]], l: ['a', 'b'], d: R`0 \le t \le 3.75` },
+        ms: [['(M1)', R`$240 - 64t = 0$`], ['A1', R`$0 \le t \le 3.75$`]], w: [R`Time cannot be negative: $t \ge 0$.`, R`The van reaches the depot when $240 - 64t = 0$, so $t = 3.75$.`, R`$0 \le t \le 3.75$`], h: 'When does the van arrive (d = 0)? Time cannot be negative.', v: '(0, solve(240-64*t, t)[0])' }
+    ] },
+    { stem: R`The height, $H$ metres, of a young tree $t$ years after it is planted is modelled by $H(t) = \frac{3}{4}t + 2$.`, parts: [
+      { l: 'a', c: 'Determine', p: 'whether $H$ is a function, with a reason.', m: 1, a: { mc: ['Function — each value of t gives one height', 'Not a function — the tree grows every year', 'Not a function — the rule contains a fraction'] }, ms: [['A1', 'function, one height for each $t$']], w: [R`Each $t$ gives exactly one value of $\frac{3}{4}t + 2$, so $H$ is a function.`], h: 'For one value of t, how many heights can you get?', v: mcv('True') },
+      { l: 'b', c: 'Find', p: R`$H(12)$ and describe what it means.`, m: 2, a: 11, ms: [['(M1)', R`$\frac{3}{4}(12) + 2$`], ['A1', R`$11$ (the height in metres after 12 years)`]], w: [R`$H(12) = \frac{3}{4}(12) + 2 = 9 + 2 = 11$`, 'The tree is 11 m tall 12 years after it was planted.'], h: 'Replace t with 12.', v: '(Rational(3,4)*t+2).subs(t,12)' },
+      { l: 'c', c: 'Find', p: R`the value of $t$ for which $H(t) = 14$, and describe what this asks.`, m: 2, a: 16, ms: [['M1', R`$\frac{3}{4}t + 2 = 14$`], ['A1', R`$t = 16$`]], w: ['It asks: after how many years is the tree 14 m tall?', R`$\frac{3}{4}t = 12 \Rightarrow t = 16$ years`], h: 'Now you know the output — solve for the input.', e: [{ value: 9, fb: 'You worked out H(12) again — here H(t) is given, so solve for t.' }], v: 'solve(Rational(3,4)*t+2-14, t)[0]' },
+      { l: 'd', c: 'Write down', p: 'the height of the tree when it was planted.', m: 1, a: { n: 2, d: R`2\text{ m}` }, ms: [['A1', R`$H(0) = 2$ m`]], w: [R`$t = 0$: $H(0) = 2$ m`], h: 'Planted means t = 0.', v: '(Rational(3,4)*t+2).subs(t,0)' },
+      { l: 'e', c: 'Find', p: R`how long it takes the tree to reach a height of $8.75$ m.`, m: 2, a: 9, ms: [['M1', R`$\frac{3}{4}t + 2 = 8.75$`], ['A1', R`$t = 9$ years`]], w: [R`$\frac{3}{4}t = 6.75$`, R`$t = 6.75 \times \frac{4}{3} = 9$ years`], h: 'Set H(t) equal to 8.75.', v: 'solve(Rational(3,4)*t+2-Rational(35,4), t)[0]' },
+      { l: 'f', c: 'Find', p: R`the height of the tree after two and a half years.`, m: 1, a: { f: [31, 8], d: R`3.875\text{ m}` }, ms: [['A1', R`$3.875$ m`]], w: [R`$H(2.5) = \frac{3}{4}(2.5) + 2 = 1.875 + 2 = 3.875$ m`], h: 'Replace t with 2.5.', v: '(Rational(3,4)*t+2).subs(t,Rational(5,2))' },
+      { l: 'g', c: 'Find', p: R`after how many years the model predicts a height of $20$ m.`, m: 2, a: 24, ms: [['M1', R`$\frac{3}{4}t + 2 = 20$`], ['A1', R`$t = 24$`]], w: [R`$\frac{3}{4}t = 18 \Rightarrow t = 24$ years`], h: 'Solve H(t) = 20.', v: 'solve(Rational(3,4)*t+2-20, t)[0]' }
+    ] },
+    { stem: R`A climbing centre charges \$12 for shoe hire plus \$9 for each hour of climbing.`, parts: [
+      { l: 'a', c: 'Express', p: R`the total cost, $C$, as a function of the number of hours, $h$, in the form $C(h) = p + qh$.`, m: 2, a: { t: [12, 9], l: ['p', 'q'], d: R`C(h) = 12 + 9h` }, ms: [['A1', R`$p = 12$`], ['A1', R`$q = 9$`]], w: [R`Fixed charge $12$, plus $9$ for each hour: $C(h) = 12 + 9h$`], h: 'Which amount is paid once, and which is paid every hour?', v: '(Integer(12), Integer(9))' },
+      { l: 'b', c: 'State', p: 'which values of $h$ do not make sense in this context.', m: 1, a: { mc: [R`$h < 0$`, R`$h > 0$`, R`$h < 12$`, R`$h \ne 9$`] }, ms: [['A1', R`$h < 0$ (negative time)`]], w: ['The number of hours cannot be negative, so $h < 0$ makes no sense.'], h: 'Can you climb for a negative number of hours?', v: mcv('True') },
+      { l: 'c', c: 'Find', p: R`the cost of climbing for $3.5$ hours, and write it in functional notation.`, m: 2, a: { n: 43.5, d: R`C(3.5) = 43.50` }, ms: [['(M1)', R`$C(3.5) = 12 + 9(3.5)$`], ['A1', R`\$43.50`]], w: [R`$C(3.5) = 12 + 9(3.5) = 12 + 31.5 = 43.5$`, R`It costs \$43.50.`], h: 'Write C(3.5) first, then substitute.', v: '12+9*Rational(7,2)' },
+      { l: 'd', c: 'Find', p: R`how many hours a climber can buy with \$57, and write the equation you solve in functional notation.`, m: 2, a: 5, ms: [['M1', R`$C(h) = 57$, so $12 + 9h = 57$`], ['A1', R`$h = 5$`]], w: [R`$C(h) = 57$`, R`$12 + 9h = 57 \Rightarrow 9h = 45 \Rightarrow h = 5$ hours`], h: 'Now the cost is known: solve C(h) = 57.', v: 'solve(12+9*t-57, t)[0]' }
+    ] }
+  ]);
+
+  /* ===== 2C · 2.3 Drawing graphs of functions (GDC) ===== */
+  const sk = (l, p, fig, w, v) => ({ l, c: 'Sketch', p, m: 2, a: 'open', ms: [['A1', 'correct shape over the given domain'], ['A1', 'key points (intercepts, turning points or end points) in the right places']], w, kfig: fig, h: 'Use your GDC, then copy the shape and mark the important points.', v });
+  B('SL', '2C', { page: 76, sec: '2.3', title: 'Drawing graphs of functions', skill: 'SL-2.2', paper: 2 }, [
+    { stem: 'Use your GDC to help you.', parts: [
+      sk('a(i)', R`the graph of $f(x) = -0.02x^{2} + 0.6x + 1.8$ for $-5 \le x \le 35$.`, plot({ x: [-5, 35], y: [-3, 8], step: [5, 1], f: [{ f: x => -0.02 * x * x + 0.6 * x + 1.8 }], pts: [pt(15, 6.3), pt(0, 1.8, 'l')], alt: 'Downward parabola with maximum at (15, 6.3)' }),
+        [R`A downward parabola with maximum $(15,\ 6.3)$, $y$-intercept $1.8$ and $x$-intercepts about $-2.75$ and $32.7$.`], '(-Rational(2,100)*x**2+Rational(6,10)*x+Rational(18,10)).subs(x,0) == Rational(9,5)'),
+      { l: 'a(ii)', c: 'Write down', p: 'the coordinates of the maximum point.', m: 2, a: { t: [15, 6.3], l: ['x', 'y'] }, ms: [['A1', R`$x = 15$`], ['A1', R`$y = 6.3$`]], w: [R`GDC: maximum at $(15,\ 6.3)$`], h: 'Use the maximum tool on your GDC.', v: '(solve(diff(-Rational(2,100)*x**2+Rational(6,10)*x+Rational(18,10),x),x)[0], (-Rational(2,100)*x**2+Rational(6,10)*x+Rational(18,10)).subs(x,15))' },
+      sk('b(i)', R`the graph of $g: x \mapsto 0.6\sqrt{2.5x - 3.5}$ for $0 \le x \le 12$.`, plot({ x: [0, 12], y: [-0.5, 4], step: [1, 1], f: [{ f: x => 0.6 * Math.sqrt(2.5 * x - 3.5), from: 1.4 }], pts: [pt(1.4, 0, 'b')], alt: 'Square-root curve starting at (1.4, 0)' }),
+        [R`The curve starts at $(1.4,\ 0)$ (where $2.5x - 3.5 = 0$) and increases slowly.`], 'solve(Rational(5,2)*x-Rational(7,2), x)[0] == Rational(7,5)'),
+      { l: 'b(ii)', c: 'Write down', p: R`the value of $g(10)$.`, m: 1, a: { n: 2.78208554864871, sf: 3 }, ms: [['A1', R`$2.78$`]], w: [R`$g(10) = 0.6\sqrt{25 - 3.5} = 0.6\sqrt{21.5} = 2.78$ (3 s.f.)`], h: 'Use the table or trace on your GDC at x = 10.', v: '0.6*sqrt(2.5*10-3.5)' },
+      sk('c(i)', R`the graph of $y = 3\cos(x - 1) - 1$ for $-2\pi \le x \le 2\pi$ (radians).`, plot({ x: [-6.3, 6.3], y: [-4.5, 2.5], step: [1, 1], f: [{ f: x => 3 * Math.cos(x - 1) - 1 }], alt: 'Cosine wave between −4 and 2' }),
+        [R`A wave between $y = -4$ and $y = 2$, with a maximum at $x = 1$.`], 'maximum(3*cos(x-1)-1, x) == 2'),
+      { l: 'c(ii)', c: 'Write down', p: R`the $y$-intercept.`, m: 1, a: { n: 0.620906917604419, sf: 3 }, ms: [['A1', R`$0.621$`]], w: [R`$x = 0$: $y = 3\cos(-1) - 1 = 0.621$ (3 s.f.)`], h: 'Make sure your GDC is in radians.', v: '3*cos(-1)-1' }
+    ] },
+    { stem: R`$f(x) = x^{2} - 2$, $g(x) = 2x + 1$ and $h(x) = \sqrt{x}$. Use your GDC to help you.`, parts: [
+      sk('a(i)', R`the graph of $y = f(x) + g(x)$.`, plot({ x: [-4, 3], y: [-3, 7], step: [1, 1], f: [{ f: x => x * x + 2 * x - 1 }], pts: [pt(-1, -2, 'b')], alt: 'Parabola with vertex (−1, −2)' }), [R`$f(x) + g(x) = x^{2} + 2x - 1$: a parabola with vertex $(-1,\ -2)$.`], 'expand((x**2-2)+(2*x+1)) == x**2+2*x-1'),
+      { l: 'a(ii)', c: 'Write down', p: 'the coordinates of the vertex.', m: 1, a: { t: [-1, -2], l: ['x', 'y'] }, ms: [['A1', R`$(-1,\ -2)$`]], w: [R`Minimum point: $(-1,\ -2)$`], h: 'Use the minimum tool.', v: '(solve(diff(x**2+2*x-1,x),x)[0], (x**2+2*x-1).subs(x,-1))' },
+      sk('b(i)', R`the graph of $y = f(x) - h(x)$.`, plot({ x: [-0.5, 3], y: [-3, 4], step: [0.5, 1], f: [{ f: x => x * x - 2 - Math.sqrt(x), from: 0 }], pts: [pt(0, -2, 'l')], alt: 'Curve starting at (0, −2)' }), [R`Only $x \ge 0$ (because of $\sqrt{x}$); starts at $(0,\ -2)$ and crosses the $x$-axis near $1.83$.`], 'True if (x**2-2-sqrt(x)).subs(x,0) == -2 else False'),
+      { l: 'b(ii)', c: 'Write down', p: R`the $x$-intercept.`, m: 1, a: { n: 1.83117720720834, sf: 3 }, ms: [['A1', R`$1.83$`]], w: [R`GDC zero: $x = 1.83$ (3 s.f.)`], h: 'Use the zero (root) tool.', v: "nsolve(x**2-2-sqrt(x), x, 1.6)" },
+      sk('c(i)', R`the graph of $y = f(x) \times g(x)$.`, plot({ x: [-2.5, 2.5], y: [-5, 6], step: [0.5, 1], f: [{ f: x => (x * x - 2) * (2 * x + 1) }], alt: 'Cubic crossing the x-axis three times' }), [R`A cubic crossing the $x$-axis at $-\sqrt{2}$, $-0.5$ and $\sqrt{2}$.`], 'degree(expand((x**2-2)*(2*x+1)), x) == 3'),
+      { l: 'c(ii)', c: 'Write down', p: R`the $x$-intercepts.`, m: 2, a: { list: [-1.4142135623731, -0.5, 1.4142135623731], sf: 3, d: R`-1.41,\ -0.5,\ 1.41` }, ms: [['A1', R`$-0.5$`], ['A1', R`$\pm 1.41$`]], w: [R`$(x^{2} - 2)(2x + 1) = 0$`, R`$x = -0.5$ or $x = \pm\sqrt{2} = \pm 1.41$`], h: 'Each bracket can equal zero.', v: 'solve((x**2-2)*(2*x+1), x)' },
+      sk('d(i)', R`the graph of $y = f(x) + g(x) + h(x)$.`, plot({ x: [-0.5, 2.5], y: [-2, 8], step: [0.5, 1], f: [{ f: x => x * x + 2 * x - 1 + Math.sqrt(x), from: 0 }], pts: [pt(0, -1, 'l')], alt: 'Increasing curve from (0, −1)' }), [R`Only $x \ge 0$; starts at $(0,\ -1)$ and increases, crossing the $x$-axis near $0.232$.`], '(x**2+2*x-1+sqrt(x)).subs(x,0) == -1'),
+      { l: 'd(ii)', c: 'Write down', p: R`the $x$-intercept.`, m: 1, a: { n: 0.232146261953006, sf: 3 }, ms: [['A1', R`$0.232$`]], w: [R`GDC zero: $x = 0.232$ (3 s.f.)`], h: 'Use the zero tool; the graph starts at x = 0.', v: 'nsolve(x**2+2*x-1+sqrt(x), x, 0.3)' }
+    ] },
+    { stem: 'Use your GDC to help you draw the graph of each function.', parts: [
+      sk('a(i)', R`$y = 0.4x^{2} - 1.6x - 2.2$.`, plot({ x: [-3, 7], y: [-5, 8], step: [1, 1], f: [{ f: x => 0.4 * x * x - 1.6 * x - 2.2 }], pts: [pt(2, -3.8, 'b')], alt: 'Parabola with vertex (2, −3.8)' }), [R`Parabola with vertex $(2,\ -3.8)$, $y$-intercept $-2.2$, $x$-intercepts $-1.08$ and $5.08$.`], '(Rational(2,5)*x**2-Rational(8,5)*x-Rational(11,5)).subs(x,2) == Rational(-19,5)'),
+      { l: 'a(ii)', c: 'Write down', p: R`the $x$-intercepts.`, m: 2, a: { list: [-1.08220700148449, 5.08220700148449], sf: 3, d: R`-1.08,\ 5.08` }, ms: [['A1', R`$-1.08$`], ['A1', R`$5.08$`]], w: [R`GDC zeros: $x = -1.08$ and $x = 5.08$ (3 s.f.)`], h: 'Use the zero tool twice.', v: 'solve(Rational(2,5)*x**2-Rational(8,5)*x-Rational(11,5), x)' },
+      sk('b(i)', R`$f(x) = 4 \times 2^{-0.5x} - 3$.`, plot({ x: [-3, 8], y: [-4, 9], step: [1, 1], f: [{ f: x => 4 * Math.pow(2, -0.5 * x) - 3 }], hl: [-3], pts: [pt(0, 1)], alt: 'Decreasing exponential curve approaching y = −3' }), [R`A decreasing exponential curve through $(0,\ 1)$, approaching the line $y = -3$.`], 'limit(4*2**(-x/2)-3, x, oo) == -3'),
+      { l: 'b(ii)', c: 'Write down', p: R`the $y$-intercept and the equation of the horizontal asymptote, $y = k$.`, m: 2, a: { t: [1, -3], l: [R`y\text{-intercept}`, 'k'] }, ms: [['A1', R`$y$-intercept $1$`], ['A1', R`$y = -3$`]], w: [R`$f(0) = 4 \times 1 - 3 = 1$`, R`As $x$ gets large, $2^{-0.5x} \to 0$, so $f(x) \to -3$.`], h: 'Set x = 0; then think about very large x.', v: '((4*2**(-x/2)-3).subs(x,0), limit(4*2**(-x/2)-3, x, oo))' }
+    ] }
+  ]);
+
+  /* ===== 2D · 2.4 Domain and range ===== */
+  const dr = (l, p, opts, ms, w, h, v, fig) => ({ l, c: 'State', p, m: 2, fig, a: { mc: opts }, ms, w, h: h || 'Function first; then list the inputs (domain) and the outputs (range).', v: mcv(v) });
+  const NF = 'Not a function';
+  B('SL', '2D', { page: 82, sec: '2.4', title: 'The domain and range of a function', skill: 'SL-2.4', paper: 1 }, [
+    { stem: 'For each relation, state whether it is a function. If it is, state its domain and range.', parts: [
+      dr('a', R`The table: $x$-values $3,\ 5,\ 5,\ 9$ with $y$-values $2,\ 0,\ 7,\ 2$ respectively.`, [NF, R`Function; domain $\{3, 5, 9\}$, range $\{0, 2, 7\}$`, R`Function; domain $\{0, 2, 7\}$, range $\{3, 5, 9\}$`], [['A1', 'not a function'], ['R1', 'the input $5$ has outputs $0$ and $7$']], [R`The input $5$ is paired with $0$ and with $7$, so this is not a function.`], null, 'len({3,5,9}) < 4'),
+      dr('b', R`$\{(-4, 2),\ (0, 9),\ (6, 2)\}$`, [R`Function; domain $\{-4, 0, 6\}$, range $\{2, 9\}$`, R`Function; domain $\{2, 9\}$, range $\{-4, 0, 6\}$`, R`Function; domain $\{-4, 0, 6\}$, range $\{2, 9, 2\}$`, NF], [['A1', 'function'], ['A1', R`domain $\{-4, 0, 6\}$, range $\{2, 9\}$`]], [R`No $x$ repeats, so it is a function.`, R`Domain: $\{-4, 0, 6\}$; range: $\{2, 9\}$ (list each output once).`], null, '{p[1] for p in [(-4,2),(0,9),(6,2)]} == {2,9}'),
+      dr('c', R`$\{(-7, 3),\ (1, 3),\ (8, -5)\}$`, [R`Function; domain $\{-7, 1, 8\}$, range $\{-5, 3\}$`, NF, R`Function; domain $\{-5, 3\}$, range $\{-7, 1, 8\}$`, R`Function; domain $\{-7, 8\}$, range $\{-5, 3\}$`], [['A1', 'function'], ['A1', R`domain $\{-7, 1, 8\}$, range $\{-5, 3\}$`]], [R`No repeated input: a function (two inputs sharing the output $3$ is allowed).`, R`Domain $\{-7, 1, 8\}$, range $\{-5, 3\}$`], null, '{p[1] for p in [(-7,3),(1,3),(8,-5)]} == {-5,3}'),
+      dr('d', R`A mapping diagram with arrows $-2 \to 5$, $0 \to 5$, $1 \to 3$, $1 \to 7$ and $4 \to 3$.`, [NF, R`Function; domain $\{-2, 0, 1, 4\}$, range $\{3, 5, 7\}$`, R`Function; domain $\{3, 5, 7\}$, range $\{-2, 0, 1, 4\}$`], [['A1', 'not a function'], ['R1', 'the input $1$ has two arrows']], [R`The input $1$ goes to both $3$ and $7$: not a function.`], null, 'True'),
+      dr('e', R`$f(x) = 5 - 3x$`, [R`Function; domain $x \in \mathbb{R}$, range $y \in \mathbb{R}$`, R`Function; domain $x \in \mathbb{R}$, range $y \le 5$`, R`Function; domain $x \ge 0$, range $y \le 5$`, NF], [['A1', 'function'], ['A1', R`domain and range both $\mathbb{R}$`]], [R`A straight line that is not horizontal: every real $x$ and every real $y$ occur.`], null, 'len(solve(5-3*x-y, x)) == 1'),
+      dr('f', R`$g(x) = 7$`, [R`Function; domain $x \in \mathbb{R}$, range $\{7\}$`, R`Function; domain $\{7\}$, range $y \in \mathbb{R}$`, R`Function; domain $x \in \mathbb{R}$, range $y \in \mathbb{R}$`, NF], [['A1', 'function'], ['A1', R`domain $\mathbb{R}$, range $\{7\}$`]], [R`Every input gives $7$: a horizontal line.`, R`Domain $x \in \mathbb{R}$, range $\{7\}$`], null, 'True'),
+      dr('g', R`$x = -4$`, [NF, R`Function; domain $\{-4\}$, range $y \in \mathbb{R}$`, R`Function; domain $x \in \mathbb{R}$, range $\{-4\}$`], [['A1', 'not a function'], ['R1', R`the input $-4$ has infinitely many outputs`]], [R`$x = -4$ is a vertical line: one input, every $y$. Not a function.`], 'What does the graph of x = −4 look like?', 'True'),
+      dr('h', 'The graph below (the curve continues upwards at both ends).', [R`Function; domain $x \in \mathbb{R}$, range $y \ge -2$`, R`Function; domain $x \ge -2$, range $y \in \mathbb{R}$`, R`Function; domain $x \in \mathbb{R}$, range $y \le -2$`, NF], [['A1', 'function'], ['A1', R`domain $\mathbb{R}$, range $y \ge -2$`]], [R`A parabola with minimum point $(0,\ -2)$: every $x$ is allowed and $y$ never goes below $-2$.`], 'Look at the lowest point of the curve.', 'minimum(x**2/4-2, x) == -2',
+        plot({ x: [-5, 5], y: [-3, 5], f: [{ f: x => x * x / 4 - 2 }], pts: [pt(0, -2, 'b')], alt: 'Parabola with minimum (0, −2)' })),
+      dr('i', 'The graph below (the curve continues to the right).', [R`Function; domain $x \ge -1$, range $y \ge 0$`, R`Function; domain $x \ge 0$, range $y \ge -1$`, R`Function; domain $x \in \mathbb{R}$, range $y \ge 0$`, NF], [['A1', 'function'], ['A1', R`domain $x \ge -1$, range $y \ge 0$`]], [R`The curve starts at $(-1,\ 0)$ and rises to the right.`, R`Domain $x \ge -1$, range $y \ge 0$`], 'Where does the curve start?', 'solve(2*sqrt(x+1), x) == [-1]',
+        plot({ x: [-2, 8], y: [-1, 7], f: [{ f: x => 2 * Math.sqrt(x + 1), from: -1 }], pts: [pt(-1, 0, 'b')], alt: 'Square-root curve starting at (−1, 0)' })),
+      dr('j', 'The graph below.', [NF, R`Function; domain $-3 \le x \le 3$, range $-3 \le y \le 3$`, R`Function; domain $x \in \mathbb{R}$, range $y \in \mathbb{R}$`], [['A1', 'not a function'], ['R1', 'fails the vertical line test']], [R`A vertical line such as $x = 1$ meets the circle twice: not a function.`], null, 'len(solve((x**2+y**2-9).subs(x,1), y)) == 2',
+        plot({ x: [-4, 4], y: [-4, 4], f: [{ f: x => Math.sqrt(9 - x * x), from: -3, to: 3 }, { f: x => -Math.sqrt(9 - x * x), from: -3, to: 3 }], alt: 'A circle of radius 3' })),
+      dr('k', 'The graph below (it continues upwards at both ends).', [R`Function; domain $x \in \mathbb{R}$, range $y \ge 2$`, R`Function; domain $x \ge 1$, range $y \ge 2$`, R`Function; domain $x \in \mathbb{R}$, range $y \ge 1$`, NF], [['A1', 'function'], ['A1', R`domain $\mathbb{R}$, range $y \ge 2$`]], [R`A V-shape with its lowest point at $(1,\ 2)$.`, R`Domain $\mathbb{R}$, range $y \ge 2$`], 'The lowest point gives the range.', 'all((Abs(x-1)+2).subs(x,v) >= 2 for v in range(-6,7)) and (Abs(x-1)+2).subs(x,1) == 2',
+        plot({ x: [-4, 6], y: [-1, 7], f: [{ f: x => Math.abs(x - 1) + 2 }], pts: [pt(1, 2, 'b')], alt: 'V-shaped graph with vertex (1, 2)' })),
+      dr('l', 'The graph below.', [NF, R`Function; domain $x \ge -3$, range $y \in \mathbb{R}$`, R`Function; domain $x \in \mathbb{R}$, range $y \ge -3$`], [['A1', 'not a function'], ['R1', 'fails the vertical line test']], [R`It is a sideways parabola: the line $x = 1$ meets it at $y = 2$ and $y = -2$.`], null, 'len(solve((x-(y**2-3)).subs(x,1), y)) == 2',
+        plot({ x: [-4, 6], y: [-4, 4], f: [{ f: x => Math.sqrt(x + 3), from: -3 }, { f: x => -Math.sqrt(x + 3), from: -3 }], alt: 'A parabola opening to the right' }))
+    ] },
+    { paper: 2, stem: 'Use your GDC to graph each function. Then sketch the graph and state the domain and range.', parts: [
+      sk('a(i)', R`$f(x) = (x + 3)(x - 2)(x - 5)$`, plot({ x: [-5, 7], y: [-40, 50], step: [1, 10], f: [{ f: x => (x + 3) * (x - 2) * (x - 5) }], pts: [pt(-3, 0, 'l'), pt(2, 0, 'b'), pt(5, 0, 'b')], alt: 'Cubic through (−3, 0), (2, 0) and (5, 0)' }), [R`A cubic crossing the $x$-axis at $-3$, $2$ and $5$, with $y$-intercept $30$.`], 'expand((x+3)*(x-2)*(x-5)).subs(x,0) == 30'),
+      { l: 'a(ii)', c: 'State', p: 'the domain and range.', m: 2, a: { mc: [R`domain $x \in \mathbb{R}$, range $y \in \mathbb{R}$`, R`domain $-3 \le x \le 5$, range $y \in \mathbb{R}$`, R`domain $x \in \mathbb{R}$, range $y \ge 0$`] }, ms: [['A1', R`domain $\mathbb{R}$`], ['A1', R`range $\mathbb{R}$`]], w: ['A cubic goes on forever in both directions, so every $x$ and every $y$ occur.'], h: 'What happens to the cubic at both ends?', v: mcv('limit((x+3)*(x-2)*(x-5), x, oo) == oo and limit((x+3)*(x-2)*(x-5), x, -oo) == -oo') },
+      sk('b(i)', R`$g(x) = \frac{2x - 1}{x + 3}$`, plot({ x: [-12, 6], y: [-8, 12], step: [2, 2], f: [{ f: x => (2 * x - 1) / (x + 3), to: -3.01 }, { f: x => (2 * x - 1) / (x + 3), from: -2.99 }], vl: [-3], hl: [2], alt: 'Rational function with asymptotes x = −3 and y = 2' }), [R`Two branches, vertical asymptote $x = -3$, horizontal asymptote $y = 2$.`], 'limit((2*x-1)/(x+3), x, oo) == 2'),
+      { l: 'b(ii)', c: 'State', p: 'the domain and range.', m: 2, a: { mc: [R`domain $x \ne -3$, range $y \ne 2$`, R`domain $x \ne 2$, range $y \ne -3$`, R`domain $x \in \mathbb{R}$, range $y \ne 2$`, R`domain $x \ne -3$, range $y \in \mathbb{R}$`] }, ms: [['A1', R`$x \ne -3$`], ['A1', R`$y \ne 2$`]], w: [R`Undefined at $x = -3$; the graph never reaches $y = 2$.`], h: 'Look at the asymptotes.', v: mcv('len(solve(Eq((2*x-1)/(x+3), 2), x)) == 0') },
+      sk('c(i)', R`$h: x \mapsto \ln(x + 2)$`, plot({ x: [-3, 8], y: [-4, 3], step: [1, 1], f: [{ f: x => Math.log(x + 2), from: -1.999 }], vl: [-2], pts: [pt(-1, 0, 'b')], alt: 'Logarithmic curve with asymptote x = −2' }), [R`Increasing curve with vertical asymptote $x = -2$, through $(-1,\ 0)$.`], 'solve(log(x+2), x) == [-1]'),
+      { l: 'c(ii)', c: 'State', p: 'the domain and range.', m: 2, a: { mc: [R`domain $x > -2$, range $y \in \mathbb{R}$`, R`domain $x \ge -2$, range $y > 0$`, R`domain $x \in \mathbb{R}$, range $y > -2$`] }, ms: [['A1', R`$x > -2$`], ['A1', R`$y \in \mathbb{R}$`]], w: [R`$\ln$ needs a positive input: $x + 2 > 0$, so $x > -2$. The outputs take every real value.`], h: 'What must be true of the number inside ln?', v: mcv('solveset(x+2>0, x, S.Reals) == Interval.open(-2, oo)') },
+      sk('d(i)', R`$k: x \mapsto 2\sin x - 1$ (radians)`, plot({ x: [-6.3, 6.3], y: [-4, 2], step: [1, 1], f: [{ f: x => 2 * Math.sin(x) - 1 }], alt: 'Sine wave between −3 and 1' }), [R`A wave oscillating between $-3$ and $1$.`], 'maximum(2*sin(x)-1, x) == 1'),
+      { l: 'd(ii)', c: 'State', p: 'the domain and range.', m: 2, a: { mc: [R`domain $x \in \mathbb{R}$, range $-3 \le y \le 1$`, R`domain $x \in \mathbb{R}$, range $-2 \le y \le 2$`, R`domain $-3 \le x \le 1$, range $y \in \mathbb{R}$`, R`domain $x \in \mathbb{R}$, range $-1 \le y \le 1$`] }, ms: [['A1', R`domain $\mathbb{R}$`], ['A1', R`range $-3 \le y \le 1$`]], w: [R`$\sin x$ is between $-1$ and $1$, so $2\sin x - 1$ is between $-3$ and $1$.`], h: 'Start from −1 ≤ sin x ≤ 1.', v: mcv('minimum(2*sin(x)-1, x) == -3 and maximum(2*sin(x)-1, x) == 1') }
+    ] },
+    { stem: 'Sketch the graph of a possible function with each domain and range. (Many answers are possible.)', parts: [
+      { l: 'a', c: 'Sketch', p: R`domain $x \in \mathbb{R}$, range $y \in \mathbb{R}$.`, m: 1, a: 'open', ms: [['A1', 'e.g. any non-horizontal straight line or a cubic']], w: [R`e.g. $y = 2x - 1$`], kfig: plot({ x: [-4, 4], y: [-5, 5], f: [{ f: x => 2 * x - 1 }], alt: 'A straight line' }), h: 'A straight line that is not horizontal works.', v: 'len(solve(2*x-1-y, x)) == 1' },
+      { l: 'b', c: 'Sketch', p: R`domain $x \in \mathbb{R}$, range $y \ge -1$.`, m: 1, a: 'open', ms: [['A1', R`e.g. a parabola opening up with minimum value $-1$`]], w: [R`e.g. $y = x^{2} - 1$`], kfig: plot({ x: [-3, 3], y: [-2, 6], f: [{ f: x => x * x - 1 }], pts: [pt(0, -1, 'b')], alt: 'Parabola with minimum −1' }), h: 'Think of a parabola whose lowest point is at height −1.', v: 'minimum(x**2-1, x) == -1' },
+      { l: 'c', c: 'Sketch', p: R`domain $-2 \le x < 4$, range $-1 \le y < 3$.`, m: 1, a: 'open', ms: [['A1', 'e.g. a line segment from $(-2, -1)$ (closed dot) to $(4, 3)$ (open dot)']], w: [R`e.g. a straight segment from $(-2,\ -1)$, filled dot, to $(4,\ 3)$, open dot.`], kfig: plot({ x: [-3, 5], y: [-2, 4], f: [{ f: x => (2 / 3) * (x + 2) - 1, from: -2, to: 4 }], pts: [pt(-2, -1, 'b'), [4, 3, '(4, 3) open']], alt: 'A line segment' }), h: 'A straight segment with the right end points; use an open dot where the value is not included.', v: '(Rational(2,3)*(x+2)-1).subs(x,4) == 3' },
+      { l: 'd', c: 'Sketch', p: R`domain $x > 0$, range $y > 0$.`, m: 1, a: 'open', ms: [['A1', R`e.g. $y = \frac{1}{x}$ for $x > 0$`]], w: [R`e.g. $y = \frac{1}{x}$ for $x > 0$`], kfig: plot({ x: [-0.5, 5], y: [-0.5, 5], f: [{ f: x => 1 / x, from: 0.2 }], alt: 'Reciprocal curve in the first quadrant' }), h: 'Which graph stays in the first quadrant and never touches the axes?', v: 'limit(1/x, x, 0, "+") == oo' }
+    ] },
+    { stem: R`Consider the function $f(x) = \frac{1}{2}x + 3$ for $-2 \le x \le 4$, and $f(x) = 9 - x$ for $4 < x \le 10$.`, parts: [
+      { l: 'a(i)', c: 'Find', p: R`$f(2)$.`, m: 1, a: 4, ms: [['A1', R`$4$`]], w: [R`$2$ is in $-2 \le x \le 4$: $f(2) = \frac{1}{2}(2) + 3 = 4$`], h: 'Which rule applies to x = 2?', e: [{ value: 7, fb: 'x = 2 uses the first rule, not 9 − x.' }], v: '(Rational(1,2)*x+3).subs(x,2)' },
+      { l: 'a(ii)', c: 'Find', p: R`$f(7)$.`, m: 1, a: 2, ms: [['A1', R`$2$`]], w: [R`$7$ is in $4 < x \le 10$: $f(7) = 9 - 7 = 2$`], h: 'Which rule applies to x = 7?', e: [{ value: 6.5, fb: 'x = 7 uses the second rule.' }], v: '(9-x).subs(x,7)' },
+      { l: 'b', c: 'Sketch', p: 'the graph of $f$.', m: 2, a: 'open', ms: [['A1', R`segment from $(-2, 2)$ to $(4, 5)$`], ['A1', R`segment from $(4, 5)$ down to $(10, -1)$`]], w: [R`First piece: from $(-2,\ 2)$ to $(4,\ 5)$.`, R`Second piece: from just after $(4,\ 5)$ down to $(10,\ -1)$.`],
+        kfig: plot({ x: [-3, 11], y: [-2, 6], f: [{ f: x => x / 2 + 3, from: -2, to: 4 }, { f: x => 9 - x, from: 4, to: 10 }], pts: [pt(-2, 2, 'b'), pt(4, 5), pt(10, -1, 'b')], alt: 'Piecewise graph rising then falling' }), h: 'Plot the end points of each piece, then join them.', v: '(Rational(1,2)*x+3).subs(x,4) == (9-x).subs(x,4)' },
+      { l: 'c', c: 'Write down', p: R`the domain and range of $f$, in the form $p \le x \le q$ and $r \le y \le s$.`, m: 2, a: { t: [-2, 10, -1, 5], l: ['p', 'q', 'r', 's'] }, ms: [['A1', R`domain $-2 \le x \le 10$`], ['A1', R`range $-1 \le y \le 5$`]], w: [R`Domain: from $-2$ to $10$.`, R`Lowest output $f(10) = -1$; highest $f(4) = 5$. Range $-1 \le y \le 5$.`], h: 'Read the lowest and highest points of your sketch.', v: '(-2, 10, min((Rational(1,2)*x+3).subs(x,-2),(9-x).subs(x,10)), (Rational(1,2)*x+3).subs(x,4))' }
+    ] },
+    { stem: R`The graph of the piecewise function $y = f(x)$, for $-4 \le x \le 6$, is shown. It is made of three straight pieces.`,
+      fig: plot({ x: [-5, 7], y: [-3, 5], f: [{ f: x => x + 5, from: -4, to: -1 }, { f: x => -2 * x + 2, from: -1, to: 2 }, { f: x => -2, from: 2, to: 6 }], pts: [pt(-4, 1, 'l'), pt(-1, 4), pt(2, -2, 'b'), pt(6, -2, 'b')], alt: 'Three line segments' }), parts: [
+      { l: 'a', c: 'Find', p: R`the equation of the piece for $-4 \le x \le -1$, in the form $y = mx + c$.`, m: 2, a: { t: [1, 5], l: ['m', 'c'], d: R`y = x + 5` }, ms: [['(M1)', R`gradient $\frac{4 - 1}{-1 - (-4)} = 1$`], ['A1', R`$y = x + 5$`]], w: [R`Gradient $= \frac{4 - 1}{-1 - (-4)} = 1$`, R`$y - 4 = 1(x + 1) \Rightarrow y = x + 5$`], h: 'Use the two end points to find the gradient.', v: '(Rational(4-1,-1+4), 4-Rational(4-1,-1+4)*(-1))' },
+      { l: 'b', c: 'Find', p: R`the equation of the piece for $-1 < x \le 2$, in the form $y = mx + c$.`, m: 2, a: { t: [-2, 2], l: ['m', 'c'], d: R`y = -2x + 2` }, ms: [['(M1)', R`gradient $\frac{-2 - 4}{2 - (-1)} = -2$`], ['A1', R`$y = -2x + 2$`]], w: [R`Gradient $= \frac{-2 - 4}{2 + 1} = -2$`, R`$y + 2 = -2(x - 2) \Rightarrow y = -2x + 2$`], h: 'End points (−1, 4) and (2, −2).', v: '(Rational(-2-4,2+1), -2-Rational(-2-4,2+1)*2)' },
+      { l: 'c', c: 'Write down', p: R`the equation of the piece for $2 < x \le 6$.`, m: 1, a: { n: -2, d: R`y = -2` }, ms: [['A1', R`$y = -2$`]], w: [R`It is horizontal at height $-2$: $y = -2$.`], h: 'A horizontal line has the form y = constant.', v: 'Integer(-2)' }
+    ] }
+  ]);
+})(window.Hub = window.Hub || {});
+
+/* ---- js/q_bx_sl3.js ---- */
+/* AA SL — book-exercise questions, Chapter 2 part 2 (2E–2J).
+   NEW questions for each Oxford AA SL (2019) exercise: same skills, style and level; own numbers, contexts and wording. */
+(function (Hub) {
+  'use strict';
+  const B = Hub.qcore.bx, plot = Hub.qcore.plot, R = String.raw;
+  const mcv = ok => `'k0' if ${ok} else 'bad'`;
+  const neg = v => String(v).replace('-', '−');
+  const pt = (x, y, pos) => [x, y, `(${neg(x)}, ${neg(y)})`, pos];
+  const open = (l, c, p, m, ms, w, h, v, kfig) => ({ l, c, p, m, a: 'open', ms, w, h, v, kfig });
+
+  /* ===== 2E · 2.4 Domain and range in context ===== */
+  B('SL', '2E', { page: 84, sec: '2.4', title: 'The domain and range of a function', skill: 'SL-2.4', paper: 2 }, [
+    { stem: R`A bike repair shop charges €15 to inspect a bike plus €18 for each hour of repair work. The shop never spends more than 6 hours on one bike.`, parts: [
+      { l: 'a', c: 'Write down', p: R`a function $R(h) = p + qh$ for the total charge, $R$ euros, for $h$ hours of work, and define the variables.`, m: 2, a: { t: [15, 18], l: ['p', 'q'], d: R`R(h) = 15 + 18h` }, ms: [['A1', R`$p = 15$`], ['A1', R`$q = 18$ ($h$ = hours of work, $R$ = charge in euros)`]], w: [R`$R(h) = 15 + 18h$, where $h$ is the number of hours of work and $R$ is the total charge in euros.`], h: 'Which part is charged once, and which part every hour?', v: '(Integer(15), Integer(18))' },
+      { l: 'b', c: 'State', p: R`a reasonable domain and range, in the form $a \le h \le b$ and $c \le R \le d$.`, m: 2, a: { t: [0, 6, 15, 123], l: ['a', 'b', 'c', 'd'] }, ms: [['A1', R`domain $0 \le h \le 6$`], ['A1', R`range $15 \le R \le 123$`]], w: [R`Hours: from $0$ to $6$, so $0 \le h \le 6$.`, R`$R(0) = 15$ and $R(6) = 15 + 108 = 123$, so $15 \le R \le 123$.`], h: 'Use the smallest and largest sensible number of hours, then find the charges they give.', v: '(0, 6, 15+18*0, 15+18*6)' },
+      { l: 'c', c: 'Find', p: R`the charge for $2.5$ hours of work.`, m: 1, a: { n: 60, d: R`€60` }, ms: [['A1', R`$R(2.5) = 60$`]], w: [R`$R(2.5) = 15 + 18(2.5) = 15 + 45 = 60$ euros`], h: 'Substitute h = 2.5.', v: '15+18*Rational(5,2)' }
+    ] },
+    { stem: R`A zoologist estimates the body length, $L$ cm, of a crocodile from the length of its head, $h$ cm, using $L(h) = 7.4h + 3.2$. The model is used for heads from $20$ cm to $70$ cm long.`, parts: [
+      open('a', 'Sketch', 'the graph of $L$ for the values of $h$ where the model is used. Label the axes.', 2, [['A1', 'straight line segment with positive gradient between $h = 20$ and $h = 70$'], ['A1', 'axes labelled (head length, body length) with the end points']],
+        [R`A straight segment from $(20,\ 151.2)$ to $(70,\ 521.2)$; horizontal axis head length $h$ (cm), vertical axis body length $L$ (cm).`], 'Plot the two end points and join them.', '(Rational(37,5)*x+Rational(16,5)).subs(x,20) == Rational(756,5)',
+        plot({ x: [0, 80], y: [0, 600], step: [10, 100], f: [{ f: x => 7.4 * x + 3.2, from: 20, to: 70 }], pts: [pt(20, 151.2, 'l'), pt(70, 521.2)], labels: [[66, 40, 'h (cm)'], [2, 580, 'L (cm)']], alt: 'Line segment from (20, 151.2) to (70, 521.2)' })),
+      { l: 'b', c: 'State', p: R`the domain and find the range, in the form $a \le h \le b$ and $c \le L \le d$.`, m: 2, a: { t: [20, 70, 151.2, 521.2], l: ['a', 'b', 'c', 'd'] }, ms: [['A1', R`domain $20 \le h \le 70$`], ['A1', R`range $151.2 \le L \le 521.2$`]], w: [R`Domain: $20 \le h \le 70$`, R`$L(20) = 151.2$, $L(70) = 521.2$, so $151.2 \le L \le 521.2$`], h: 'The function is increasing, so the end points of the domain give the end points of the range.', v: '(20, 70, Rational(37,5)*20+Rational(16,5), Rational(37,5)*70+Rational(16,5))' },
+      { l: 'c', c: 'Find', p: R`the body length of a crocodile whose head is $46$ cm long.`, m: 1, a: { n: 343.6, d: R`343.6\text{ cm}` }, ms: [['A1', R`$343.6$ cm`]], w: [R`$L(46) = 7.4(46) + 3.2 = 343.6$ cm`], h: 'Substitute h = 46.', v: 'Rational(37,5)*46+Rational(16,5)' },
+      { l: 'd', c: 'Find', p: R`the head length of a crocodile whose body is $299.2$ cm long.`, m: 2, a: { n: 40, d: R`40\text{ cm}` }, ms: [['M1', R`$7.4h + 3.2 = 299.2$`], ['A1', R`$h = 40$ cm`]], w: [R`$7.4h = 296$`, R`$h = 40$ cm`], h: 'This time L is known — solve for h.', v: "solve(Rational(37,5)*x+Rational(16,5)-Rational(1496,5), x)[0]" }
+    ] },
+    { stem: R`Amara invests £6000 in a savings account paying $3.2\%$ interest per year, compounded quarterly. She makes no other deposits or withdrawals.`, parts: [
+      { l: 'a', c: 'Write down', p: R`an equation for the value, $A$, of the investment after $t$ years.`, m: 1, a: { mc: [R`$A(t) = 6000\left(1 + \frac{0.032}{4}\right)^{4t}$`, R`$A(t) = 6000(1.032)^{4t}$`, R`$A(t) = 6000\left(1 + \frac{0.032}{4}\right)^{t}$`, R`$A(t) = 6000(1 + 0.032t)$`] }, ms: [['A1', R`$A(t) = 6000\left(1 + \frac{0.032}{4}\right)^{4t}$`]], w: [R`Each quarter the rate is $\frac{3.2\%}{4} = 0.8\%$, and there are $4t$ quarters in $t$ years.`, R`$A(t) = 6000(1.008)^{4t}$`], h: 'Quarterly: divide the rate by 4 and multiply the number of years by 4.', v: mcv('(6000*(1+Rational(32,4000))**(4*1)) > 6000*Rational(1032,1000)') },
+      { l: 'b', c: 'Explain', p: 'why this equation is a function.', m: 1, a: { mc: ['Each time t gives exactly one value of the investment', 'The value of the investment increases', 'The equation contains a power'] }, ms: [['R1', 'one output (value) for each input (time)']], w: ['At any one time the investment has exactly one value, so each $t$ gives one $A$.'], h: 'What is the test for a function?', v: mcv('True') },
+      { l: 'c', c: 'State', p: 'the domain and range of this function.', m: 2, a: { mc: [R`domain $t \ge 0$, range $A \ge 6000$`, R`domain $t \in \mathbb{R}$, range $A > 0$`, R`domain $t \ge 0$, range $A \ge 0$`, R`domain $t \ge 6000$, range $A \ge 0$`] }, ms: [['A1', R`$t \ge 0$`], ['A1', R`$A \ge 6000$`]], w: [R`Time starts at $0$; the value starts at £6000 and only grows.`], h: 'When does the investment start, and what is it worth then?', v: mcv('6000*(1+Rational(32,4000))**0 == 6000') },
+      { l: 'd', c: 'Find', p: 'how long it takes for Amara’s money to double.', m: 2, a: { n: 21.747378, sf: 3, d: R`21.7\text{ years}` }, ms: [['M1', R`$6000(1.008)^{4t} = 12000$`], ['A1', R`$t = 21.7$ years`]], w: [R`$6000(1.008)^{4t} = 12000 \Rightarrow (1.008)^{4t} = 2$`, R`GDC (intersect or solver): $t = 21.7$ years (3 s.f.)`], h: 'Set A(t) = 12 000 and use your GDC.', v: 'log(2)/(4*log(1+Rational(32,4000)))' }
+    ] }
+  ]);
+
+  /* ===== 2F · 2.5 Composite functions ===== */
+  B('SL', '2F', { page: 89, sec: '2.5', title: 'Composite functions', skill: 'SL-2.5', paper: 1 }, [
+    { stem: R`$f(x) = x^{2} - 3x$, $g(x) = 2x + 1$ and $h(x) = \sqrt{x} - 2$.`, parts: [
+      { l: 'a(i)', c: 'Find', p: R`$f(g(x))$ in the form $ax^{2} + bx + c$.`, m: 3, a: { t: [4, -2, -2], l: ['a', 'b', 'c'], d: R`4x^{2} - 2x - 2` }, ms: [['M1', R`$(2x + 1)^{2} - 3(2x + 1)$`], ['(A1)', R`$4x^{2} + 4x + 1 - 6x - 3$`], ['A1', R`$4x^{2} - 2x - 2$`]], w: [R`$f(g(x)) = (2x + 1)^{2} - 3(2x + 1)$`, R`$= 4x^{2} + 4x + 1 - 6x - 3 = 4x^{2} - 2x - 2$`], h: 'Replace every x in f with (2x + 1).', v: 'tuple(Poly(expand((x**2-3*x).subs(x,2*x+1)),x).all_coeffs())' },
+      { l: 'a(ii)', c: 'Find', p: R`$f(f(x))$ in the form $ax^{4} + bx^{3} + cx^{2} + dx + e$.`, m: 3, a: { t: [1, -6, 6, 9, 0], l: ['a', 'b', 'c', 'd', 'e'], d: R`x^{4} - 6x^{3} + 6x^{2} + 9x` }, ms: [['M1', R`$(x^{2} - 3x)^{2} - 3(x^{2} - 3x)$`], ['(A1)', R`$x^{4} - 6x^{3} + 9x^{2} - 3x^{2} + 9x$`], ['A1', R`$x^{4} - 6x^{3} + 6x^{2} + 9x$`]], w: [R`$f(f(x)) = (x^{2} - 3x)^{2} - 3(x^{2} - 3x)$`, R`$= x^{4} - 6x^{3} + 9x^{2} - 3x^{2} + 9x = x^{4} - 6x^{3} + 6x^{2} + 9x$`], h: 'The inside function is f itself.', v: 'tuple(Poly(expand((x**2-3*x).subs(x,x**2-3*x)),x).all_coeffs())' },
+      { l: 'a(iii)', c: 'Find', p: R`$f(h(x))$ in the form $x + p\sqrt{x} + q$.`, m: 3, a: { t: [-7, 10], l: ['p', 'q'], d: R`x - 7\sqrt{x} + 10` }, ms: [['M1', R`$(\sqrt{x} - 2)^{2} - 3(\sqrt{x} - 2)$`], ['(A1)', R`$x - 4\sqrt{x} + 4 - 3\sqrt{x} + 6$`], ['A1', R`$x - 7\sqrt{x} + 10$`]], w: [R`$f(h(x)) = (\sqrt{x} - 2)^{2} - 3(\sqrt{x} - 2)$`, R`$= x - 4\sqrt{x} + 4 - 3\sqrt{x} + 6 = x - 7\sqrt{x} + 10$`], h: 'Square the bracket carefully: (√x − 2)² has three terms.', v: "(Integer(-7), Integer(10)) if expand((x**2-3*x).subs(x,sqrt(x)-2) - (x-7*sqrt(x)+10)) == 0 else None" },
+      { l: 'a(iv)', c: 'Find', p: R`$(g \circ h)(x)$ in the form $p\sqrt{x} + q$.`, m: 2, a: { t: [2, -3], l: ['p', 'q'], d: R`2\sqrt{x} - 3` }, ms: [['M1', R`$2(\sqrt{x} - 2) + 1$`], ['A1', R`$2\sqrt{x} - 3$`]], w: [R`$(g \circ h)(x) = g(\sqrt{x} - 2) = 2(\sqrt{x} - 2) + 1 = 2\sqrt{x} - 3$`], h: 'g ∘ h means do h first, then g.', v: "(Integer(2), Integer(-3)) if expand((2*x+1).subs(x,sqrt(x)-2) - (2*sqrt(x)-3)) == 0 else None" },
+      { l: 'a(v)', c: 'Find', p: R`$(f \circ f \circ f)(-1)$.`, m: 2, a: 4, ms: [['(M1)', R`$f(-1) = 4$`], ['A1', R`$4$`]], w: [R`$f(-1) = 1 + 3 = 4$`, R`$f(4) = 16 - 12 = 4$`, R`$f(4) = 4$`], h: 'Work from the inside out: three times.', v: '(lambda F: F(F(F(-1))))(lambda v: v**2-3*v)' },
+      { l: 'a(vi)', c: 'Find', p: R`$g(h(16))$.`, m: 2, a: 5, ms: [['(M1)', R`$h(16) = 2$`], ['A1', R`$5$`]], w: [R`$h(16) = 4 - 2 = 2$`, R`$g(2) = 5$`], h: 'Find h(16) first.', v: '2*(sqrt(16)-2)+1' },
+      { l: 'a(vii)', c: 'Find', p: R`$(g \circ f)(2) + (f \circ g)(2)$.`, m: 3, a: 7, ms: [['M1', R`$(g \circ f)(2) = g(-2) = -3$`], ['M1', R`$(f \circ g)(2) = f(5) = 10$`], ['A1', R`$7$`]], w: [R`$f(2) = -2$, so $(g \circ f)(2) = g(-2) = -3$`, R`$g(2) = 5$, so $(f \circ g)(2) = f(5) = 10$`, R`$-3 + 10 = 7$`], h: 'Do each composite separately; the order matters.', v: '(lambda F,G: G(F(2))+F(G(2)))(lambda v: v**2-3*v, lambda v: 2*v+1)' },
+      { l: 'b', c: 'State', p: 'the domains of the functions in parts (a)(i) to (a)(iv).', m: 2, a: { mc: [R`(i) and (ii): $x \in \mathbb{R}$; (iii) and (iv): $x \ge 0$`, R`all four: $x \in \mathbb{R}$`, R`(i) and (ii): $x \ge 0$; (iii) and (iv): $x \in \mathbb{R}$`, R`(i) and (ii): $x \in \mathbb{R}$; (iii) and (iv): $x \ge 2$`] }, ms: [['A1', R`(i), (ii) $x \in \mathbb{R}$`], ['A1', R`(iii), (iv) $x \ge 0$ (because of $\sqrt{x}$)`]], w: [R`(i) and (ii) are polynomials: $x \in \mathbb{R}$.`, R`(iii) and (iv) start with $h(x) = \sqrt{x} - 2$, which needs $x \ge 0$.`], h: 'The inside function decides which x are allowed.', v: mcv('True') }
+    ] },
+    { stem: 'Create two different functions, $f(x)$ and $g(x)$, such that:', parts: [
+      open('a', 'Write down', R`two functions with $f(g(x)) = g(f(x))$.`, 1, [['A1', R`a correct pair, e.g. $f(x) = x + 2$, $g(x) = x - 5$`]], [R`e.g. $f(x) = x + 2$, $g(x) = x - 5$: both composites equal $x - 3$.`], 'Try two functions that each add a number.', 'expand((x+2).subs(x,x-5) - (x-5).subs(x,x+2)) == 0'),
+      open('b', 'Write down', R`two functions with $f(g(x)) \ne g(f(x))$.`, 1, [['A1', R`a correct pair, e.g. $f(x) = x^{2}$, $g(x) = x + 1$`]], [R`e.g. $f(x) = x^{2}$, $g(x) = x + 1$: $f(g(x)) = (x + 1)^{2}$ but $g(f(x)) = x^{2} + 1$.`], 'Squaring then adding is different from adding then squaring.', 'expand((x+1)**2 - (x**2+1)) != 0'),
+      open('c', 'Write down', R`two functions with $f(2) = g(2)$.`, 1, [['A1', R`a correct pair, e.g. $f(x) = 3x$, $g(x) = x + 4$`]], [R`e.g. $f(x) = 3x$ and $g(x) = x + 4$: both give $6$ at $x = 2$.`], 'Choose any two rules that give the same output at x = 2.', '3*2 == 2+4')
+    ] },
+    { stem: R`$f(x) = 3x - 4$ and $g(x) = 2 - 5x$.`, parts: [
+      { l: 'a', c: 'Find', p: R`an expression for $f(g(x))$ in the form $p + qx$.`, m: 2, a: { t: [2, -15], l: ['p', 'q'], d: R`2 - 15x` }, ms: [['M1', R`$3(2 - 5x) - 4$`], ['A1', R`$2 - 15x$`]], w: [R`$f(g(x)) = 3(2 - 5x) - 4 = 6 - 15x - 4 = 2 - 15x$`], h: 'Replace x in f with (2 − 5x).', v: "(Integer(2), Integer(-15)) if expand((3*x-4).subs(x,2-5*x)) == 2-15*x else None" },
+      { l: 'b', c: 'Solve', p: R`$f(g(x)) = 17$.`, m: 2, a: -1, ms: [['M1', R`$2 - 15x = 17$`], ['A1', R`$x = -1$`]], w: [R`$2 - 15x = 17 \Rightarrow -15x = 15 \Rightarrow x = -1$`], h: 'Use your answer to (a).', e: [{ value: 1, fb: 'Check the sign: −15x = 15.' }], v: 'solve((3*x-4).subs(x,2-5*x)-17, x)[0]' }
+    ] },
+    { stem: R`$f(x) = 2x^{2} + 1$ and $g(x) = 3 - x$.`, parts: [
+      { l: 'a', c: 'Find', p: R`$f(g(x))$ in the form $ax^{2} + bx + c$.`, m: 3, a: { t: [2, -12, 19], l: ['a', 'b', 'c'], d: R`2x^{2} - 12x + 19` }, ms: [['M1', R`$2(3 - x)^{2} + 1$`], ['(A1)', R`$2(9 - 6x + x^{2}) + 1$`], ['A1', R`$2x^{2} - 12x + 19$`]], w: [R`$f(g(x)) = 2(3 - x)^{2} + 1 = 2(9 - 6x + x^{2}) + 1 = 2x^{2} - 12x + 19$`], h: 'Expand (3 − x)² first.', v: 'tuple(Poly(expand((2*x**2+1).subs(x,3-x)),x).all_coeffs())' },
+      open('b', 'Sketch', R`the graph of $y = f(g(x))$, using your GDC.`, 2, [['A1', 'parabola opening upwards'], ['A1', R`vertex at $(3, 1)$`]], [R`A parabola opening upwards with vertex $(3,\ 1)$ and $y$-intercept $19$.`], 'Use your GDC, then mark the vertex.', 'minimum(2*x**2-12*x+19, x) == 1',
+        plot({ x: [-1, 7], y: [-1, 22], step: [1, 2], f: [{ f: x => 2 * x * x - 12 * x + 19 }], pts: [pt(3, 1, 'b'), pt(0, 19)], alt: 'Parabola with vertex (3, 1)' })),
+      { l: 'c', c: 'State', p: R`the domain and range of $f(g(x))$.`, m: 2, a: { mc: [R`domain $x \in \mathbb{R}$, range $y \ge 1$`, R`domain $x \ge 3$, range $y \ge 1$`, R`domain $x \in \mathbb{R}$, range $y \ge 19$`, R`domain $x \in \mathbb{R}$, range $y \in \mathbb{R}$`] }, ms: [['A1', R`domain $\mathbb{R}$`], ['A1', R`range $y \ge 1$`]], w: [R`Every $x$ is allowed; the minimum value is $1$ at $x = 3$.`], h: 'The vertex gives the range.', v: mcv('minimum(2*x**2-12*x+19, x) == 1') }
+    ] },
+    { stem: R`You buy a laptop online. A delivery charge of £12 is added, and VAT of $20\%$ is charged.`, parts: [
+      { l: 'a', c: 'Write down', p: R`a function $f(x)$ for the cost of a laptop priced at £$x$ plus the delivery charge.`, m: 1, a: { mc: [R`$f(x) = x + 12$`, R`$f(x) = 12x$`, R`$f(x) = 1.2x$`, R`$f(x) = x - 12$`] }, ms: [['A1', R`$f(x) = x + 12$`]], w: [R`Add the delivery charge: $f(x) = x + 12$`], h: 'The delivery charge is added once.', v: mcv('True') },
+      { l: 'b', c: 'Write down', p: R`a function $g(x)$ for the cost of an item priced at £$x$ plus VAT.`, m: 1, a: { mc: [R`$g(x) = 1.2x$`, R`$g(x) = 0.2x$`, R`$g(x) = x + 20$`, R`$g(x) = 1.02x$`] }, ms: [['A1', R`$g(x) = 1.2x$`]], w: [R`Adding $20\%$ multiplies by $1.2$: $g(x) = 1.2x$`], h: 'Adding 20% is the same as multiplying by 1.2.', v: mcv('True') },
+      { l: 'c', c: 'Find', p: R`$f(g(450))$ and $g(f(450))$, and interpret each.`, m: 3, a: { t: [552, 554.4], l: ['f(g(450))', 'g(f(450))'] }, ms: [['M1', 'correct order for each composite'], ['A1', R`$f(g(450)) = 552$ (VAT on the laptop only)`], ['A1', R`$g(f(450)) = 554.40$ (VAT on the laptop and the delivery)`]], w: [R`$f(g(450)) = f(540) = 552$: VAT charged on the laptop, then delivery added.`, R`$g(f(450)) = g(462) = 554.40$: delivery added first, so VAT is charged on the delivery too.`], h: 'Inside function first.', v: '(Rational(6,5)*450+12, Rational(6,5)*(450+12))' },
+      { l: 'd', c: 'State', p: 'which composite function gives the amount you pay if VAT cannot be charged on delivery.', m: 1, a: { mc: [R`$f(g(x))$`, R`$g(f(x))$`] }, ms: [['A1', R`$f(g(x))$`]], w: [R`VAT must be applied to the price only, before the delivery charge is added: $f(g(x))$.`], h: 'Which function must act first?', v: mcv('Rational(6,5)*450+12 < Rational(6,5)*462') }
+    ] }
+  ]);
+
+  /* ===== 2G · 2.5 Composite functions from sets, tables and graphs ===== */
+  const F1 = { 1: 4, 3: -2, 6: 5, 8: 0 }, G1 = { '-3': 1, 0: 6, 4: 8, 5: 0 };
+  B('SL', '2G', { page: 90, sec: '2.5', title: 'Composite functions', skill: 'SL-2.5', paper: 1 }, [
+    { stem: R`$f = \{(1, 4),\ (3, -2),\ (6, 5),\ (8, 0)\}$ and $g = \{(-3, 1),\ (0, 6),\ (4, 8),\ (5, 0)\}$.`, parts: [
+      { l: 'a(i)', c: 'Find', p: R`$f(g(-3))$.`, m: 1, a: 4, ms: [['A1', R`$4$`]], w: [R`$g(-3) = 1$, then $f(1) = 4$`], h: 'Find g(−3) first, then use f.', v: 'dict([(1,4),(3,-2),(6,5),(8,0)])[dict([(-3,1),(0,6),(4,8),(5,0)])[-3]]' },
+      { l: 'a(ii)', c: 'Find', p: R`$g(f(6))$.`, m: 1, a: 0, ms: [['A1', R`$0$`]], w: [R`$f(6) = 5$, then $g(5) = 0$`], h: 'f(6) first.', v: 'dict([(-3,1),(0,6),(4,8),(5,0)])[dict([(1,4),(3,-2),(6,5),(8,0)])[6]]' },
+      { l: 'a(iii)', c: 'Find', p: R`$g(g(5))$.`, m: 1, a: 6, ms: [['A1', R`$6$`]], w: [R`$g(5) = 0$, then $g(0) = 6$`], h: 'Use g twice.', v: '(lambda G: G[G[5]])(dict([(-3,1),(0,6),(4,8),(5,0)]))' },
+      { l: 'b(i)', c: 'Write down', p: R`the domain of $f$.`, m: 1, a: { list: [1, 3, 6, 8], d: R`\{1, 3, 6, 8\}` }, ms: [['A1', R`$\{1, 3, 6, 8\}$`]], w: [R`The inputs (first coordinates): $\{1, 3, 6, 8\}$`], h: 'Domain = first coordinates.', v: '[1,3,6,8]' },
+      { l: 'b(ii)', c: 'Write down', p: R`the range of $f$.`, m: 1, a: { list: [4, -2, 5, 0], d: R`\{-2, 0, 4, 5\}` }, ms: [['A1', R`$\{-2, 0, 4, 5\}$`]], w: [R`The outputs (second coordinates): $\{-2, 0, 4, 5\}$`], h: 'Range = second coordinates.', v: '[4,-2,5,0]' },
+      { l: 'b(iii)', c: 'Write down', p: R`the domain of $g$.`, m: 1, a: { list: [-3, 0, 4, 5], d: R`\{-3, 0, 4, 5\}` }, ms: [['A1', R`$\{-3, 0, 4, 5\}$`]], w: [R`$\{-3, 0, 4, 5\}$`], h: 'First coordinates of g.', v: '[-3,0,4,5]' },
+      { l: 'b(iv)', c: 'Write down', p: R`the range of $g$.`, m: 1, a: { list: [1, 6, 8, 0], d: R`\{0, 1, 6, 8\}` }, ms: [['A1', R`$\{0, 1, 6, 8\}$`]], w: [R`$\{0, 1, 6, 8\}$`], h: 'Second coordinates of g.', v: '[1,6,8,0]' }
+    ] },
+    { stem: R`The table gives some values of $f(x)$ and $g(x)$: for $x = -2,\ 1,\ 4,\ 6$, $f(x) = 6,\ 4,\ -2,\ 1$ and $g(x) = 1,\ 6,\ 0,\ -2$ respectively.`, parts: [
+      { l: 'a', c: 'Find', p: R`$(f \circ g)(-2)$.`, m: 1, a: 4, ms: [['A1', R`$4$`]], w: [R`$g(-2) = 1$, $f(1) = 4$`], h: 'g(−2) first.', v: 'dict([(-2,6),(1,4),(4,-2),(6,1)])[dict([(-2,1),(1,6),(4,0),(6,-2)])[-2]]' },
+      { l: 'b', c: 'Find', p: R`$(g \circ f)(6)$.`, m: 1, a: 6, ms: [['A1', R`$6$`]], w: [R`$f(6) = 1$, $g(1) = 6$`], h: 'f(6) first.', v: 'dict([(-2,1),(1,6),(4,0),(6,-2)])[dict([(-2,6),(1,4),(4,-2),(6,1)])[6]]' },
+      { l: 'c', c: 'Find', p: R`$(f \circ f)(1)$.`, m: 1, a: -2, ms: [['A1', R`$-2$`]], w: [R`$f(1) = 4$, $f(4) = -2$`], h: 'Use f twice.', v: '(lambda F: F[F[1]])(dict([(-2,6),(1,4),(4,-2),(6,1)]))' }
+    ] },
+    { stem: R`The graphs of $y = f(x)$ (the solid V-shape) and $y = g(x)$ (the dashed parabola) are shown.`,
+      fig: plot({ x: [-4, 5], y: [-4, 6], f: [{ f: x => 3 - Math.abs(x) }, { f: x => (x - 1) * (x - 1) - 3, dash: true }], pts: [pt(0, 3), pt(1, -3, 'b')], labels: [[-3.9, 0.4, 'f'], [3.3, 5.3, 'g']], alt: 'An upside-down V with vertex (0, 3) and a parabola with vertex (1, −3)' }), parts: [
+      { l: 'a', c: 'Find', p: R`$g(f(0))$.`, m: 1, a: 1, ms: [['A1', R`$1$`]], w: [R`$f(0) = 3$; $g(3) = 1$`], h: 'Read f(0) from the V-shape, then read g at that value.', v: '((x-1)**2-3).subs(x, 3-Abs(0))' },
+      { l: 'b', c: 'Find', p: R`$g(f(2))$.`, m: 1, a: -3, ms: [['A1', R`$-3$`]], w: [R`$f(2) = 1$; $g(1) = -3$`], h: 'f(2) first.', v: '((x-1)**2-3).subs(x, 3-Abs(2))' },
+      { l: 'c', c: 'Find', p: R`$f(g(-1))$.`, m: 1, a: 2, ms: [['A1', R`$2$`]], w: [R`$g(-1) = 1$; $f(1) = 2$`], h: 'g(−1) first, from the parabola.', v: '(3-Abs(x)).subs(x, ((x-1)**2-3).subs(x,-1))' },
+      { l: 'd', c: 'Find', p: R`$f(g(1))$.`, m: 1, a: 0, ms: [['A1', R`$0$`]], w: [R`$g(1) = -3$; $f(-3) = 0$`], h: 'g(1) is the lowest point of the parabola.', v: '(3-Abs(x)).subs(x, ((x-1)**2-3).subs(x,1))' }
+    ] },
+    { parts: [open('a', 'Write down', R`two functions $f$ and $g$, each a set of ordered pairs, such that $g(f(2)) = -3$.`, 2, [['A1', R`$f$ contains a pair $(2, a)$`], ['A1', R`$g$ contains the pair $(a, -3)$`]], [R`e.g. $f = \{(2, 7),\ (5, 1)\}$ and $g = \{(7, -3),\ (0, 4)\}$: $f(2) = 7$ and $g(7) = -3$.`], 'Decide what f(2) is, then make g send that number to −3.', 'dict([(7,-3),(0,4)])[dict([(2,7),(5,1)])[2]] == -3')] }
+  ]);
+
+  /* ===== 2H · 2.5 Decomposing composite functions ===== */
+  B('SL', '2H', { page: 92, sec: '2.5', title: 'Composite functions', skill: 'SL-2.5', paper: 2 }, [
+    { stem: R`A sports club recycles bottles. Each week the recycling company pays the club £0.15 for every bottle collected above the first 400. The weekly payment is $P(n) = 0.15(n - 400)$, where $n$ is the number of bottles collected.`, parts: [
+      { l: 'a', c: 'Write down', p: R`two component functions $f$ and $g$ such that $P(n) = g(f(n))$.`, m: 2, a: { mc: [R`$f(n) = n - 400$ and $g(n) = 0.15n$`, R`$f(n) = 0.15n$ and $g(n) = n - 400$`, R`$f(n) = n + 400$ and $g(n) = 0.15n$`, R`$f(n) = 0.15n - 400$ and $g(n) = n$`] }, ms: [['A1', R`$f(n) = n - 400$`], ['A1', R`$g(n) = 0.15n$`]], w: [R`Inside first: subtract the 400 unpaid bottles, $f(n) = n - 400$.`, R`Then pay £0.15 each: $g(n) = 0.15n$.`], h: 'Which operation happens first?', v: mcv("expand(Rational(15,100)*(x-400)) == expand((Rational(15,100)*x).subs(x, x-400))") },
+      { l: 'b', c: 'Explain', p: 'what each component represents.', m: 2, a: 'open', ms: [['R1', R`$f$: the number of bottles that are paid for`], ['R1', R`$g$: the payment, at £0.15 per paid bottle`]], w: [R`$f(n) = n - 400$ is the number of bottles above the first 400 (the ones that earn money).`, R`$g$ turns that number into money at £0.15 per bottle.`], h: 'Describe each step in words.', v: 'True' },
+      { l: 'c(i)', c: 'Find', p: 'how many bottles are paid for in a week when the club collects 1150 bottles.', m: 1, a: 750, ms: [['A1', R`$750$`]], w: [R`$f(1150) = 1150 - 400 = 750$`], h: 'Use f.', v: '1150-400' },
+      { l: 'c(ii)', c: 'Find', p: 'the payment that week.', m: 1, a: { n: 112.5, d: R`£112.50` }, ms: [['A1', R`£112.50`]], w: [R`$g(750) = 0.15 \times 750 = 112.50$`], h: 'Use g on your answer to (c)(i).', v: 'Rational(15,100)*750' },
+      { l: 'd(i)', c: 'Find', p: 'the payment in a week when 1520 bottles are collected.', m: 1, a: { n: 168, d: R`£168` }, ms: [['A1', R`£168`]], w: [R`$P(1520) = 0.15(1120) = 168$`], h: 'Substitute n = 1520.', v: 'Rational(15,100)*(1520-400)' },
+      { l: 'd(ii)', c: 'Find', p: 'how many bottles were collected in a week when the club was paid £87.75.', m: 2, a: 985, ms: [['M1', R`$0.15(n - 400) = 87.75$`], ['A1', R`$n = 985$`]], w: [R`$n - 400 = \frac{87.75}{0.15} = 585$`, R`$n = 985$ bottles`], h: 'Undo the operations in reverse order.', v: 'solve(Rational(15,100)*(x-400)-Rational(8775,100), x)[0]' }
+    ] },
+    { stem: R`In a sale, a shop takes £10 off the price of any pair of trainers costing more than £10, and then takes $15\%$ off. The amount paid is $P(x) = 0.85(x - 10)$, where $x$ is the original price.`, parts: [
+      { l: 'a', c: 'State', p: 'the component functions and what they represent.', m: 2, a: { mc: [R`$f(x) = x - 10$ (the £10 off) then $g(x) = 0.85x$ (the $15\%$ off)`, R`$f(x) = 0.85x$ (the £10 off) then $g(x) = x - 10$ (the $15\%$ off)`, R`$f(x) = x - 10$ (the $15\%$ off) then $g(x) = 0.15x$ (the £10 off)`] }, ms: [['A1', R`$x - 10$: £10 off`], ['A1', R`$0.85x$: $15\%$ off`]], w: [R`First $f(x) = x - 10$ takes off £10; then $g(x) = 0.85x$ takes off $15\%$.`], h: '15% off means you pay 85%.', v: mcv('True') },
+      { l: 'b(i)', c: 'Find', p: 'how much you pay for trainers with an original price of £74.99.', m: 2, a: { n: 55.2415, dp: 2, d: R`£55.24` }, ms: [['M1', R`$0.85(74.99 - 10)$`], ['A1', R`£55.24`]], w: [R`$P(74.99) = 0.85 \times 64.99 = 55.24$ (to the nearest penny)`], h: 'Substitute x = 74.99.', v: 'Rational(85,100)*(Rational(7499,100)-10)' },
+      { l: 'b(ii)', c: 'Find', p: 'the original price of a pair for which you paid £46.75.', m: 2, a: { n: 65, d: R`£65` }, ms: [['M1', R`$0.85(x - 10) = 46.75$`], ['A1', R`£65`]], w: [R`$x - 10 = \frac{46.75}{0.85} = 55$`, R`$x = 65$`], h: 'Divide by 0.85, then add 10.', v: 'solve(Rational(85,100)*(x-10)-Rational(4675,100), x)[0]' },
+      { l: 'c(i)', c: 'Write down', p: 'the new function if a delivery fee of £4.99 is added after the discounts (no discount on delivery).', m: 1, a: { mc: [R`$P(x) = 0.85(x - 10) + 4.99$`, R`$P(x) = 0.85(x - 10 + 4.99)$`, R`$P(x) = 0.85(x - 5.01)$`, R`$P(x) = 0.85x - 10 + 4.99$`] }, ms: [['A1', R`$0.85(x - 10) + 4.99$`]], w: [R`The fee is added last, so it is not discounted: $P(x) = 0.85(x - 10) + 4.99$`], h: 'The delivery fee is added after everything else.', v: mcv('True') },
+      { l: 'c(ii)', c: 'Find', p: 'the total paid with delivery for trainers with an original price of £120.', m: 1, a: { n: 98.49, d: R`£98.49` }, ms: [['A1', R`£98.49`]], w: [R`$0.85(110) + 4.99 = 93.50 + 4.99 = 98.49$`], h: 'Use your function from (c)(i).', v: 'Rational(85,100)*110+Rational(499,100)' }
+    ] },
+    { stem: R`Consider the function $f(x) = 0.6(x - 150)$.`, parts: [
+      open('a', 'Write down', 'a word problem that can be modelled by $f$. Define the variables and state a reasonable domain.', 2, [['A1', 'a sensible context with “subtract 150, then take 60%”'], ['A1', R`variables defined and a reasonable domain, e.g. $x > 150$`]], [R`e.g. A tutor keeps $60\%$ of every pound a student pays above a £150 registration fee. $x$ = amount paid (£), $f(x)$ = tutor’s share; domain $x > 150$.`], 'Think of a situation where 150 is removed first, then 60% is kept.', '(Rational(6,10)*(x-150)).subs(x,150) == 0'),
+      open('b', 'State', 'the component functions and explain what they represent in your word problem.', 2, [['A1', R`$g(x) = x - 150$ with meaning`], ['A1', R`$h(x) = 0.6x$ with meaning`]], [R`$g(x) = x - 150$: the amount above the fee; $h(x) = 0.6x$: the $60\%$ share. $f(x) = h(g(x))$.`], 'Which step happens first in your story?', 'expand((Rational(6,10)*x).subs(x,x-150) - Rational(6,10)*(x-150)) == 0')
+    ] }
+  ]);
+
+  /* ===== 2I · 2.6 Inverse functions ===== */
+  const inv = (l, p, yes, why, v) => ({ l, c: 'Determine', p, m: 2, a: { mc: yes ? ['Yes — they are inverses', 'No — they are not inverses'] : ['No — they are not inverses', 'Yes — they are inverses'] }, ms: [['M1', R`finds $f(g(x))$ (or $g(f(x))$)`], ['A1', yes ? R`$= x$, so they are inverses` : R`$\ne x$, so they are not inverses`]], w: why, h: 'Find the composite. If it simplifies to x (both ways), they are inverses.', v: mcv(v) });
+  B('SL', '2I', { page: 96, sec: '2.6', title: 'Inverse functions', skill: 'SL-2.6', paper: 1 }, [
+    { stem: 'Determine algebraically whether each pair of functions are inverses of each other.', parts: [
+      inv('a', R`$f(x) = 3x - 6$ and $g(x) = \frac{1}{3}x + 2$`, true, [R`$f(g(x)) = 3\left(\frac{1}{3}x + 2\right) - 6 = x$`, R`$g(f(x)) = \frac{1}{3}(3x - 6) + 2 = x$`, 'Both give $x$: inverses.'], 'simplify((3*x-6).subs(x,x/3+2)) == x and simplify((x/3+2).subs(x,3*x-6)) == x'),
+      inv('b', R`$f: x \mapsto x^{3} - 5$ and $g: x \mapsto \sqrt[3]{x + 5}$`, true, [R`$f(g(x)) = \left(\sqrt[3]{x + 5}\right)^{3} - 5 = x$`, R`$g(f(x)) = \sqrt[3]{x^{3}} = x$`, 'Inverses.'], 'simplify((x**3-5).subs(x,cbrt(x+5))) == x'),
+      inv('c', R`$f(x) = \sqrt{2x + 4}$, $x \ge -2$, and $g(x) = \frac{x^{2}}{2} - 2$, $x \ge 0$`, true, [R`$g(f(x)) = \frac{2x + 4}{2} - 2 = x$`, R`$f(g(x)) = \sqrt{x^{2} - 4 + 4} = \sqrt{x^{2}} = x$ for $x \ge 0$`, 'Inverses (with the given domains).'], "simplify((x**2/2-2).subs(x,sqrt(2*x+4))) == x"),
+      inv('d', R`$g(x) = -\frac{2}{5}x + 3$ and $h(x) = \frac{5x - 15}{2}$`, false, [R`$g(h(x)) = -\frac{2}{5} \cdot \frac{5x - 15}{2} + 3 = -(x - 3) + 3 = 6 - x$`, R`$6 - x \ne x$, so they are not inverses.`], 'simplify((-Rational(2,5)*x+3).subs(x,(5*x-15)/2)) != x')
+    ] },
+    { stem: R`Consider the line $y = 3x - 6$.`, parts: [
+      { l: 'a', c: 'Find', p: R`the $x$-intercept and the $y$-intercept.`, m: 2, a: { t: [2, -6], l: [R`x\text{-intercept}`, R`y\text{-intercept}`] }, ms: [['A1', R`$x$-intercept $2$`], ['A1', R`$y$-intercept $-6$`]], w: [R`$y = 0$: $3x = 6$, $x = 2$`, R`$x = 0$: $y = -6$`], h: 'Set y = 0, then x = 0.', v: '(solve(3*x-6,x)[0], (3*x-6).subs(x,0))' },
+      { l: 'b', c: 'Hence', p: R`write down two points on the graph of the inverse.`, m: 1, a: { mc: [R`$(0, 2)$ and $(-6, 0)$`, R`$(2, 0)$ and $(0, -6)$`, R`$(0, -2)$ and $(6, 0)$`, R`$(-2, 0)$ and $(0, 6)$`] }, ms: [['A1', R`$(0, 2)$ and $(-6, 0)$ (coordinates swapped)`]], w: [R`Swap the coordinates of the intercepts: $(2, 0) \to (0, 2)$ and $(0, -6) \to (-6, 0)$.`, R`Joining them gives the inverse: a reflection in $y = x$.`], h: 'An inverse swaps x and y.', v: mcv('solve(Eq(3*x-6, 0), x)[0] == 2') }
+    ] },
+    { stem: 'For each function: (i) use your GDC to sketch its graph and, on the same axes, the graph of its inverse; (ii) find the equation of the inverse.', parts: [
+      open('a(i)', 'Sketch', R`$f(x) = -2x^{2} + 8$, $x \ge 0$, and its inverse.`, 2, [['A1', R`correct graph of $f$ for $x \ge 0$`], ['A1', R`reflection in $y = x$`]], [R`$f$ goes from $(0,\ 8)$ down through $(2,\ 0)$; the inverse goes from $(8,\ 0)$ through $(0,\ 2)$.`], 'Reflect your graph in the line y = x.', '(-2*x**2+8).subs(x,2) == 0',
+        plot({ x: [-1, 9], y: [-1, 9], f: [{ f: x => -2 * x * x + 8, from: 0, to: 2.1 }, { f: x => Math.sqrt((8 - x) / 2), from: 0, to: 8 }, { f: x => x, dash: true }], pts: [pt(0, 8, 'l'), pt(2, 0, 'b'), pt(8, 0, 'b'), pt(0, 2, 'l')], alt: 'A curve and its reflection in y = x' })),
+      { l: 'a(ii)', c: 'Find', p: R`$f^{-1}(x)$.`, m: 3, a: { mc: [R`$f^{-1}(x) = \sqrt{\frac{8 - x}{2}}$`, R`$f^{-1}(x) = \sqrt{\frac{x - 8}{2}}$`, R`$f^{-1}(x) = \frac{1}{-2x^{2} + 8}$`, R`$f^{-1}(x) = -\sqrt{\frac{8 - x}{2}}$`] }, ms: [['M1', R`swaps $x$ and $y$: $x = -2y^{2} + 8$`], ['A1', R`$y^{2} = \frac{8 - x}{2}$`], ['A1', R`positive root since $y \ge 0$`]], w: [R`$x = -2y^{2} + 8 \Rightarrow y^{2} = \frac{8 - x}{2}$`, R`$y \ge 0$ (the range of $f^{-1}$ is the domain of $f$), so $f^{-1}(x) = \sqrt{\frac{8 - x}{2}}$`], h: 'Swap x and y, then make y the subject. Which square root?', v: mcv("simplify((-2*x**2+8).subs(x, sqrt((8-x)/2))) == x") },
+      open('b(i)', 'Sketch', R`$g(x) = 3\sqrt{x} - 2$ and its inverse.`, 2, [['A1', R`correct graph of $g$ starting at $(0, -2)$`], ['A1', R`reflection in $y = x$ starting at $(-2, 0)$`]], [R`$g$ starts at $(0,\ -2)$ and rises; the inverse starts at $(-2,\ 0)$.`], 'Reflect in y = x.', '(3*sqrt(x)-2).subs(x,0) == -2',
+        plot({ x: [-3, 9], y: [-3, 9], f: [{ f: x => 3 * Math.sqrt(x) - 2, from: 0 }, { f: x => ((x + 2) / 3) ** 2, from: -2, to: 7 }, { f: x => x, dash: true }], pts: [pt(0, -2, 'b'), pt(-2, 0, 'l')], alt: 'A square-root curve and its reflection' })),
+      { l: 'b(ii)', c: 'Find', p: R`$g^{-1}(x)$.`, m: 3, a: { mc: [R`$g^{-1}(x) = \left(\frac{x + 2}{3}\right)^{2}$, $x \ge -2$`, R`$g^{-1}(x) = \frac{(x + 2)^{2}}{3}$, $x \ge -2$`, R`$g^{-1}(x) = \left(\frac{x - 2}{3}\right)^{2}$, $x \ge 2$`, R`$g^{-1}(x) = 3\sqrt{x} + 2$`] }, ms: [['M1', R`$x = 3\sqrt{y} - 2$`], ['A1', R`$\sqrt{y} = \frac{x + 2}{3}$`], ['A1', R`$\left(\frac{x + 2}{3}\right)^{2}$ with domain $x \ge -2$`]], w: [R`$x = 3\sqrt{y} - 2 \Rightarrow \sqrt{y} = \frac{x + 2}{3}$`, R`$g^{-1}(x) = \left(\frac{x + 2}{3}\right)^{2}$, $x \ge -2$`], h: 'Swap x and y, isolate the square root, then square.', v: mcv("simplify((3*sqrt(x)-2).subs(x, ((x+2)/3)**2) - x).subs(x,4) == 0") },
+      open('c(i)', 'Sketch', R`$h: x \mapsto \frac{1}{4}x - 3$ and its inverse.`, 2, [['A1', 'correct line'], ['A1', R`reflection in $y = x$`]], [R`$h$ crosses the axes at $(12,\ 0)$ and $(0,\ -3)$; the inverse at $(0,\ 12)$ and $(-3,\ 0)$.`], 'Swap the intercepts.', '(x/4-3).subs(x,12) == 0',
+        plot({ x: [-5, 14], y: [-5, 14], step: [2, 2], f: [{ f: x => x / 4 - 3 }, { f: x => 4 * x + 12, from: -5, to: 0.5 }, { f: x => x, dash: true }], pts: [pt(12, 0, 'b'), pt(0, 12, 'l')], alt: 'Two lines reflected in y = x' })),
+      { l: 'c(ii)', c: 'Find', p: R`$h^{-1}(x)$ in the form $px + q$.`, m: 2, a: { t: [4, 12], l: ['p', 'q'], d: R`h^{-1}(x) = 4x + 12` }, ms: [['M1', R`$x = \frac{1}{4}y - 3$`], ['A1', R`$4x + 12$`]], w: [R`$x = \frac{1}{4}y - 3 \Rightarrow \frac{1}{4}y = x + 3 \Rightarrow y = 4x + 12$`], h: 'Swap x and y, then make y the subject.', v: "(Integer(4), Integer(12)) if simplify((x/4-3).subs(x,4*x+12)) == x else None" }
+    ] },
+    { stem: 'Use your GDC if necessary.', parts: [
+      { l: 'a(i)', c: 'State', p: R`the domain and range of the inverse of $f(x) = x^{2} - 6x + 11$, $x \ge 3$.`, m: 2, a: { mc: [R`domain $x \ge 2$, range $y \ge 3$`, R`domain $x \ge 3$, range $y \ge 2$`, R`domain $x \in \mathbb{R}$, range $y \ge 3$`, R`domain $x \ge 11$, range $y \ge 3$`] }, ms: [['A1', R`domain $x \ge 2$`], ['A1', R`range $y \ge 3$`]], w: [R`$f$ has domain $x \ge 3$ and range $y \ge f(3) = 2$.`, R`The inverse swaps them: domain $x \ge 2$, range $y \ge 3$.`], h: 'Find the range of f first; then swap.', v: mcv('(x**2-6*x+11).subs(x,3) == 2') },
+      { l: 'a(ii)', c: 'State', p: R`the domain and range of the inverse of $f: x \mapsto 5 - 2x$.`, m: 2, a: { mc: [R`domain $x \in \mathbb{R}$, range $y \in \mathbb{R}$`, R`domain $x \le 5$, range $y \in \mathbb{R}$`, R`domain $x \in \mathbb{R}$, range $y \ge 0$`] }, ms: [['A1', R`domain $\mathbb{R}$`], ['A1', R`range $\mathbb{R}$`]], w: ['A non-horizontal line: both domain and range are $\\mathbb{R}$, so the same is true for its inverse.'], h: 'A sloping line covers every x and every y.', v: mcv('True') },
+      { l: 'a(iii)', c: 'State', p: R`the domain and range of the inverse of $g: x \mapsto 3^{x} - 2$.`, m: 2, a: { mc: [R`domain $x > -2$, range $y \in \mathbb{R}$`, R`domain $x \in \mathbb{R}$, range $y > -2$`, R`domain $x > 0$, range $y \in \mathbb{R}$`, R`domain $x \ge -2$, range $y \ge 0$`] }, ms: [['A1', R`domain $x > -2$`], ['A1', R`range $\mathbb{R}$`]], w: [R`$g$: domain $\mathbb{R}$, range $y > -2$ (asymptote $y = -2$).`, R`Inverse: domain $x > -2$, range $\mathbb{R}$.`], h: 'Where is the horizontal asymptote of g?', v: mcv('limit(3**x-2, x, -oo) == -2') },
+      { l: 'a(iv)', c: 'State', p: R`the domain and range of the inverse of $g(x) = -\sqrt{x - 1} + 4$.`, m: 2, a: { mc: [R`domain $x \le 4$, range $y \ge 1$`, R`domain $x \ge 1$, range $y \le 4$`, R`domain $x \ge 4$, range $y \ge 1$`, R`domain $x \le 4$, range $y \le 1$`] }, ms: [['A1', R`domain $x \le 4$`], ['A1', R`range $y \ge 1$`]], w: [R`$g$: domain $x \ge 1$, range $y \le 4$ (it starts at $(1,\ 4)$ and goes down).`, R`Inverse: domain $x \le 4$, range $y \ge 1$.`], h: 'Where does g start, and does it go up or down?', v: mcv('(-sqrt(x-1)+4).subs(x,1) == 4') },
+      open('b', 'Explain', 'how you can use the domain and range of a function to find the domain and range of its inverse.', 1, [['R1', 'they swap: the domain of $f^{-1}$ is the range of $f$, and the range of $f^{-1}$ is the domain of $f$']], ['The inverse swaps inputs and outputs, so domain and range swap.'], 'What does an inverse do to inputs and outputs?', 'True')
+    ] },
+    { parts: [open('a', 'Write down', 'a one-to-one function, its domain, the equation of its inverse, and explain why the inverse is also one-to-one.', 3, [['A1', 'a one-to-one function with domain'], ['A1', 'correct inverse'], ['R1', 'reason, e.g. the inverse is a reflection in $y = x$, so it also passes the horizontal line test']], [R`e.g. $f(x) = 2x + 1$, $x \in \mathbb{R}$; $f^{-1}(x) = \frac{x - 1}{2}$.`, R`Reflecting in $y = x$ turns the horizontal line test into the vertical line test, so $f^{-1}$ is also one-to-one.`], 'A sloping straight line is the easiest choice.', 'simplify((2*x+1).subs(x,(x-1)/2)) == x')] },
+    { stem: R`$f(x) = 4x + 7$.`, parts: [
+      { l: 'a', c: 'Solve', p: R`$f(x) = 19$.`, m: 1, a: 3, ms: [['A1', R`$x = 3$`]], w: [R`$4x + 7 = 19 \Rightarrow x = 3$`], h: 'Subtract 7, then divide by 4.', v: 'solve(4*x+7-19, x)[0]' },
+      { l: 'b', c: 'Find', p: R`$f^{-1}(x)$ in the form $\frac{x - a}{b}$.`, m: 2, a: { t: [7, 4], l: ['a', 'b'], d: R`f^{-1}(x) = \frac{x - 7}{4}` }, ms: [['M1', R`$x = 4y + 7$`], ['A1', R`$\frac{x - 7}{4}$`]], w: [R`$x = 4y + 7 \Rightarrow y = \frac{x - 7}{4}$`], h: 'Swap x and y.', v: "(Integer(7), Integer(4)) if simplify((4*x+7).subs(x,(x-7)/4)) == x else None" },
+      { l: 'c', c: 'Find', p: R`$f^{-1}(19)$.`, m: 1, a: 3, ms: [['A1', R`$3$`]], w: [R`$f^{-1}(19) = \frac{19 - 7}{4} = 3$`], h: 'Substitute into your answer to (b).', v: '(x-7).subs(x,19)/4' },
+      open('d', 'Comment', R`on your answers to parts (a) and (c).`, 1, [['R1', 'they are equal']], [R`They are the same: solving $f(x) = 19$ gives the input whose output is $19$, which is exactly $f^{-1}(19)$.`], 'Compare the two numbers.', 'solve(4*x+7-19, x)[0] == Rational(19-7,4)'),
+      open('e', 'Write down', 'a general rule that explains your answer to part (d).', 1, [['R1', R`if $f(a) = b$ then $f^{-1}(b) = a$`]], [R`If $f(a) = b$, then $f^{-1}(b) = a$.`], 'Use letters for the input and output.', 'True')
+    ] },
+    { parts: [open('a', 'Show that', R`$(g \circ f^{-1})(8) = 0$, given $f(x) = 3x + 2$ and $g(x) = 2x^{2} - 8$.`, 3, [['M1', R`$f^{-1}(x) = \frac{x - 2}{3}$ or solves $3x + 2 = 8$`], ['A1', R`$f^{-1}(8) = 2$`], ['A1', R`$g(2) = 8 - 8 = 0$`], ['AG', '']], [R`$f^{-1}(x) = \frac{x - 2}{3}$, so $f^{-1}(8) = 2$`, R`$g(2) = 2(4) - 8 = 0$`], 'Find f⁻¹(8) first.', '(2*x**2-8).subs(x, Rational(8-2,3)) == 0')] }
+  ]);
+
+  /* ===== 2J · 2.6 Self-inverse functions ===== */
+  const selfinv = (l, tex, py, w) => open(l, 'Show that', `$${tex}$ is a self-inverse function.`, 2, [['M1', R`finds $f(f(x))$ (or the inverse)`], ['A1', R`simplifies to $x$`], ['AG', '']], w, 'Show that applying the function twice gives x.', `simplify((${py}).subs(x, ${py})) == x`);
+  B('SL', '2J', { page: 99, sec: '2.6', title: 'Inverse functions', skill: 'SL-2.6', paper: 1 }, [
+    { parts: [open('a', 'Show that', R`$f(x) = \frac{4}{x}$, $x \ne 0$, is a self-inverse function by sketching its graph.`, 2, [['A1', 'correct graph (both branches)'], ['R1', R`the graph is symmetric about $y = x$`]], [R`Reflecting the graph of $y = \frac{4}{x}$ in $y = x$ gives the same graph, so $f^{-1} = f$.`], 'Draw y = x on your sketch.', 'simplify((4/x).subs(x,4/x)) == x',
+      plot({ x: [-6, 6], y: [-6, 6], f: [{ f: x => 4 / x, to: -0.6 }, { f: x => 4 / x, from: 0.6 }, { f: x => x, dash: true }], pts: [pt(2, 2), pt(-2, -2, 'b')], alt: 'Reciprocal graph symmetric about y = x' }))] },
+    { parts: [
+      selfinv('a', R`y = 5 - x`, '5-x', [R`$f(f(x)) = 5 - (5 - x) = x$`]),
+      selfinv('b', R`y = -4 - x`, '-4-x', [R`$f(f(x)) = -4 - (-4 - x) = x$`]),
+      selfinv('c', R`y = \frac{3}{4} - x`, 'Rational(3,4)-x', [R`$f(f(x)) = \frac{3}{4} - \left(\frac{3}{4} - x\right) = x$`]),
+      open('d', 'Write down', 'a generalization from your answers to parts (a) to (c).', 1, [['A1', R`$y = c - x$ is self-inverse for any constant $c$`]], [R`For any constant $c$, $y = c - x$ is self-inverse: $c - (c - x) = x$.`], 'What do the three functions have in common?', "simplify((Symbol('c')-x).subs(x, Symbol('c')-x)) == x")
+    ] },
+    { parts: [selfinv('a', R`f(x) = \frac{3x + 1}{2x - 3}`, '(3*x+1)/(2*x-3)', [R`$f(f(x)) = \dfrac{3\left(\frac{3x + 1}{2x - 3}\right) + 1}{2\left(\frac{3x + 1}{2x - 3}\right) - 3}$`, R`$= \dfrac{9x + 3 + 2x - 3}{6x + 2 - 6x + 9} = \dfrac{11x}{11} = x$`])] },
+    { parts: [{ l: 'a', c: 'Find', p: R`the value of $m$ such that $g(x) = \frac{4x - 5}{x + m}$ is a self-inverse function.`, m: 4, a: -4, ms: [['M1', R`attempt at $g^{-1}(x)$: $x(y + m) = 4y - 5$`], ['A1', R`$g^{-1}(x) = \frac{-mx - 5}{x - 4}$`], ['M1', R`compares with $g(x)$`], ['A1', R`$m = -4$`]],
+      w: [R`$x = \frac{4y - 5}{y + m} \Rightarrow xy + mx = 4y - 5 \Rightarrow y(x - 4) = -mx - 5$`, R`$g^{-1}(x) = \frac{-mx - 5}{x - 4}$`, R`For $g^{-1} = g$: $\frac{-mx - 5}{x - 4} = \frac{4x - 5}{x + m}$, so $-m = 4$ and $m = -4$.`], h: 'Find the inverse in terms of m and compare it with g.', e: [{ value: 4, fb: 'Check the sign: the inverse has x − 4 in its denominator.' }], v: "[s for s in solve(Eq(simplify(((4*x-5)/(x+Symbol('m'))).subs(x,(4*x-5)/(x+Symbol('m')))).subs(x,3), 3), Symbol('m')) if simplify(((4*x-5)/(x+s)).subs(x,(4*x-5)/(x+s))) == x][0]" }] }
+  ]);
 })(window.Hub = window.Hub || {});
 
 /* ---- js/curriculum.js ---- */
@@ -3637,7 +4021,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const TYPES = {
     'Exit Ticket': { count: 2, upload: false, release: 'auto', minutes: 8 },
     'Quiz': { count: 4, upload: true, release: 'hold', minutes: 25 },
-    'Homework': { count: 5, upload: false, release: 'auto', minutes: 40, mc: true },
+    'Homework': { count: 5, upload: false, release: 'auto', minutes: 40 },
     'Unit test': { count: 8, upload: true, release: 'hold', minutes: 60 },
     'Retest': { count: 6, upload: true, release: 'hold', minutes: 60 }
   };
@@ -3674,15 +4058,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const t = TYPES[o.type] || TYPES.Quiz, gens = pickGenerators(o.skills, o.paper, o.style);
     if (!gens.length) return { ok: false, error: o.style === 'exam' ? 'No IB exam-style questions exist for those skills yet. Choose “Mixed”.' : o.paper === 'P1' ? 'No Paper 1 (non-calculator) questions exist for that selection yet. Try Mixed.' : 'Choose at least one skill.' };
     const n = Math.max(1, Math.min(12, Number(o.count) || t.count)), qs = [];
-    for (let i = 0; i < n; i++) qs.push(buildQ(gens[i % gens.length], o.rigour === 'challenge', o.type === 'Homework' || o.mc));
+    for (let i = 0; i < n; i++) qs.push(buildQ(gens[i % gens.length], o.rigour === 'challenge', o.type === 'Homework', !!o.mc));
     const a = { id: uid('a'), course: o.course, title: o.title || defaultTitle(o), type: o.type, lessonDate: o.lessonDate || null, skills: o.skills.slice(), paper: o.paper || 'Mixed', rigour: o.rigour || 'standard',
       questions: qs, reviewed: {}, status: 'draft', version: 1, groups: o.groups || [], uploadRequired: t.upload, release: t.release, minutes: t.minutes, due: null, retestOf: o.retestOf || null, cap: o.type === 'Retest' ? 80 : null, createdAt: new Date().toISOString(), history: [] };
     hist(a, 'Draft generated'); S().assessments.unshift(a); Hub.store.log(`Generated draft “${a.title}”`); Hub.store.save(); return { ok: true, assessment: a };
   }
   function defaultTitle(o) { const sk = o.skills.map(id => Hub.curriculum.SKILL[id]).filter(Boolean); return `${o.course} · ${sk.length === 1 ? sk[0].ox ? sk[0].ox + ' ' + sk[0].name : sk[0].name : 'Unit ' + (sk[0] ? sk[0].unit : '')} · ${o.type}`; }
-  function buildQ(gen, challenge, mcOnly) {
+  /** A part students mark themselves: they write it on paper, then see the model answer (used for show that / prove / sketch in homework). */
+  const SELF = 'I have written my answer on paper — show me the model answer';
+  function selfCheck(p) { return Object.assign({}, p, { answer: { kind: 'mc', choices: [SELF], keys: ['done'], correct: 0, display: 'Model answer' }, selfCheck: true }); }
+  /** hw: homework — typed answers stay typed (marked automatically); open parts become self-check. mcOnly: also turn numbers into multiple choice. */
+  function buildQ(gen, challenge, hw, mcOnly) {
     const seed = Math.floor(Math.random() * 1e6) + 1, q = Hub.qcore.build(gen, seed, { challenge });
-    if (mcOnly) q.parts = q.parts.filter(p => p.answer.kind !== 'open').map((p, i) => toMC(p, seed + i));
+    if (hw || mcOnly) q.parts = q.parts.map((p, i) => p.answer.kind === 'open' ? selfCheck(p) : mcOnly ? toMC(p, seed + i) : p);
     q.marks = q.parts.reduce((s, p) => s + p.marks, 0); return q;
   }
   function edited(a, qid, what) {
@@ -3703,7 +4091,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function updateStem(aid, qid, stem) { const a = A(aid); if (!editable(a)) return false; const q = a.questions.find(x => x.id === qid); if (!q) return false; q.stem = stem; q.teacherEdited = true; edited(a, qid, `Edited Q${a.questions.indexOf(q) + 1} stem`); return true; }
   function regenerate(aid, qid) {
     const a = A(aid); if (!editable(a)) return false; const i = a.questions.findIndex(x => x.id === qid); if (i < 0) return false;
-    a.questions[i] = buildQ(a.questions[i].gen, a.questions[i].challenge, a.type === 'Homework'); edited(a, qid, `Regenerated Q${i + 1} with new numbers`); return true;
+    a.questions[i] = buildQ(a.questions[i].gen, a.questions[i].challenge, a.type === 'Homework', a.questions[i].parts.some(p => p.wasNumeric)); edited(a, qid, `Regenerated Q${i + 1} with new numbers`); return true;
   }
   function removeQ(aid, qid) { const a = A(aid); if (!editable(a) || a.questions.length < 2) return false; a.questions = a.questions.filter(x => x.id !== qid); edited(a, qid, 'Removed a question'); return true; }
   function addQ(aid, skillId) { const a = A(aid); if (!editable(a)) return false; const gens = pickGenerators([skillId], a.paper); if (!gens.length) return false; a.questions.push(buildQ(gens[0], a.rigour === 'challenge', a.type === 'Homework')); if (!a.skills.includes(skillId)) a.skills.push(skillId); edited(a, null, 'Added a question'); return true; }
@@ -3779,7 +4167,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function archive(aid) { const a = A(aid); if (!a) return { ok: false }; a.status = 'archived'; hist(a, 'Archived'); Hub.store.save(true); return { ok: true }; }
   function duplicate(aid, asRetest) {
     const src = A(aid); if (!src) return null;
-    const qs = asRetest ? src.questions.map(q => buildQ(q.gen, q.challenge, src.type === 'Homework')) : JSON.parse(JSON.stringify(src.questions)).map(q => Object.assign(q, { id: uid('q') }));
+    const qs = asRetest ? src.questions.map(q => buildQ(q.gen, q.challenge, src.type === 'Homework', q.parts.some(p => p.wasNumeric))) : JSON.parse(JSON.stringify(src.questions)).map(q => Object.assign(q, { id: uid('q') }));
     const a = Object.assign(JSON.parse(JSON.stringify(src)), { id: uid('a'), questions: qs, reviewed: {}, status: 'draft', version: 1, createdAt: new Date().toISOString(), approvedAt: null, publishedAt: null, history: [] });
     if (asRetest) Object.assign(a, { type: 'Retest', title: src.title.replace(/ · [^·]+$/, '') + ' · Retest', retestOf: src.id, cap: 80, uploadRequired: true, release: 'hold' });
     else a.title = src.title + ' (copy)';
@@ -3882,7 +4270,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     });
     return toCSV(rows);
   }
-  Hub.assess = { CLOSE_AFTER_DAYS, dueFor, closesOn, isOpen, setDue, autoClose, destroy, TYPES, createDraft, updatePart, updateStem, regenerate, removeQ, addQ, setReviewed, setAllReviewed, problems, approve, publish, unpublish, close, archive, duplicate, remove, forStudent, attemptsFor, saveProgress, getProgress, submit, autoMark, release, releaseAuto, queue, itemAnalysis, gradebookCSV, score, questionsOf, toMC, valueTex, buildQ, byId: A };
+  Hub.assess = { selfCheck, SELF, CLOSE_AFTER_DAYS, dueFor, closesOn, isOpen, setDue, autoClose, destroy, TYPES, createDraft, updatePart, updateStem, regenerate, removeQ, addQ, setReviewed, setAllReviewed, problems, approve, publish, unpublish, close, archive, duplicate, remove, forStudent, attemptsFor, saveProgress, getProgress, submit, autoMark, release, releaseAuto, queue, itemAnalysis, gradebookCSV, score, questionsOf, toMC, valueTex, buildQ, byId: A };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/donow.js ---- */
@@ -4060,10 +4448,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     }).join('');
     return `<article class="q-card ${opts.cls || ''}" id="q-${q.id}">${head}${stem}${parts}${opts.footer || ''}</article>`;
   }
-  function answerDisplay(p) { const a = p.answer; if (a.kind === 'mc') return `${'ABCDEF'[a.correct]} · ${M(a.choices[a.correct])}`; if (a.kind === 'open') return 'See markscheme'; return M('$' + (a.display || (Array.isArray(a.value) ? a.value.join(', ') : a.value)) + '$'); }
+  function answerDisplay(p) { const a = p.answer; if (p.selfCheck) return 'Model answer — see the worked solution'; if (a.kind === 'mc') return `${'ABCDEF'[a.correct]} · ${M(a.choices[a.correct])}`; if (a.kind === 'open') return 'See markscheme'; return M('$' + (a.display || (Array.isArray(a.value) ? a.value.join(', ') : a.value)) + '$'); }
   const accuracyText = a => a.kind === 'mc' ? 'Multiple choice' : a.kind === 'open' ? 'Teacher-marked from working' : a.int ? 'Whole number' : a.dp !== undefined ? `Correct to ${a.dp} d.p.` : a.exact ? 'Exact value' : 'Correct to 3 s.f.';
   function teacherKey(p) {
-    return `<div class="key"><div class="key-row"><span class="key-lab">Answer</span><span>${answerDisplay(p)}</span><span class="tiny muted">${accuracyText(p.answer)}</span></div>
+    return `<div class="key"><div class="key-row"><span class="key-lab">Answer</span><span>${answerDisplay(p)}</span><span class="tiny muted">${p.selfCheck ? "Self-check" : accuracyText(p.answer)}</span></div>
       <div class="ms"><span class="key-lab">Markscheme</span>${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>
       <details class="working"><summary>Worked solution</summary><div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${p.kfig ? `<div class="q-fig">${p.kfig}</div>` : ''}${numworks(p.numworks)}</details>
       ${p.errors && p.errors.length ? `<div class="tiny muted">Detects: ${p.errors.map(e => esc(Hub.mastery.tagText(e.tag))).join(' · ')}</div>` : ''}</div>`;
@@ -4168,7 +4556,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <label>Question style<select id="b-style"><option value="mixed">Mixed: exam-style + skill practice</option><option value="exam">IB exam-style only (multi-part)</option><option value="practice">Skill practice only</option></select></label>
         <label>Questions<input id="b-count" type="number" min="1" max="12" value="2"></label>
         <fieldset class="skills-pick span2"><legend>Skills <span class="tiny muted">(${course} · ticked from the lesson; change freely)</span></legend><div id="b-skills" class="skill-grid">${C().skillsFor(course).map(s => `<label class="sk ${U.unitColour(s.unit)}"><input type="checkbox" value="${s.id}" ${nl && nl.skills.includes(s.id) ? 'checked' : ''}> ${U.skillLabel(s.id)}${C().isTaught(s.id, group, asOf) ? '' : ' <span class="tiny muted">(not yet taught)</span>'}</label>`).join('')}</div></fieldset>
-        <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework is converted to multiple choice (Canvas style) with distractors from known misconceptions.</span></div></form></section>
+        <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework answers are typed by students and marked automatically; “show that” parts become self-check with the model answer.</span></div></form></section>
       <section class="card"><div class="row-between"><h2 class="bar-head blue">Library</h2><div class="tabs" role="tablist">${['all', 'draft', 'approved', 'published', 'closed', 'archived'].map(s => `<button role="tab" class="tab ${s === status ? 'on' : ''}" data-status="${s}" aria-selected="${s === status}">${s[0].toUpperCase() + s.slice(1)}</button>`).join('')}</div></div>
       ${list.length ? `<div class="lib">${list.map(libRow).join('')}</div>` : U.empty('Nothing here yet.')}</section>`;
     $('#b-group').onchange = e => { pref('group', e.target.value); go('#/studio?group=' + e.target.value); };
@@ -5029,7 +5417,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <table class="cover-table"><thead><tr><th>Section</th><th>Style</th><th>Marks</th><th>Score</th></tr></thead><tbody>${sections.map(([p, qs]) => `<tr><td><b>${SECTION[p][0]}</b></td><td>${SECTION[p][1]} · ${SECTION[p][2]}</td><td>${total(qs)}</td><td></td></tr>`).join('')}<tr class="tot"><td colspan="2"><b>Total</b></td><td><b>${total(o.qs)}</b></td><td></td></tr></tbody></table></section>`;
   }
   /** Which parts show A–D options: real multiple-choice parts always; converted homework parts only when asked. */
-  const showOptions = (p, o) => p.answer.kind === 'mc' && (!p.wasNumeric || o.mc);
+  const showOptions = (p, o) => p.answer.kind === 'mc' && !p.selfCheck && (!p.wasNumeric || o.mc);
   function answerLine(p) {
     const a = p.answer;
     if (a.kind === 'open') return '';
@@ -5048,6 +5436,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   function keyAnswer(p, o) {
     const a = p.answer;
+    if (p.selfCheck) return 'See the markscheme and worked solution';
     if (a.kind === 'mc') { const v = M(a.choices[a.correct]); return showOptions(p, o) ? `<b>${LETTERS[a.correct]}</b> · ${v}` : v; }
     return U.answerDisplay(p);
   }
@@ -5081,7 +5470,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       return cover(a, o, secs) + `<section class="sheet">${o.key ? header(a, o) : `<header class="ws-head mini">${titleLine(a.title, 'h2', 18)}<div class="ws-line"><span>Name: <i class="fill f-name"></i></span></div></header>`}${sheetBody(a, o)}</section>`;
     }
     if (o.two && !o.key) { const slip = `<div class="half">${header(a, o)}${sheetBody(a, o)}</div>`; return `<section class="sheet halves">${slip}<div class="cut" aria-hidden="true">✂</div>${slip}</section>`; }
-    const intro = !o.key && a.type === 'Homework' ? `<p class="ws-intro">Show your working in each box${o.mc ? ', then circle the letter of your answer' : ' and write your final answer on the line'}. ${o.mc ? '' : 'The Canvas version has the same questions as multiple choice.'}</p>` : !o.key ? '<p class="ws-intro">Show your working in each box and write your final answer on the line.</p>' : '';
+    const intro = !o.key && a.type === 'Homework' ? `<p class="ws-intro">Show your working in each box${o.mc ? ', then circle the letter of your answer' : ' and write your final answer on the line'}.</p>` : !o.key ? '<p class="ws-intro">Show your working in each box and write your final answer on the line.</p>' : '';
     return `<section class="sheet">${header(a, o)}${intro}${sheetBody(a, o)}</section>`;
   }
 
@@ -5099,7 +5488,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         ${unreviewed ? '<div class="notice preview">This is still a draft with unreviewed questions. Check them in the editor before printing for students.</div>' : ''}
         <div class="print-ctl">
           <div class="seg" role="group" aria-label="Version"><a class="seg-b ${o.key ? '' : 'on'}" href="${link({ key: '0' })}" aria-current="${!o.key}">Student worksheet</a><a class="seg-b ${o.key ? 'on' : ''}" href="${link({ key: '1' })}" aria-current="${o.key}">Answer key</a></div>
-          ${hasConverted ? `<label class="inline-check"><input type="checkbox" id="pr-mc" ${o.mc ? 'checked' : ''}> Include the multiple-choice options (as on Canvas)</label>` : ''}
+          ${hasConverted ? `<label class="inline-check"><input type="checkbox" id="pr-mc" ${o.mc ? 'checked' : ''}> Include the multiple-choice options</label>` : ''}
           ${canTwo ? `<label class="inline-check"><input type="checkbox" id="pr-two" ${o.two ? 'checked' : ''}> Two per page (cut in half)</label>` : ''}
           ${o.key ? '' : `<label class="inline">Working space <select id="pr-space"><option value="compact" ${o.space === 'compact' ? 'selected' : ''}>Compact</option><option value="large" ${o.space === 'large' ? 'selected' : ''}>Large</option><option value="xl" ${o.space === 'xl' ? 'selected' : ''}>Extra large</option></select></label>`}
           ${Hub.HOST === 'artifact' ? '<span class="tiny muted">Printing works in the hosted Hub (Ctrl+P / ⌘P).</span>' : '<button class="btn primary" id="pr-go" type="button">🖨 Print</button>'}
@@ -5209,20 +5598,18 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const marksOf = e => e.qs.reduce((s, id) => { try { const q = Hub.qcore.build(id, 1); return s + q.marks; } catch (_) { return s; } }, 0);
 
   /* ---------- homework draft ---------- */
-  const SELF = 'I have written my answer on paper — show me the model answer';
-  function selfCheck(p) { return Object.assign({}, p, { answer: { kind: 'mc', choices: [SELF], keys: ['done'], correct: 0, display: 'Model answer' }, selfCheck: true }); }
-  function buildQ(id, mcOnly) {
-    const seed = Math.floor(Math.random() * 1e6) + 1, q = Hub.qcore.build(id, seed);
-    if (mcOnly) q.parts = q.parts.map((p, i) => p.answer.kind === 'open' ? selfCheck(p) : p.answer.kind === 'num' ? Hub.assess.toMC(p, seed + i) : p);
-    q.marks = q.parts.reduce((s, p) => s + p.marks, 0); q.bookRef = `Exercise ${q.gen.split('.')[2]} · Q${q.gen.split('.')[3]}`; return q;
+  /** Typed answers stay typed and are marked automatically; show that / sketch parts become self-check. */
+  function buildQ(id, mc) {
+    const q = Hub.assess.buildQ(id, false, true, mc);
+    q.bookRef = `Exercise ${q.gen.split('.')[2]} · Q${q.gen.split('.')[3]}`; return q;
   }
   /** Homework assessment (a review draft) from an exercise. groups: the days it goes to. */
   function draft(course, ex, opts = {}) {
     const e = get(course, ex); if (!e || !e.ready) return { ok: false, error: 'There are no questions for that exercise yet.' };
     const ids = opts.only && opts.only.length ? e.qs.filter(id => opts.only.includes(id)) : e.qs; if (!ids.length) return { ok: false, error: 'Tick at least one question.' };
-    const qs = ids.map(id => buildQ(id, opts.mc !== false)), skills = [...new Set(qs.map(q => q.skill))];
+    const qs = ids.map(id => buildQ(id, opts.mc === true)), skills = [...new Set(qs.map(q => q.skill))];
     const a = { id: uid('a'), course, title: `Exercise ${ex} · ${e.title}`, type: 'Homework', lessonDate: opts.lessonDate || null, skills, paper: 'Mixed', rigour: 'standard', book: { course, ex, page: e.page },
-      questions: qs, reviewed: {}, status: 'draft', version: 1, groups: opts.groups || [course + '-A', course + '-B'], uploadRequired: opts.upload !== false, release: 'auto', minutes: 45, due: null, retestOf: null, cap: null, createdAt: new Date().toISOString(),
+      questions: qs, reviewed: {}, status: 'draft', version: 1, groups: opts.groups || [course + '-A', course + '-B'], uploadRequired: opts.upload === true, release: 'auto', minutes: 45, due: null, retestOf: null, cap: null, createdAt: new Date().toISOString(),
       history: [{ at: new Date().toISOString(), who: Hub.auth.who(), what: `Draft made from ${BOOK[course]} Exercise ${ex} (new questions)` }] };
     S().assessments.unshift(a); Hub.store.log(`Made homework draft “${a.title}”`); Hub.store.save(); return { ok: true, assessment: a };
   }
@@ -5247,7 +5634,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <label>Goes to<select id="bx-days"><option value="both">${course} A day and B day (one assignment)</option><option value="${course}-A">${course} A day only</option><option value="${course}-B">${course} B day only</option></select></label></div>
       ${sug ? `<p class="tiny">Suggested for the next lesson (${Hub.core.fmtDate(nl.date)}): <b>${forLesson(course, nl.activity).filter(e => e.ready).map(e => 'Exercise ' + e.ex).join(', ')}</b></p>` : ''}
       <div id="bx-list">${qList(first)}</div>
-      <div class="actions"><button class="btn primary" id="bx-make" type="button" ${first ? '' : 'disabled'}>Make homework draft →</button><span class="tiny muted">Numerical answers become multiple choice (Canvas style); “show that” and sketch parts become self-check with the model answer; students upload a photo of their working.</span></div></section>`;
+      <div class="actions"><button class="btn primary" id="bx-make" type="button" ${first ? '' : 'disabled'}>Make homework draft →</button><span class="tiny muted">Students type their answers and the Hub marks them; “show that” and sketch parts are self-check with the model answer. No photo upload.</span></div></section>`;
   }
   function bindStudio(main, group) {
     const card = $('.bx-card', main); if (!card) return;
@@ -5273,7 +5660,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     }));
   }
 
-  Hub.bookex = { all, get, forLesson, draft, studioCard, bindStudio, notebookButtons, bindNotebook, marksOf, SELF, BOOK };
+  Hub.bookex = { all, get, forLesson, draft, studioCard, bindStudio, notebookButtons, bindNotebook, marksOf, BOOK };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/notes.js ---- */
@@ -6023,7 +6410,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <div class="actions"><button class="btn small" id="my-add" type="button">+ Type an example</button></div></details></section>
       <section class="card"><h2 class="bar-head amber">Your turn <span class="tiny muted">· optional practice, not graded · students check it themselves</span></h2><div id="yt-list">${qList('tasks', L.tasks || [])}</div>${gens.length ? `<div class="add-row"><select id="yt-gen">${genOpts}</select><label class="inline-check"><input type="checkbox" id="yt-ch"> Challenge</label><button class="btn small" id="yt-add">+ Add question</button></div>` : ''}</section>
       <section class="card"><h2 class="bar-head pink">Exit Ticket <span class="tiny muted">· assigned</span></h2><label>Link an Exit Ticket from the studio<select data-f="exitTicketId"><option value="">— none —</option>${ets.map(a => `<option value="${a.id}" ${a.id === L.exitTicketId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students see it here once it is published to their day. <a href="#/studio?group=${L.course}-A">Build an Exit Ticket →</a></p></section>
-      <section class="card"><h2 class="bar-head green">Homework <span class="tiny muted">· assigned</span></h2><label>Link homework from the studio<select data-f="homeworkId"><option value="">— none —</option>${S().assessments.filter(a => a.type === 'Homework' && a.course === L.course && a.status !== 'archived').map(a => `<option value="${a.id}" ${a.id === L.homeworkId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students get a button to start it once it is published to their day. <a href="#/studio?group=${L.course}-A">Build homework →</a></p>${Hub.bookex ? Hub.bookex.notebookButtons(L) : ''}<div class="form-grid"><label>What to do<input data-f="homework" value="${esc(L.homework || '')}" placeholder="IB Exercise 2A — on Canvas"></label><label>Link (optional)<input data-f="homeworkUrl" value="${esc(L.homeworkUrl || '')}" placeholder="https://…"></label></div></section>
+      <section class="card"><h2 class="bar-head green">Homework <span class="tiny muted">· assigned</span></h2><label>Link homework from the studio<select data-f="homeworkId"><option value="">— none —</option>${S().assessments.filter(a => a.type === 'Homework' && a.course === L.course && a.status !== 'archived').map(a => `<option value="${a.id}" ${a.id === L.homeworkId ? 'selected' : ''}>${esc(a.title)} · ${a.status}</option>`).join('')}</select></label><p class="tiny muted">Students get a button to start it once it is published to their day. <a href="#/studio?group=${L.course}-A">Build homework →</a></p>${Hub.bookex ? Hub.bookex.notebookButtons(L) : ''}<div class="form-grid"><label>What to do<input data-f="homework" value="${esc(L.homework || '')}" placeholder="Exercise 2A — on the Hub"></label><label>Link (optional)<input data-f="homeworkUrl" value="${esc(L.homeworkUrl || '')}" placeholder="https://…"></label></div></section>
       <section class="card danger-zone"><div class="row-between"><span class="tiny muted">Created ${fmtDateTime(L.createdAt)} · last change ${fmtDateTime(L.updatedAt)}</span><button class="btn small ghost danger" id="nb-del">Delete this notebook</button></div></section>`;
     bindEdit(main, L);
     if (Hub.bookex) Hub.bookex.bindNotebook(main, L, put);
