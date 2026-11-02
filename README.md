@@ -1,7 +1,7 @@
 # Miss Badmus’ IB Math Hub
 Inquirers. Thinkers. Reflective Learners.
 
-Live site: https://lyndabad.github.io/ib-math-hub/
+Live site: https://missbadmusibmath.com/
 
 This version preserves the supplied Claude v2.1 classroom design and adds verified Supabase sign-in, private cloud persistence, roster import and CSV exports. The classroom starts empty. No demonstration accounts or simulated marks are loaded.
 
@@ -26,7 +26,7 @@ Data & settings exports roster, results and evidence CSVs and a full JSON data b
 
 Requires Node 20+ to build/test. Run `npm run build`, `npm test`, then `npm run serve`. Deploy the `hub` Edge Function with all three source files. It verifies bearer tokens itself, so platform verify_jwt is false. The service-role key is read only from Supabase environment variables; it is never part of the site. Frontend configuration contains only the intended public publishable key.
 
-Supabase project: `innufzhtrttxecgainwo` in LyndaBad’s Org. Auth site URL must be `https://lyndabad.github.io/ib-math-hub/`. Owner access is held in `hub_teachers`; student access is checked against active roster emails. Direct database reads/writes by anonymous and authenticated clients are revoked. The Edge Function filters student responses and uses optimistic revision checks to protect concurrent saves.
+Supabase project: `innufzhtrttxecgainwo` in LyndaBad’s Org. Auth site URL must be `https://missbadmusibmath.com/`. Owner access is held in `hub_teachers`; student access is checked against active roster emails. Direct database reads/writes by anonymous and authenticated clients are revoked. The Edge Function filters student responses and uses optimistic revision checks to protect concurrent saves.
 
 ## Scope and operating limits
 This is a small-classroom release using a single versioned classroom document. It is not intended for district-scale usage. It has no paid AI service. Question banks are original generators from the supplied project; no Oxford textbook pages or questions are shipped. Pacing comes from the supplied Claude project and can be reviewed in Course & pacing.
