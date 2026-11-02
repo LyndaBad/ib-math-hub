@@ -613,6 +613,43 @@ body.mp-on { padding-bottom: 76px; }
 .mchip math { font-size: 1.15em; }
 .mchip { display: inline-block; vertical-align: middle; background: var(--pink); border-radius: 8px; padding: 0 4px; margin: 0 1px; cursor: default; user-select: all; }
 @media print { .mathpad, .mp-builder { display: none !important; } body.mp-on { padding-bottom: 0; } }
+
+/* ---------- joining a class with a code ---------- */
+.code-in { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.6rem; letter-spacing: .25em; text-transform: uppercase; text-align: center; }
+.google-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.g-mark { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--white); color: #4285F4; font-family: Arial, sans-serif; font-weight: 700; font-size: .95rem; border: 1px solid #DADCE0; }
+.join .signin-card form { display: flex; flex-direction: column; gap: 12px; }
+.join details { border-top: 1px dashed var(--line); padding-top: 10px; }
+.join details summary { cursor: pointer; font-family: var(--f-ui); font-weight: 600; }
+.signin-students { display: flex; flex-direction: column; gap: 8px; border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 4px; }
+.join-card .join-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
+.join-card .join-link code { font-size: .95rem; padding: 4px 8px; }
+.join-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; font-size: 1.15rem; letter-spacing: .15em; background: var(--cream); border: 2px dashed var(--orange); border-radius: 10px; padding: 2px 10px; }
+.join-act { display: flex; flex-wrap: wrap; gap: 6px; }
+.join-dom { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 8px; } .join-dom label { flex: 1; min-width: 220px; }
+.join-req { border: 2px solid var(--amber); background: var(--warn-bg); border-radius: var(--r-s); padding: 10px 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.join-whod { margin-top: 10px; } .join-whod summary { cursor: pointer; font-family: var(--f-ui); font-weight: 600; }
+.join-who { border-top: 1px dashed var(--line); padding: 8px 0; } .join-who ul { margin: 4px 0 0; padding-left: 1.2em; }
+.join .signin-card > form, .join .signin-card > details, .signin-students { width: 100%; text-align: left; }
+.signin-students .btn { width: 100%; }
+.join-card { grid-column: 1 / -1; }
+.code-in::placeholder { text-transform: none; letter-spacing: .05em; font-size: 1.1rem; }
+.join-tbl td { vertical-align: middle; }
+
+.join-names { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } @media (max-width: 420px) { .join-names { grid-template-columns: 1fr; } }
+.join-user { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--cream); border: 2px dashed var(--orange); border-radius: var(--r-s); padding: 12px 18px; }
+.join-user b { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.5rem; }
+/* notebook sections fold away */
+.nb-det > summary { list-style: none; cursor: pointer; border-radius: 12px; }
+.nb-det > summary::-webkit-details-marker { display: none; }
+.nb-det > summary:hover .nb-sec-h { color: var(--orange-d); }
+.nb-det > summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+.nb-chev { margin-left: auto; flex: none; width: 13px; height: 13px; border-right: 3px solid var(--orange); border-bottom: 3px solid var(--orange); transform: rotate(45deg); transition: transform .15s ease; margin-right: 6px; }
+.nb-det[open] .nb-chev { transform: rotate(-135deg); margin-top: 6px; }
+.nb-det:not([open]) .nb-sec-h { margin: 0; }
+.nb-body { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.nb-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: -6px; }
+.nb-tools .tiny { margin-right: auto; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -709,7 +746,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const r=await fetch(cfg.supabaseUrl+'/functions/v1/hub',{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.supabaseKey,Authorization:'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
   const body=await r.json();if(!r.ok)throw Error(body.error||'Could not reach the Hub.');return body;
  }
- Hub.cloud={client,call,clone,activation};
+ /** Without a signed-in user: only the 'join' action (class code + name + new password) accepts this. */
+ async function callPublic(action,data={}){
+  const r=await fetch(cfg.supabaseUrl+'/functions/v1/hub',{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.supabaseKey,Authorization:'Bearer '+cfg.supabaseKey},body:JSON.stringify({action,...data})});
+  let body={};try{body=await r.json();}catch(e){}if(!r.ok)throw Error(body.error||body.message||'Could not reach the Hub. Ask Miss Badmus.');return body;
+ }
+ /** Students sign in with a username (amara.okafor); the server keeps it as a plus-address of the teacher's Gmail. Nothing is emailed to it. */
+ const loginEmail=u=>String(u).includes('@')?String(u).trim().toLowerCase():'badmuslyn+'+String(u).trim().toLowerCase().replace(/[^a-z0-9.]/g,'')+'@gmail.com';
+ Hub.cloud={client,call,callPublic,loginEmail,clone,activation};
 })(window.Hub=window.Hub||{});
 
 /* ---- js/math.js ---- */
@@ -3118,24 +3162,46 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 })(window.Hub=window.Hub||{});
 
 /* ---- js/roster.js ---- */
-/* CSV import merges by verified-email identity; existing work is preserved. */
+/* CSV import merges by email, or by name + class when there is no email (students join later with the class code); existing work is preserved. */
 (function(Hub){
  'use strict';const S=()=>Hub.store.state;
- const all=()=>S().roster.students.filter(s=>s.active!==false),byId=id=>S().roster.students.find(s=>s.id===id),byEmail=e=>all().find(s=>s.email.toLowerCase()===String(e).toLowerCase()),inGroup=g=>all().filter(s=>s.group===g),inCourse=c=>all().filter(s=>s.course===c);
- function parseImport(text){
- const records=[],errors=[];let row=[],cell='',quoted=false;const sep=text.split(/\r?\n/)[0].includes('\t')?'\t':',';
- text=String(text).replace(/^\uFEFF/,'');
+ const all=()=>S().roster.students.filter(s=>s.active!==false),byId=id=>S().roster.students.find(s=>s.id===id),byEmail=e=>e?all().find(s=>(s.email||'').toLowerCase()===String(e).toLowerCase()):null,inGroup=g=>all().filter(s=>s.group===g),inCourse=c=>all().filter(s=>s.course===c);
+ const GROUPS=['HL-A','HL-B','SL-A','SL-B'],toGroup=x=>{const v=String(x||'').toUpperCase().replace(/[\s_]+/g,'-').replace(/^(SL|HL)-?(A|B)(-?DAY)?$/,'$1-$2');return GROUPS.includes(v)?v:'';};
+ /** Roster text → rows. Only names are needed: "First Last" or "Last, First", one student per line, or a CSV/TSV with
+     first name / last name (or name) columns. Email and class columns are optional; without a class column the chosen class is used. */
+ function parseImport(text,defGroup){
+ const records=[],errors=[];let row=[],cell='',quoted=false;text=String(text||'').replace(/^﻿/,'');const first=text.split(/\r?\n/).find(l=>l.trim())||'',sep=first.includes('\t')?'\t':',';
  for(let i=0;i<=text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}
  else if((c===sep||c==='\n'||c===undefined)&&!quoted){row.push(cell.trim());cell='';if(c!==sep){if(row.some(Boolean))records.push(row);row=[];}}else if(c!=='\r')cell+=c||'';}
  if(quoted)errors.push('Unclosed quotation mark.');
- let names=['name','email','group'];if(records[0]?.some(x=>/^email$/i.test(x))){names=records.shift().map(x=>x.toLowerCase().trim());}
- const rows=[],seen=new Set();records.forEach((r,i)=>{const name=r[names.indexOf('name')],email=r[names.indexOf('email')]?.toLowerCase(),group=r[names.indexOf('group')]?.toUpperCase().replace(/\s+/g,'-');
- if(!name||!/^\S+@\S+\.\S+$/.test(email||'')||!['HL-A','HL-B','SL-A','SL-B'].includes(group)){errors.push('Row '+(i+2)+': expected name, valid email, and SL-A / SL-B / HL-A / HL-B.');return;}
- if(seen.has(email)){errors.push('Duplicate email: '+email);return;}seen.add(email);rows.push({name,email,group,course:group.slice(0,2)});
- });return {rows,errors};
+ const HEAD=/^(e-?mail( address)?|(student )?name|full name|student|group|class|block|first( name)?|given name|preferred( first)?( name)?|last( name)?|surname|family name)$/i;
+ let cols=null;if(records[0]&&records[0].filter(x=>HEAD.test(x.trim())).length>=1&&records[0].every(x=>!x.trim()||HEAD.test(x.trim())||!/@|\d/.test(x))&&records[0].some(x=>/^(first|last|surname|name|full name|student name|e-?mail)/i.test(x.trim())))cols=records.shift().map(x=>x.toLowerCase().trim());
+ const col=re=>cols?cols.findIndex(c=>re.test(c)):-1;
+ const fi=col(/^(first( name)?|given name|preferred( first)?( name)?)$/),li=col(/^(last( name)?|surname|family name)$/),ni=col(/^((student )?name|full name|student)$/),ei=col(/^e-?mail/),gi=col(/^(group|class|block)$/);
+ const rows=[],seen=new Set(),seenName=new Set(),dg=toGroup(defGroup);
+ records.forEach((r,i)=>{
+  let name='',email='',group='',parts=null;
+  if(cols){if(fi>=0||li>=0)parts={first:(r[fi]||'').trim(),last:(r[li]||'').trim()};name=parts?[parts.first,parts.last].filter(Boolean).join(' '):(r[ni]||'').trim();email=ei>=0?(r[ei]||'').trim():'';group=gi>=0?toGroup(r[gi]):'';}
+  else{const g=r.findIndex(x=>toGroup(x)),e=r.findIndex(x=>/@/.test(x));group=g>=0?toGroup(r[g]):'';email=e>=0?r[e].trim():'';const rest=r.filter((x,k)=>k!==g&&k!==e&&x.trim()).map(x=>x.trim());
+   // two name parts in a comma list are "Last, First" (the school roster style); a single field is the whole name
+   name=rest.length===2&&sep===','?rest[0]+', '+rest[1]:rest.join(' ');}
+  email=email.toLowerCase();group=group||dg;
+  const where='Line '+(i+1+(cols?1:0))+': ';
+  if(!name){errors.push(where+'no name.');return;}
+  if(email&&!/^\S+@\S+\.\S+$/.test(email)){errors.push(where+'that email does not look right ('+email+'). Leave it empty if you like.');return;}
+  if(!group){errors.push(where+'choose the class above (or add a class column: SL-A, SL-B, HL-A, HL-B).');return;}
+  if(email&&seen.has(email)){errors.push('Duplicate email: '+email);return;}if(email)seen.add(email);
+  const nk=group+'|'+nameKey(name);if(seenName.has(nk)){errors.push(where+name+' is in the list twice.');return;}seenName.add(nk);
+  rows.push(Object.assign({name,email,group,course:group.slice(0,2)},parts&&parts.first&&parts.last?parts:{}));
+ });
+ return {rows,errors};
  }
- function applyImport(rows){const st=S();for(const r of rows){const existing=st.roster.students.find(s=>s.email.toLowerCase()===r.email);if(existing)Object.assign(existing,r,{active:true});else st.roster.students.push({...r,id:crypto.randomUUID(),active:true});}st.roster.source='imported';Hub.store.log('Merged '+rows.length+' roster rows; existing work preserved');Hub.store.save(true);}
- Hub.roster={all,byId,byEmail,inGroup,inCourse,parseImport,applyImport};
+ /** Same person? Same class and the same name ignoring order ("Okafor, Amara J" = "Amara J Okafor"), case and accents. */
+ function nameKey(n){let s=String(n||'').trim();const i=s.indexOf(',');if(i>0)s=s.slice(i+1)+' '+s.slice(0,i);return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/['’`.]/g,'').replace(/[^a-z\s-]/g,' ').split(/[\s-]+/).filter(x=>x.length>1).join(' ');}
+ const findExisting=r=>{const st=S();return (r.email&&st.roster.students.find(s=>(s.email||'').toLowerCase()===r.email))||st.roster.students.find(s=>s.group===r.group&&nameKey(s.name)===nameKey(r.name))||null;};
+ function applyImport(rows){const st=S();for(const r of rows){const existing=findExisting(r);if(existing){const keep=existing.email;Object.assign(existing,r,{active:true});if(!r.email&&keep)existing.email=keep;}else st.roster.students.push({...r,id:crypto.randomUUID(),active:true});}st.roster.source='imported';Hub.store.log('Merged '+rows.length+' roster rows; existing work preserved');Hub.store.save(true);}
+ const joined=s=>!!(s&&s.email);
+ Hub.roster={all,byId,byEmail,inGroup,inCourse,parseImport,applyImport,findExisting,nameKey,joined};
 })(window.Hub=window.Hub||{});
 
 /* ---- js/auth.js ---- */
@@ -3143,7 +3209,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 (function(Hub){
  'use strict';let session=null;
  async function init(){const {data,error}=await Hub.cloud.client.auth.getSession();if(error)throw error;if(!data.session)return false;const r=await Hub.cloud.call('load');session=r.session;Hub.store.accept(r.state);return true;}
- async function signIn(email,password){const {error}=await Hub.cloud.client.auth.signInWithPassword({email,password});if(error)throw error;await init();}
+ async function signIn(email,password){const {error}=await Hub.cloud.client.auth.signInWithPassword({email:Hub.cloud.loginEmail(email),password});if(error)throw Error(/invalid login/i.test(error.message)?'That username (or email) and password do not match. Forgot your password? Ask Miss Badmus to reset your login.':error.message);await init();}
  async function signOut(){await Hub.store.flush();const {error}=await Hub.cloud.client.auth.signOut();if(error)throw error;session=null;Hub.store.clear();}
  const current=()=>session;
  const isTeacher=()=>session?.role==='teacher';
@@ -4387,6 +4453,93 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.rosterPdf = { read, parse, lines, niceName, detectGroup };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/join.js ---- */
+/* Joining a class with a code — no emails, no Google.
+   Student: opens …/#/join, types the class code, their first and last name and a new password. The server matches the name to the
+   roster for that class (automatically — the teacher does nothing), makes their sign-in, and gives them a username (amara.okafor).
+   Teacher (Data & settings): a code per class, open/close joining, new code, who has joined, and Reset login for a forgotten password. */
+(function (Hub) {
+  'use strict';
+  const { $, $$, esc, toast } = Hub.core;
+  const ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const GROUPS = () => Hub.curriculum.GROUPS;
+  const clean = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  const joinURL = () => location.origin + location.pathname + '#/join';
+  const app = () => $('#app');
+  const card = inner => `<main class="signin join" id="main"><section class="signin-card"><img class="signin-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ wolf logo"><p class="kicker">MISS BADMUS’ IB MATH HUB</p>${inner}</section></main>`;
+  const classLabel = g => (GROUPS()[g] || {}).label || g;
+
+  /* ---------- student: the join page ---------- */
+  function page(msg) {
+    app().innerHTML = card(`<h1>Join your class</h1><p>Type the class code from Miss Badmus and your name as it is on the class register. Then choose a password.</p>
+      <form id="join-form" novalidate>
+        <label>Class code<input id="join-code" class="code-in" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="e.g. K7Q2MX" required></label>
+        <div class="join-names"><label>First name<input id="join-first" autocomplete="given-name" required></label><label>Last name<input id="join-last" autocomplete="family-name" required></label></div>
+        <label>Choose a password <span class="tiny muted">(8 characters or more)</span><input id="join-pw" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>Type the password again<input id="join-pw2" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="btn primary" id="join-go">Join my class</button></form>
+      <p id="join-msg" role="alert" class="small">${msg ? esc(msg) : ''}</p>
+      <p class="tiny"><a href="#/" id="join-back">I have already joined — sign in</a></p>`);
+    const codeIn = $('#join-code');
+    codeIn.oninput = () => { const v = clean(codeIn.value); if (v !== codeIn.value) codeIn.value = v; };
+    $('#join-back').onclick = e => { e.preventDefault(); location.hash = '#/'; location.reload(); };
+    $('#join-form').onsubmit = async e => {
+      e.preventDefault(); const say = t => { $('#join-msg').textContent = t; };
+      const code = clean(codeIn.value), first = $('#join-first').value.trim(), last = $('#join-last').value.trim(), pw = $('#join-pw').value;
+      if (code.length < 4) { say('Type the class code from Miss Badmus.'); return codeIn.focus(); }
+      if (!first || !last) { say('Type your first name and your last name.'); return (first ? $('#join-last') : $('#join-first')).focus(); }
+      if (pw.length < 8) { say('Choose a password with at least 8 characters.'); return $('#join-pw').focus(); }
+      if (pw !== $('#join-pw2').value) { say('The two passwords are not the same.'); return $('#join-pw2').focus(); }
+      const b = $('#join-go'); b.disabled = true; say('Joining…');
+      try {
+        const r = await Hub.cloud.callPublic('join', { code, first, last, password: pw });
+        // signed in straight away; the username is how they sign in next time
+        await Hub.cloud.client.auth.signInWithPassword({ email: r.login, password: pw }).catch(() => {});
+        app().innerHTML = card(`<h1>You’re in! 🎉</h1><p>Welcome to <b>${esc(classLabel(r.group))}</b>, ${esc(first)}.</p>
+          <div class="join-user"><span class="key-lab">Your username</span><b id="join-username">${esc(r.username)}</b></div>
+          <p class="small"><b>Write it down.</b> Next time, sign in with this username and the password you just chose.</p>
+          <button class="btn primary" id="join-in" type="button">Go to my Hub →</button>`);
+        $('#join-in').onclick = () => { location.hash = '#/home'; location.reload(); };
+      } catch (err) { say(err.message); b.disabled = false; }
+    };
+    codeIn.focus();
+  }
+
+  /** Called while the app starts: the join link shows the join page (signed in or not). */
+  async function resume() { if (/^#\/join\b/.test(location.hash)) { page(); return true; } return false; }
+
+  /* ---------- teacher: Data & settings card ---------- */
+  const S = () => Hub.store.state;
+  const cfg = () => { const st = S(); st.settings.join = st.settings.join || { codes: {} }; st.settings.join.codes = st.settings.join.codes || {}; return st.settings.join; };
+  function newCode() { const used = new Set(Object.values(cfg().codes).map(c => c && c.code)); let c; do { const r = crypto.getRandomValues(new Uint32Array(6)); c = Array.from(r, x => ALPH[x % ALPH.length]).join(''); } while (used.has(c)); return c; }
+  const isIn = s => !!(s && (s.joinedAt || s.email));
+  function cardHTML() {
+    const J = (S().settings || {}).join || { codes: {} };
+    const row = g => { const c = (J.codes || {})[g.id], studs = Hub.roster.inGroup(g.id), n = studs.filter(isIn).length;
+      return `<tr><td><b>${esc(g.label)}</b></td><td>${c && c.code ? `<span class="join-code">${esc(c.code)}</span>` : '<span class="tiny muted">no code yet</span>'}</td><td>${c && c.code ? (c.open === false ? '<span class="pill grey">Closed</span>' : '<span class="pill green">Open</span>') : ''}</td><td>${n}/${studs.length}</td>
+        <td><div class="join-act">${c && c.code ? `<button class="btn small ghost" data-jcopy="${g.id}" type="button">Copy for students</button><button class="btn small ghost" data-jtoggle="${g.id}" type="button">${c.open === false ? 'Open joining' : 'Close joining'}</button><button class="btn small ghost" data-jnew="${g.id}" type="button">New code</button>` : `<button class="btn small" data-jnew="${g.id}" type="button">Make a code</button>`}</div></td></tr>`; };
+    const who = Object.values(GROUPS()).map(g => { const studs = Hub.roster.inGroup(g.id); if (!studs.length) return ''; const yes = studs.filter(isIn), no = studs.filter(s => !isIn(s));
+      return `<div class="join-who"><b>${esc(g.label)}</b> · ${yes.length}/${studs.length} joined${no.length ? `<p class="tiny"><span class="muted">Not joined yet:</span> ${no.map(s => esc(s.name)).join(', ')}</p>` : ''}${yes.length ? `<ul class="tiny">${yes.map(s => `<li>${esc(s.name)} · <code>${esc(s.username || s.email || '')}</code>${s.joinedAt ? ` <button class="btn small ghost" data-reset="${esc(s.id)}" type="button">Reset login</button>` : ''}</li>`).join('')}</ul>` : ''}</div>`; }).join('');
+    return `<section class="card join-card"><h2 class="bar-head green">Class join codes</h2>
+      <p>Give students the join link and their class code. They type the code and their first and last name, and choose a password. They are matched to your roster <b>automatically</b> and get a username (e.g. <code>amara.okafor</code>) to sign in with. No emails.</p>
+      <div class="join-link"><span class="key-lab">Join link</span><code id="join-url">${esc(joinURL().replace(/^https?:\/\//, ''))}</code><button class="btn small ghost" id="join-copy-link" type="button">Copy link</button></div>
+      <div class="scroll"><table class="tbl join-tbl"><thead><tr><th>Class</th><th>Code</th><th>Joining</th><th>Joined</th><th></th></tr></thead><tbody>${Object.values(GROUPS()).map(row).join('')}</tbody></table></div>
+      <p class="tiny muted">If a student’s name is not found, check how it is spelled on your roster. Forgot password? Press <b>Reset login</b> by their name (under “Who has joined”); they join again with the code and choose a new password, keeping the same username and all their work. A new code stops the old one working; close joining once everyone is in.</p>
+      <details class="join-whod" ${Hub.roster.all().length ? 'open' : ''}><summary>Who has joined</summary>${who || '<p class="tiny muted">Upload a roster first.</p>'}</details></section>`;
+  }
+  async function saveNow(msg) { Hub.store.save(true); try { await Hub.store.flush(); if (msg) toast(msg); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); }
+  function bind(main) {
+    const J = () => cfg();
+    const copy = async (txt, ok) => { try { await navigator.clipboard.writeText(txt); toast(ok); } catch (e) { toast('Could not copy here — select the text and copy it.', 'error'); } };
+    const cl = $('#join-copy-link', main); if (cl) cl.onclick = () => copy(joinURL(), 'Join link copied.');
+    $$('[data-jnew]', main).forEach(b => (b.onclick = async () => { const g = b.dataset.jnew, had = J().codes[g] && J().codes[g].code; if (had && !(await Hub.ui.confirmBox(`Make a new code for ${esc(classLabel(g))}? The old code stops working. Students who have already joined are not affected.`, 'New code'))) return; J().codes[g] = { code: newCode(), open: true, at: new Date().toISOString() }; Hub.store.log(`New class join code for ${classLabel(g)}`); await saveNow('New code ready.'); }));
+    $$('[data-jtoggle]', main).forEach(b => (b.onclick = async () => { const c = J().codes[b.dataset.jtoggle]; c.open = c.open === false; await saveNow(c.open ? 'Joining is open.' : 'Joining is closed for that class.'); }));
+    $$('[data-jcopy]', main).forEach(b => (b.onclick = () => { const g = b.dataset.jcopy, c = J().codes[g]; copy(`Join Miss Badmus’ ${classLabel(g)} on the IB Math Hub: open ${joinURL()} , type the class code ${c.code}, your first and last name, and choose a password.`, 'Copied — paste it to your students.'); }));
+    $$('[data-reset]', main).forEach(b => (b.onclick = async () => { const s = Hub.roster.byId(b.dataset.reset); if (!s || !(await Hub.ui.confirmBox(`Reset ${esc(s.name)}’s login? They join again with the class code and choose a new password. Their username (${esc(s.username || '')}) and all their work stay.`, 'Reset login'))) return; delete s.joinedAt; Hub.store.log(`Reset the login for ${s.name}`); await saveNow(`Done. ${s.name} can join again with the class code.`); }));
+  }
+  Hub.join = { page, resume, cardHTML, bind, newCode };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/live.js ---- */
 /* Live behavior layered over the original classroom interface. */
 (function(Hub){
@@ -4399,8 +4552,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
  const st=Hub.store.state;main.innerHTML=U.heading('YOUR CLASSROOM','Data & settings','Your roster, assessments, results, notebooks and uploaded work are stored privately in Supabase.')+`
  <div class="grid g2"><section class="card"><h2 class="bar-head blue">Cloud connection</h2><p><span class="pill green">Supabase connected</span> Teacher: ${esc(Hub.auth.current().email)}</p><p>Changes save automatically while online. Wait for “Saved to cloud” before closing the tab. Refresh to see new work from another device.</p><div class="actions"><button class="btn" id="cloud-refresh">Save & refresh</button><button class="btn ghost" id="cloud-retry">Retry save</button></div><p class="tiny">If two people edit the same item, a conflict stops the save. Export your pending copy before reloading.</p><button class="btn small ghost" id="cloud-reload">Discard pending changes & reload</button></section>
  <section class="card"><h2 class="bar-head green">Export your data</h2><div class="actions"><button class="btn" id="bk">Download full data backup</button><button class="btn ghost" id="roster-csv">Roster CSV</button><button class="btn ghost" id="results-csv">Results CSV</button><button class="btn ghost" id="evidence-csv">Evidence CSV</button></div><p class="tiny">Backups include data and attachment references. Photos/PDFs remain in private storage; download an attachment from the marking screen for a separate copy.</p></section>
- <section class="card"><h2 class="bar-head pink">Upload your roster</h2><p>${Hub.roster.all().length} active students. Import adds students or updates by email. Existing work is preserved.</p><div class="actions"><label class="btn file-btn"><input id="roster-file" type="file" accept=".csv,.tsv,.pdf,text/csv,text/tab-separated-values,application/pdf">Choose CSV / TSV / PDF</label><label class="inline">Group for a PDF<select id="roster-pdf-group"><option value="">Read it from the PDF</option><option>SL-A</option><option>SL-B</option><option>HL-A</option><option>HL-B</option></select></label><button class="btn small ghost" id="template">Download template</button></div><p class="tiny muted">A PDF roster is read on this computer only. Check the names and add any missing school emails before saving.</p><label>Or paste rows<textarea id="roster-text" rows="5" placeholder="name,email,group"></textarea></label><p class="tiny">Columns: name, email, group. Groups: SL-A, SL-B, HL-A, HL-B. Quote names containing commas.</p><button class="btn" id="roster-check">Review import</button><div id="roster-review" aria-live="polite"></div><button class="btn primary" id="roster-apply" disabled>Save roster to cloud</button></section>
- <section class="card"><h2 class="bar-head amber">Student accounts</h2><p>Create a private activation link after importing a roster. Give it only to that student through your usual private channel. They choose their own password. No email delivery service is required.</p><label>Student<select id="account-student">${Hub.roster.all().map(s=>`<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.email)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="invite" ${Hub.roster.all().length?'':'disabled'}>Create activation / reset link</button><button class="btn ghost" id="deactivate" ${Hub.roster.all().length?'':'disabled'}>Deactivate student</button></div><div id="invite-result"></div><p class="tiny">Deactivation blocks access but retains work. Import their email again to reactivate.</p></section>
+ <section class="card"><h2 class="bar-head pink">Upload your roster</h2><p>${Hub.roster.all().length} students on your roster. <b>Only first and last names are needed</b> — no emails. Students join with the class code and are matched to these names.</p>
+ <label>1. Which class is this list for?<select id="roster-pdf-group"><option value="">Choose the class…</option>${Object.values(Hub.curriculum.GROUPS).map(g=>`<option value="${g.id}">${esc(g.label)}</option>`).join('')}</select></label>
+ <label>2. Paste the names — one student per line (<i>First Last</i> or <i>Last, First</i>)<textarea id="roster-text" rows="7" placeholder="Okafor, Amara&#10;Theo Lindqvist&#10;De la Cruz, Mateo"></textarea></label>
+ <div class="actions"><label class="btn small ghost file-btn"><input id="roster-file" type="file" accept=".csv,.tsv,.txt,.pdf,text/csv,text/plain,text/tab-separated-values,application/pdf">…or choose a file (CSV, TXT or PDF)</label><button class="btn small ghost" id="template">Download template</button></div>
+ <p class="tiny muted">A file can have “first name” and “last name” columns (or one “name” column). A class column (SL-A, SL-B, HL-A, HL-B) lets one file hold several classes. Emails are optional. A PDF is read on this computer only.</p>
+ <button class="btn" id="roster-check">3. Check the list</button><div id="roster-review" aria-live="polite"></div><button class="btn primary" id="roster-apply" disabled>4. Save roster to cloud</button><p class="tiny muted">Importing again updates students with the same name in the same class; nobody's work is lost.</p></section>
+ ${Hub.join?Hub.join.cardHTML():''}
+ <section class="card"><h2 class="bar-head amber">Student accounts</h2><p>Students make their own login with the class code (see Class join codes). Use this only to switch a student off, or for an older account that signs in with an email.</p><label>Student<select id="account-student">${Hub.roster.all().map(s=>`<option value="${esc(s.id)}">${esc(s.name)} · ${s.username?esc(s.username):s.email?esc(s.email):'not joined yet'}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="invite" ${Hub.roster.all().length?'':'disabled'}>Create activation / reset link</button><button class="btn ghost" id="deactivate" ${Hub.roster.all().length?'':'disabled'}>Deactivate student</button></div><div id="invite-result"></div><p class="tiny">Deactivation blocks access but retains work. Import their email again to reactivate.</p></section>
  <section class="card"><h2 class="bar-head green">Lesson date</h2><p>The calendar uses today unless you set a planning date.</p><form id="asof-form"><label>Planning date<input id="asof" type="date" value="${st.settings.asOf||''}"></label><button class="btn">Save date</button><button class="btn ghost" type="button" id="asof-clear">Use today</button></form></section>
  <section class="card"><h2 class="bar-head blue">Canvas link</h2><p>Add this URL to Canvas as an external link. Students use their own Hub accounts. Grade syncing is not connected.</p><input id="canvas-link" aria-label="Canvas entry URL" readonly value="${esc(location.href.split('#')[0])}"><button class="btn ghost" id="copy-link">Copy link</button></section></div>`;
  $('#cloud-refresh').onclick=()=>Hub.store.refresh().catch(e=>toast(e.message,'error'));$('#cloud-retry').onclick=()=>Hub.store.flush().catch(e=>toast(e.message,'error'));
@@ -4410,18 +4569,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
  $('#roster-csv').onclick=()=>csv('roster',[['name','email','group','active'],...st.roster.students.map(s=>[s.name,s.email,s.group,s.active!==false])]);
  $('#results-csv').onclick=()=>csv('results',[['Student','Email','Group','Assessment','Submitted','Status','Earned','Max','Percent','Recorded percent','Teacher comment'],...st.attempts.map(t=>{const s=Hub.roster.byId(t.sid)||{},a=Hub.assess.byId(t.aid)||t.inline||{},sc=Hub.assess.score(t);return [s.name,s.email,s.group,a.title||t.type,t.at,t.status,t.status==='released'?sc.earned:'',sc.max,t.status==='released'?sc.pct:'',t.status==='released'?sc.capped:'',t.comment]})]);
  $('#evidence-csv').onclick=()=>csv('evidence',[['Student','Email','Skill','Earned','Max','Date','Source','Superseded','Preview'],...st.evidence.map(e=>{const s=Hub.roster.byId(e.sid)||{};return [s.name,s.email,e.skill,e.earned,e.max,e.date,e.source,!!e.superseded,!!e.preview]})]);
- $('#template').onclick=()=>csv('roster-template',[['name','email','group']]);
- let parsed=null;const invalidate=()=>{parsed=null;$('#roster-apply').disabled=true;$('#roster-review').textContent=''};$('#roster-text').oninput=invalidate;
+ $('#template').onclick=()=>csv('roster-template',[['first name','last name']]);
+ let parsed=null;const invalidate=()=>{parsed=null;$('#roster-apply').disabled=true;$('#roster-review').textContent=''};$('#roster-text').oninput=invalidate;$('#roster-pdf-group').onchange=invalidate;
  $('#roster-file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
  if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){$('#roster-review').innerHTML='<p>Reading the PDF…</p>';try{const r=await Hub.rosterPdf.read(f,$('#roster-pdf-group').value);$('#roster-text').value=r.csv;invalidate();
-  $('#roster-review').innerHTML=`<p><b>Found ${r.rows.length} student${r.rows.length===1?'':'s'}</b> in the PDF${r.withEmail<r.rows.length?` · <b>${r.rows.length-r.withEmail} without an email</b>: type their school email after the first comma on their line`:''}.${r.group?` Group: <b>${esc(r.group)}</b>${r.detected&&!$('#roster-pdf-group').value?' (read from the PDF)':''}.`:' <b>Choose the group</b> above, then choose the file again (or type SL-A / SL-B / HL-A / HL-B at the end of each line).'}</p><p class="tiny">Check every name below, then press Review import.</p>`;
+  $('#roster-review').innerHTML=`<p><b>Found ${r.rows.length} student${r.rows.length===1?'':'s'}</b> in the PDF.${r.group?` Class: <b>${esc(Hub.curriculum.GROUPS[r.group]?Hub.curriculum.GROUPS[r.group].label:r.group)}</b>${r.detected&&!$('#roster-pdf-group').value?' (read from the PDF)':''}.`:' <b>Choose the class</b> above, then press Check the list.'}</p><p class="tiny">Check the names in the box, then press Check the list.</p>`;
   if(!r.rows.length)$('#roster-review').innerHTML='<p>No student names were found in that PDF. If it is a scanned image, export the roster as CSV instead.</p>';}
  catch(err){$('#roster-review').innerHTML=`<p>${esc(err.message)}</p>`;}e.target.value='';return;}
  $('#roster-text').value=await f.text();invalidate();e.target.value='';};
- $('#roster-check').onclick=()=>{parsed=Hub.roster.parseImport($('#roster-text').value);$('#roster-review').innerHTML=`<p>${parsed.rows.length} valid rows. ${parsed.rows.filter(r=>Hub.roster.byEmail(r.email)).length} existing accounts will be updated.</p>${parsed.errors.map(x=>`<p>${esc(x)}</p>`).join('')}<ul>${parsed.rows.slice(0,8).map(s=>`<li>${esc(s.name)} · ${esc(s.email)} · ${s.group}</li>`).join('')}</ul>`;$('#roster-apply').disabled=!!parsed.errors.length||!parsed.rows.length;};
+ $('#roster-check').onclick=()=>{parsed=Hub.roster.parseImport($('#roster-text').value,$('#roster-pdf-group').value);$('#roster-review').innerHTML=`<p><b>${parsed.rows.length} student${parsed.rows.length===1?'':'s'}</b>${parsed.rows.length?' · '+[...new Set(parsed.rows.map(r=>Hub.curriculum.GROUPS[r.group].label))].join(', '):''}. ${parsed.rows.filter(r=>Hub.roster.findExisting(r)).length} already on your roster (they are updated, not doubled).</p>${parsed.errors.map(x=>`<p class="parse-error">${esc(x)}</p>`).join('')}<ul class="roster-pv">${parsed.rows.slice(0,40).map(s=>`<li>${esc(s.name)}${s.email?' · '+esc(s.email):''}</li>`).join('')}${parsed.rows.length>40?`<li class="muted">+ ${parsed.rows.length-40} more</li>`:''}</ul>`;$('#roster-apply').disabled=!!parsed.errors.length||!parsed.rows.length;};
  $('#roster-apply').onclick=async()=>{if(!parsed||parsed.errors.length)return;$('#roster-apply').disabled=true;try{Hub.roster.applyImport(parsed.rows);await Hub.store.flush();toast('Roster saved to cloud.');Hub.app.render()}catch(e){toast(e.message,'error')}};
  $('#invite').onclick=async()=>{const b=$('#invite');b.disabled=true;try{await Hub.store.flush();const r=await Hub.cloud.call('invite',{sid:$('#account-student').value});$('#invite-result').innerHTML=`<label>Private one-time link<textarea readonly rows="4">${esc(r.link)}</textarea></label><p class="tiny">Copy and share privately with this student only. This grants access to their account and may expire.</p>`;}catch(e){toast(e.message,'error')}finally{b.disabled=false}};
  $('#deactivate').onclick=async()=>{const s=Hub.roster.byId($('#account-student').value);if(s&&await U.confirmBox('Deactivate '+esc(s.name)+'? Their work will be retained.','Deactivate')){s.active=false;Hub.store.save(true);try{await Hub.store.flush();Hub.app.render()}catch(e){toast(e.message,'error')}}};
+ if(Hub.join)Hub.join.bind(main);
  $('#asof-form').onsubmit=async e=>{e.preventDefault();st.settings.asOf=$('#asof').value||null;Hub.store.save(true);try{await Hub.store.flush();toast('Planning date saved.')}catch(e){toast(e.message,'error')}};
  $('#asof-clear').onclick=()=>{st.settings.asOf=null;Hub.store.save(true);Hub.app.render()};$('#copy-link').onclick=async()=>{try{await navigator.clipboard.writeText($('#canvas-link').value);toast('Link copied.')}catch{$('#canvas-link').select()}};
  };
@@ -5224,11 +5384,16 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   /* ================= the notebook page (student view; also teacher preview and read-only response view) ================= */
   const opt = t => `<span class="sec-tag opt">${t}</span>`, req = t => `<span class="sec-tag req">${t}</span>`;
-  function sectionCard(n, title, cls, body) { return `<section class="card nb-sec ${cls}" id="nb-${cls}"><h2 class="nb-sec-h"><span class="nb-n">${n}</span>${title}</h2>${body}</section>`; }
+  /** Each section folds away: tap its heading to open it. */
+  function sectionCard(n, title, cls, body, open) { return `<section class="card nb-sec ${cls}" id="nb-${cls}"><details class="nb-det" data-sec="${cls}" ${open ? 'open' : ''}><summary><h2 class="nb-sec-h"><span class="nb-n">${n}</span>${title}<span class="nb-chev" aria-hidden="true"></span></h2></summary><div class="nb-body">${body}</div></details></section>`; }
+  /** Which sections a student left open in this notebook (this browser only). Slides and the Do Now start open. */
+  const OPEN_KEY = id => 'hub-nb-open:' + id;
+  function openSecs(id) { try { const v = JSON.parse(localStorage.getItem(OPEN_KEY(id))); if (Array.isArray(v)) return v; } catch (e) { /* no storage */ } return ['donow', 'slides']; }
+  function rememberOpen(id, root) { try { localStorage.setItem(OPEN_KEY(id), JSON.stringify($$('details.nb-det[open]', root).map(d => d.dataset.sec))); } catch (e) { /* no storage */ } }
   function notebookHTML(L, ctx) {
     const r = ctx.resp || {}, dis = ctx.readOnly ? 'disabled' : '', sid = ctx.sid;
-    const secs = []; let n = 0;
-    const add = (title, cls, body) => { if (body) secs.push(sectionCard(++n, title, cls, body)); };
+    const secs = []; let n = 0, opened = ctx.readOnly || ctx.key ? null : openSecs(L.id);
+    const add = (title, cls, body) => { if (body) secs.push(sectionCard(++n, title, cls, body, !opened || opened.includes(cls))); };
     // Do Now
     if (L.doNow) {
       let body;
@@ -5252,7 +5417,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     if (L.reflect !== false) add('Reflection', 'reflect', `<fieldset class="rag"><legend>How confident do you feel about today’s lesson?</legend>${[['red', 'I’m stuck'], ['amber', 'Getting there'], ['green', 'I’ve got it']].map(([v, t]) => `<label class="rag-opt ${v}"><input type="radio" name="rag" value="${v}" ${r.rag === v ? 'checked' : ''} ${dis}> ${t}</label>`).join('')}</fieldset>
       <label>One thing I learned today<textarea id="nb-learned" rows="2" ${dis}>${esc(r.learned || '')}</textarea></label><label>A question I still have <span class="tiny muted">(Miss Badmus reads these)</span><textarea id="nb-question" rows="2" ${dis}>${esc(r.question || '')}</textarea></label>`);
     const eq = L.eq ? `<div class="eq-strip"><span class="eq-tag">Essential question</span> ${M(L.eq)}</div>` : '';
-    return `${eq}<div class="chips nb-skills">${L.skills.map(s => U.skillChip(s)).join('')}</div>${secs.join('') || U.empty('This notebook is still empty.')}`;
+    const tools = secs.length > 2 ? `<div class="nb-tools no-print"><span class="tiny muted">Tap a heading to open or close it.</span><button type="button" class="btn small ghost" data-nb-all="open">Open all</button><button type="button" class="btn small ghost" data-nb-all="close">Close all</button></div>` : '';
+    return `${eq}<div class="chips nb-skills">${L.skills.map(s => U.skillChip(s)).join('')}</div>${tools}${secs.join('') || U.empty('This notebook is still empty.')}`;
   }
   /** Student-built blocks: note, example, key word, photo. Editable for the student; read-only for the teacher. */
   const MINE = { note: 'Note', example: 'My worked example', term: 'Key word', photo: 'Photo of my notes' };
@@ -5286,6 +5452,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       return out;
     };
     const saveNow = ctx.readOnly || !ctx.save ? () => {} : debounce(() => ctx.save(collect()), 600);
+    // open / close sections (remembered in this browser for students)
+    const remember = () => { if (!ctx.readOnly && !ctx.key) rememberOpen(L.id, root); };
+    $$('details.nb-det', root).forEach(d => d.addEventListener('toggle', remember));
+    $$('[data-nb-all]', root).forEach(b => (b.onclick = () => { const open = b.dataset.nbAll === 'open'; $$('details.nb-det', root).forEach(d => { d.open = open; }); remember(); }));
     root.addEventListener('input', saveNow); root.addEventListener('change', saveNow);
     // notes
     const markNotes = reveal => { let ok = 0; $$('.blank', root).forEach(b => { const k = Number(b.dataset.b), good = blankOK(blanks[k] || [], b.value), fb = $(`[data-bfb="${k}"]`, root); b.classList.toggle('good', good); b.classList.toggle('bad', !good); if (good) ok++; if (fb) fb.innerHTML = good ? '✓' : reveal ? `<span class="reveal">${showAns((blanks[k] || [''])[0])}</span>` : '✗'; }); const sc = $('#notes-score', root); if (sc) sc.textContent = `${ok}/${blanks.length} correct`; return ok; };
@@ -5593,7 +5763,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   /* ---------- real sign-in ---------- */
   function signIn() {
-    $('#app').innerHTML = `<main class="signin" id="main"><section class="signin-card"><img class="signin-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ wolf logo"><p class="kicker">MISS BADMUS’</p><h1>IB Math Hub</h1><p class="slogan big">Inquirers. Thinkers. Reflective Learners.</p><form id="login-form"><label>Email<input id="login-email" type="email" autocomplete="username" required></label><label>Password<input id="login-password" type="password" autocomplete="current-password" required></label><button class="btn primary" id="login-button">Sign in</button></form><p id="login-error" role="alert" class="small"></p><button class="btn small ghost" id="owner-setup" type="button">First-time teacher setup</button><button class="btn small ghost" id="owner-reset" type="button">Teacher password reset</button><p class="tiny muted">Use the account activated by your teacher. Need access or a password reset? Ask Miss Badmus for a new activation link.</p></section></main>`;
+    $('#app').innerHTML = `<main class="signin" id="main"><section class="signin-card"><img class="signin-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ wolf logo"><p class="kicker">MISS BADMUS’</p><h1>IB Math Hub</h1><p class="slogan big">Inquirers. Thinkers. Reflective Learners.</p><form id="login-form"><label>Username or email<input id="login-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>Password<input id="login-password" type="password" autocomplete="current-password" required></label><button class="btn primary" id="login-button">Sign in</button></form><p id="login-error" role="alert" class="small"></p><button class="btn small ghost" id="owner-setup" type="button">First-time teacher setup</button><button class="btn small ghost" id="owner-reset" type="button">Teacher password reset</button><div class="signin-students"><p class="key-lab">Students</p><a class="btn ghost" href="#/join" id="to-join">New here? Join your class with a code</a></div><p class="tiny muted">Students: sign in with the username you got when you joined (e.g. amara.okafor) and your password.</p></section></main>`;
+    $('#to-join').onclick = e => { e.preventDefault(); history.replaceState(null, '', '#/join'); Hub.join.page(); };
     $('#owner-setup').onclick=()=>{
       $('#app').innerHTML=`<main class="signin"><section class="signin-card"><h1>Teacher setup</h1><p>Activate badmuslyn@gmail.com as the owner. Choose your password, then confirm the message sent to that email.</p><form id="owner-form"><label>Password (12 characters minimum)<input id="owner-password" type="password" autocomplete="new-password" minlength="12" required></label><button class="btn primary">Create my teacher account</button><p id="owner-message" role="status"></p></form><button class="btn ghost" id="back-login">Back to sign in</button></section></main>`;
       $('#back-login').onclick=signIn;
@@ -5609,8 +5780,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   async function boot() {
     const activation=Hub.cloud.activation;
     try {
-      await Hub.cloud.client.auth.getSession();
+      const {data:{session}}=await Hub.cloud.client.auth.getSession();
       if(activation){passwordSetup();return;}
+      if(Hub.join&&await Hub.join.resume(session))return; // class code join (link …/#/join, or back from Google sign-in)
       await Hub.auth.init();
     }catch(e){signIn();$('#login-error').textContent=e.message;return;}
     Hub.store.onExternal(() => { shellFor = null; render(); });
@@ -5622,6 +5794,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     else window.addEventListener('hashchange', () => { render(); const m = $('#main'); if (m) { m.focus({ preventScroll: true }); window.scrollTo(0, 0); } });
     render();
   }
+  // The join link typed or clicked while the sign-in page is showing (no reload).
+  window.addEventListener('hashchange', () => { if (/^#\/join\b/.test(location.hash) && !Hub.auth.current() && Hub.join) Hub.join.page(); });
   Hub.app = { render, boot, nav, currentHash };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })(window.Hub = window.Hub || {});
