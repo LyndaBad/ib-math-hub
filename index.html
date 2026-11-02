@@ -4020,8 +4020,17 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       `<div class="grid g2"><section class="card"><h2 class="bar-head green">Skills</h2>${C().UNITS[s.course].filter(([u]) => stats.some(x => C().SKILL[x.skill].unit === u)).map(([u, name]) => `<h3 class="unit-h ${U.unitColour(u)}">Unit ${u} · ${esc(name)}</h3>${stats.filter(x => C().SKILL[x.skill].unit === u).map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<span class="tiny muted">${x.status === 'not-taught' ? 'taught ' + (C().taughtDate(x.skill, s.group) ? fmtDate(C().taughtDate(x.skill, s.group)) : 'later') : x.marks + ' marks' + (x.recent !== null ? ` · recent ${x.recent}%` : '')}</span></div>`).join('')}`).join('')}</section>
       <section><div class="card"><h2 class="bar-head pink">Recurring misconceptions</h2>${Object.keys(mis).length ? `<ul class="mis">${Object.entries(mis).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t, n]) => `<li><span class="mis-n">${n}</span><b>${esc(Hub.mastery.tagText(t))}</b></li>`).join('')}</ul>` : '<p>None recorded.</p>'}</div>
       <div class="card"><h2 class="bar-head blue">Recent work</h2>${atts.length ? atts.slice(0, 8).map(t => `<div class="row-between small"><span>${esc(t.inline ? t.inline.title : (Hub.assess.byId(t.aid) || {}).title || t.type)}</span><span>${Hub.assess.score(t).earned}/${t.max} · ${t.status === 'released' ? 'released' : '<a href="#/mark/' + t.id + '">to mark</a>'}</span></div>`).join('') : '<p>No submissions yet.</p>'}</div>
+      <div class="card"><h2 class="bar-head green">Lesson notebooks</h2>${notebookList(s)}</div>
       <div class="card"><h2 class="bar-head amber">IA</h2>${iaSummary(s)}<a class="btn small" href="#/ia/${s.id}">Open notebook</a></div></section></div>`;
     $('#view-as').onclick = () => { Hub.auth.viewAs(s.id); go('#/home'); };
+  }
+  /** Every notebook this student's course has, newest first, with how far they got and a link to read their whole notebook. */
+  function notebookList(s) {
+    if (!Hub.lessons) return '';
+    const day = s.group.slice(-1), all = Hub.lessons.all().filter(L => L.course === s.course).sort((a, b) => String(b.dates[day] || '').localeCompare(String(a.dates[day] || '')));
+    if (!all.length) return '<p class="tiny muted">No notebooks yet.</p>';
+    return all.map(L => { const p = S().progress[s.id + '|nb:' + L.id], x = p && Hub.lessons.summary(L, p.responses);
+      return `<div class="row-between small nb-row"><span>${L.dates[day] ? fmtDate(L.dates[day]) + ' · ' : ''}${esc(L.title.slice(0, 60))}</span><span>${x ? `<span class="tiny muted">notes ${x.notes} · your turn ${x.yt} · own ${x.own || 0}</span> <a class="btn small" href="#/lesson/${encodeURIComponent(L.id)}?view=responses&sid=${encodeURIComponent(s.id)}">Open notebook</a>` : '<span class="tiny muted">not opened</span>'}</span></div>`; }).join('');
   }
   function iaSummary(s) { const n = S().ia[s.id]; const sch = C().iaSchedule(s.group); return `<div class="ia-dots">${sch.map(st => `<span class="ia-dot ${(n && n.status && n.status[st.id]) || 'not-started'}" title="${esc(st.title)} · ${st.date ? fmtDate(st.date) : ''} · ${((n && n.status && n.status[st.id]) || 'not started').replace('-', ' ')}">${st.id.replace('cp', '')}</span>`).join('')}</div>`; }
 
