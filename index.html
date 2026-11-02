@@ -565,6 +565,15 @@ mark.blank-key { background: var(--hl); padding: 0 4px; border-radius: 4px; }
 .my-ex { border: 2px dashed var(--line); border-radius: var(--r-s); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
 .my-ex + .my-ex { margin-top: 10px; }
 .gen-extra summary { cursor: pointer; font-family: var(--f-ui); font-weight: 600; margin-top: 6px; }
+.tb-ref { background: var(--cream); border: 2px dashed var(--orange); border-radius: var(--r-s); padding: 8px 12px; }
+.mine-blk { border: 2px solid var(--line); border-radius: var(--r-s); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; background: #FFFCFA; }
+.mine-blk + .mine-blk { margin-top: 10px; }
+.mine-blk.edit { border-style: dashed; }
+.mine-pv { border-top: 1px dashed var(--line); padding-top: 6px; }
+.mine-photo img { max-width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+.mine-add { margin-top: 8px; }
+.ex.ref-only { grid-template-columns: minmax(0, 1fr); }
+.ex.ref-only .ex-q { border-right: 0; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -4259,6 +4268,76 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.shared = { iaStudent, iaTeacher, course, settings, rqCheck };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/rosterpdf.js ---- */
+/* Roster import from a PDF (e.g. a class roster printed from the student information system).
+   The PDF is read in the browser only (nothing is uploaded). Names and school emails are picked out of each line,
+   "Last, First M" becomes "First Last", and the group (SL/HL, A/B day) is detected from the page text when it is printed
+   there. The result goes into the normal review box, where Miss Badmus checks it before anything is saved. */
+(function (Hub) {
+  'use strict';
+  const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  const WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  let loading = null;
+  function load() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return loading || (loading = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = PDFJS; s.async = true;
+      s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER; res(window.pdfjsLib); };
+      s.onerror = () => { loading = null; rej(new Error('Could not open the PDF reader. Check your internet connection, or save the roster as CSV.')); };
+      document.head.appendChild(s);
+    }));
+  }
+  /** Text of the PDF as lines (cells separated by tabs when there is a wide gap). */
+  async function lines(file) {
+    const lib = await load();
+    const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise, out = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const tc = await (await doc.getPage(i)).getTextContent(), rows = {};
+      tc.items.forEach(it => { if (!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3); (rows[y] = rows[y] || []).push({ x: it.transform[4], s: it.str, w: it.width || 0 }); });
+      Object.keys(rows).map(Number).sort((a, b) => b - a).forEach(y => {
+        let line = '', end = null;
+        rows[y].sort((a, b) => a.x - b.x).forEach(c => { if (end !== null) line += c.x - end > 12 ? '\t' : c.x - end > 1 ? ' ' : ''; line += c.s; end = c.x + c.w; });
+        out.push(line);
+      });
+    }
+    return out;
+  }
+  const EMAIL = /[A-Za-z0-9._%+'-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
+  const HEADER = /^(student|students|name|names|teacher|course|period|block|room|grade|page|total|school|section|term|semester|report|roster|date|id|gender|email|class|day|printed|enrolled|counselor)\b/i;
+  const PART = "(?:[A-Z][A-Za-z'’\\-]+|de|la|le|del|della|der|den|van|von|da|di|du|dos|das|bin|al|el|st\\.?)";
+  const LASTFIRST = new RegExp(`^([A-Z][A-Za-z'’\\-]+(?:[ -]${PART})*),\\s*([A-Z][A-Za-z'’.\\-]*(?:\\s+[A-Z][A-Za-z'’.\\-]*)*)$`);
+  const FIRSTLAST = /^[A-Z][A-Za-z'’\-]+(?:\s+[A-Z][A-Za-z'’.\-]*){1,3}$/;
+  /** "Ainumpudi, Taneesh" → "Taneesh Ainumpudi"; middle initials are dropped. */
+  function niceName(cell) {
+    const m = cell.match(LASTFIRST);
+    if (m) { const given = m[2].split(/\s+/).filter(w => w.replace(/\./g, '').length > 1); return (given.length ? given.join(' ') + ' ' : '') + m[1]; }
+    return cell.split(/\s+/).filter((w, i, a) => i === 0 || i === a.length - 1 || w.replace(/\./g, '').length > 1).join(' ');
+  }
+  function detectGroup(text) {
+    const t = ' ' + text + ' ';
+    const course = /\bHL\b|Higher Level|Block\s*4\b/i.test(t) ? 'HL' : /\bSL\b|Standard Level|Block\s*1\b/i.test(t) ? 'SL' : '';
+    const day = /\bA[\s-]?Day\b|\bDay\s*A\b/i.test(t) ? 'A' : /\bB[\s-]?Day\b|\bDay\s*B\b/i.test(t) ? 'B' : '';
+    return course && day ? course + '-' + day : '';
+  }
+  /** Turn PDF lines into roster rows. group: a chosen group, or '' to use the one printed in the PDF. */
+  function parse(textLines, group) {
+    const detected = detectGroup(textLines.join(' ')), g = group || detected, rows = [], seen = new Set();
+    for (const raw of textLines) {
+      const email = (raw.match(EMAIL) || [''])[0].toLowerCase();
+      const cells = raw.replace(EMAIL, '\t').split(/\t+/).map(c => c.replace(/\s+/g, ' ').trim()).filter(Boolean);
+      const cell = cells.find(c => !/\d/.test(c) && !HEADER.test(c) && (LASTFIRST.test(c) || (FIRSTLAST.test(c) && c.split(' ').length <= 4)));
+      if (!cell) continue;
+      const name = niceName(cell), key = email || name.toLowerCase();
+      if (seen.has(key)) continue; seen.add(key);
+      rows.push({ name, email, group: g });
+    }
+    const csv = ['name,email,group'].concat(rows.map(r => `"${r.name.replace(/"/g, '""')}",${r.email},${r.group}`)).join('\n');
+    return { rows, csv, detected, group: g, withEmail: rows.filter(r => r.email).length };
+  }
+  async function read(file, group) { return parse(await lines(file), group); }
+  Hub.rosterPdf = { read, parse, lines, niceName, detectGroup };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/live.js ---- */
 /* Live behavior layered over the original classroom interface. */
 (function(Hub){
@@ -4271,7 +4350,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
  const st=Hub.store.state;main.innerHTML=U.heading('YOUR CLASSROOM','Data & settings','Your roster, assessments, results, notebooks and uploaded work are stored privately in Supabase.')+`
  <div class="grid g2"><section class="card"><h2 class="bar-head blue">Cloud connection</h2><p><span class="pill green">Supabase connected</span> Teacher: ${esc(Hub.auth.current().email)}</p><p>Changes save automatically while online. Wait for “Saved to cloud” before closing the tab. Refresh to see new work from another device.</p><div class="actions"><button class="btn" id="cloud-refresh">Save & refresh</button><button class="btn ghost" id="cloud-retry">Retry save</button></div><p class="tiny">If two people edit the same item, a conflict stops the save. Export your pending copy before reloading.</p><button class="btn small ghost" id="cloud-reload">Discard pending changes & reload</button></section>
  <section class="card"><h2 class="bar-head green">Export your data</h2><div class="actions"><button class="btn" id="bk">Download full data backup</button><button class="btn ghost" id="roster-csv">Roster CSV</button><button class="btn ghost" id="results-csv">Results CSV</button><button class="btn ghost" id="evidence-csv">Evidence CSV</button></div><p class="tiny">Backups include data and attachment references. Photos/PDFs remain in private storage; download an attachment from the marking screen for a separate copy.</p></section>
- <section class="card"><h2 class="bar-head pink">Upload your roster</h2><p>${Hub.roster.all().length} active students. Import adds students or updates by email. Existing work is preserved.</p><label class="btn file-btn"><input id="roster-file" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values">Choose CSV / TSV</label><button class="btn small ghost" id="template">Download template</button><label>Or paste rows<textarea id="roster-text" rows="5" placeholder="name,email,group"></textarea></label><p class="tiny">Columns: name, email, group. Groups: SL-A, SL-B, HL-A, HL-B. Quote names containing commas.</p><button class="btn" id="roster-check">Review import</button><div id="roster-review" aria-live="polite"></div><button class="btn primary" id="roster-apply" disabled>Save roster to cloud</button></section>
+ <section class="card"><h2 class="bar-head pink">Upload your roster</h2><p>${Hub.roster.all().length} active students. Import adds students or updates by email. Existing work is preserved.</p><div class="actions"><label class="btn file-btn"><input id="roster-file" type="file" accept=".csv,.tsv,.pdf,text/csv,text/tab-separated-values,application/pdf">Choose CSV / TSV / PDF</label><label class="inline">Group for a PDF<select id="roster-pdf-group"><option value="">Read it from the PDF</option><option>SL-A</option><option>SL-B</option><option>HL-A</option><option>HL-B</option></select></label><button class="btn small ghost" id="template">Download template</button></div><p class="tiny muted">A PDF roster is read on this computer only. Check the names and add any missing school emails before saving.</p><label>Or paste rows<textarea id="roster-text" rows="5" placeholder="name,email,group"></textarea></label><p class="tiny">Columns: name, email, group. Groups: SL-A, SL-B, HL-A, HL-B. Quote names containing commas.</p><button class="btn" id="roster-check">Review import</button><div id="roster-review" aria-live="polite"></div><button class="btn primary" id="roster-apply" disabled>Save roster to cloud</button></section>
  <section class="card"><h2 class="bar-head amber">Student accounts</h2><p>Create a private activation link after importing a roster. Give it only to that student through your usual private channel. They choose their own password. No email delivery service is required.</p><label>Student<select id="account-student">${Hub.roster.all().map(s=>`<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.email)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="invite" ${Hub.roster.all().length?'':'disabled'}>Create activation / reset link</button><button class="btn ghost" id="deactivate" ${Hub.roster.all().length?'':'disabled'}>Deactivate student</button></div><div id="invite-result"></div><p class="tiny">Deactivation blocks access but retains work. Import their email again to reactivate.</p></section>
  <section class="card"><h2 class="bar-head green">Lesson date</h2><p>The calendar uses today unless you set a planning date.</p><form id="asof-form"><label>Planning date<input id="asof" type="date" value="${st.settings.asOf||''}"></label><button class="btn">Save date</button><button class="btn ghost" type="button" id="asof-clear">Use today</button></form></section>
  <section class="card"><h2 class="bar-head blue">Canvas link</h2><p>Add this URL to Canvas as an external link. Students use their own Hub accounts. Grade syncing is not connected.</p><input id="canvas-link" aria-label="Canvas entry URL" readonly value="${esc(location.href.split('#')[0])}"><button class="btn ghost" id="copy-link">Copy link</button></section></div>`;
@@ -4284,7 +4363,12 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
  $('#evidence-csv').onclick=()=>csv('evidence',[['Student','Email','Skill','Earned','Max','Date','Source','Superseded','Preview'],...st.evidence.map(e=>{const s=Hub.roster.byId(e.sid)||{};return [s.name,s.email,e.skill,e.earned,e.max,e.date,e.source,!!e.superseded,!!e.preview]})]);
  $('#template').onclick=()=>csv('roster-template',[['name','email','group']]);
  let parsed=null;const invalidate=()=>{parsed=null;$('#roster-apply').disabled=true;$('#roster-review').textContent=''};$('#roster-text').oninput=invalidate;
- $('#roster-file').onchange=async e=>{if(e.target.files[0]){$('#roster-text').value=await e.target.files[0].text();invalidate()}};
+ $('#roster-file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+ if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){$('#roster-review').innerHTML='<p>Reading the PDF…</p>';try{const r=await Hub.rosterPdf.read(f,$('#roster-pdf-group').value);$('#roster-text').value=r.csv;invalidate();
+  $('#roster-review').innerHTML=`<p><b>Found ${r.rows.length} student${r.rows.length===1?'':'s'}</b> in the PDF${r.withEmail<r.rows.length?` · <b>${r.rows.length-r.withEmail} without an email</b>: type their school email after the first comma on their line`:''}.${r.group?` Group: <b>${esc(r.group)}</b>${r.detected&&!$('#roster-pdf-group').value?' (read from the PDF)':''}.`:' <b>Choose the group</b> above, then choose the file again (or type SL-A / SL-B / HL-A / HL-B at the end of each line).'}</p><p class="tiny">Check every name below, then press Review import.</p>`;
+  if(!r.rows.length)$('#roster-review').innerHTML='<p>No student names were found in that PDF. If it is a scanned image, export the roster as CSV instead.</p>';}
+ catch(err){$('#roster-review').innerHTML=`<p>${esc(err.message)}</p>`;}e.target.value='';return;}
+ $('#roster-text').value=await f.text();invalidate();e.target.value='';};
  $('#roster-check').onclick=()=>{parsed=Hub.roster.parseImport($('#roster-text').value);$('#roster-review').innerHTML=`<p>${parsed.rows.length} valid rows. ${parsed.rows.filter(r=>Hub.roster.byEmail(r.email)).length} existing accounts will be updated.</p>${parsed.errors.map(x=>`<p>${esc(x)}</p>`).join('')}<ul>${parsed.rows.slice(0,8).map(s=>`<li>${esc(s.name)} · ${esc(s.email)} · ${s.group}</li>`).join('')}</ul>`;$('#roster-apply').disabled=!!parsed.errors.length||!parsed.rows.length;};
  $('#roster-apply').onclick=async()=>{if(!parsed||parsed.errors.length)return;$('#roster-apply').disabled=true;try{Hub.roster.applyImport(parsed.rows);await Hub.store.flush();toast('Roster saved to cloud.');Hub.app.render()}catch(e){toast(e.message,'error')}};
  $('#invite').onclick=async()=>{const b=$('#invite');b.disabled=true;try{await Hub.store.flush();const r=await Hub.cloud.call('invite',{sid:$('#account-student').value});$('#invite-result').innerHTML=`<label>Private one-time link<textarea readonly rows="4">${esc(r.link)}</textarea></label><p class="tiny">Copy and share privately with this student only. This grants access to their account and may expire.</p>`;}catch(e){toast(e.message,'error')}finally{b.disabled=false}};
@@ -4480,6 +4564,282 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.print = { view, sheets };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/textbook.js ---- */
+/* Textbook worked-example references for each calendar lesson: example number and printed page in the Oxford
+   Mathematics: Analysis and Approaches SL / HL books (2019). References only — no textbook content is stored here.
+   Keyed by lesson id (course + the A-day date, as in Lessons & notebooks). Each entry: [example number, page]. */
+(function (Hub) {
+  'use strict';
+  const BOOK = { SL: 'Oxford SL', HL: 'Oxford HL' };
+  const R = {
+    // AA SL
+    'SL-2026-10-29': [[31, 53], [32, 53]],
+    'SL-2026-11-04': [[33, 53], [34, 54]],
+    'SL-2026-11-06': [[35, 56]],
+    'SL-2026-11-10': [[1, 67], [2, 68]],
+    'SL-2026-11-13': [[3, 70], [4, 71], [5, 72], [6, 72], [7, 75], [8, 76]],
+    'SL-2026-11-17': [[9, 78], [10, 80], [11, 81], [12, 83]],
+    'SL-2026-11-19': [[13, 86], [14, 88], [15, 89], [16, 90], [17, 91]],
+    'SL-2026-11-30': [[18, 93], [19, 94], [20, 95], [21, 97], [22, 98]],
+    'SL-2026-12-04': [[1, 111], [2, 112], [3, 113], [4, 114], [5, 117], [6, 118], [7, 119], [8, 120]],
+    'SL-2026-12-08': [[9, 122], [10, 123], [11, 124], [12, 125], [13, 126], [14, 127], [15, 128]],
+    'SL-2026-12-10': [[16, 133], [17, 135], [18, 138], [19, 140]],
+    'SL-2026-12-14': [[20, 142], [21, 144], [22, 146], [23, 147], [24, 149], [25, 150], [26, 152]],
+    'SL-2026-12-16': [[27, 155], [28, 156], [29, 157], [30, 158], [31, 162], [32, 163]],
+    'SL-2026-12-18': [[33, 165], [34, 168], [35, 169], [36, 170], [37, 171], [38, 172]],
+    // AA HL
+    'HL-2026-10-29': [[1, 76], [2, 78], [3, 79]],
+    'HL-2026-11-04': [[4, 83], [5, 83], [6, 84], [7, 87], [8, 88], [9, 89], [10, 90], [11, 91], [12, 92]],
+    'HL-2026-11-06': [[13, 94], [14, 95], [15, 96], [16, 96], [17, 97], [18, 98], [19, 99], [20, 99], [21, 100]],
+    'HL-2026-11-10': [[22, 103], [23, 105], [24, 107]],
+    'HL-2026-11-13': [[25, 110], [26, 110]],
+    'HL-2026-11-17': [[27, 113], [28, 113], [29, 115]],
+    'HL-2026-11-19': [[30, 117], [31, 119], [32, 121], [33, 122], [34, 123], [35, 124], [36, 125]],
+    'HL-2026-11-30': [[37, 129], [38, 131], [39, 134], [40, 135], [41, 137]],
+    'HL-2026-12-14': [[1, 149], [2, 151], [3, 152], [4, 154], [5, 155], [6, 157], [7, 157], [8, 158], [9, 159], [10, 160]],
+    'HL-2026-12-16': [[11, 162], [12, 164], [13, 165], [14, 167], [15, 167]],
+    'HL-2026-12-18': [[16, 169], [17, 169], [18, 170], [19, 173], [20, 174]]
+  };
+  /** Worked-example cards (reference only) for a lesson id. */
+  function cards(lessonId) {
+    const course = String(lessonId).slice(0, 2), list = R[lessonId] || [];
+    return list.map(([n, p]) => ({ ref: `${BOOK[course]} · Example ${n} · p. ${p}`, page: p, book: BOOK[course], q: '', steps: '' }));
+  }
+  function summary(lessonId) {
+    const list = R[lessonId] || []; if (!list.length) return '';
+    const course = String(lessonId).slice(0, 2), ns = list.map(x => x[0]), ps = list.map(x => x[1]);
+    return `${BOOK[course]} · Example${ns.length > 1 ? 's' : ''} ${ns.length > 1 ? ns[0] + '–' + ns[ns.length - 1] : ns[0]} · ${ps[0] === ps[ps.length - 1] ? 'p. ' + ps[0] : 'pp. ' + ps[0] + '–' + ps[ps.length - 1]}`;
+  }
+  Hub.textbook = { cards, summary, has: id => !!(R[id] && R[id].length) };
+})(window.Hub = window.Hub || {});
+
+/* ---- js/notes.js ---- */
+/* Ready-made guided notes ("Key ideas") for each calendar lesson, written for the Hub (original wording; the Oxford
+   books were used only to check which topics each section covers). Syntax: "## " heading, "- " bullet, [[answer]] blank
+   (alternatives separated by |), maths in $…$ with blanks kept outside the $…$. Keyed by lesson id. */
+(function (Hub) {
+  'use strict';
+  const N = {};
+  N['SL-2026-10-29'] = String.raw`## The binomial theorem
+- $(a + b)^{n}$ has [[n+1|n + 1]] terms.
+- The coefficients come from row $n$ of [[Pascal's triangle|Pascal’s triangle|Pascals triangle|pascal's triangle]], or from $\binom{n}{r}$ (nCr on the NumWorks).
+- In every term, the powers of $a$ and $b$ add up to [[n]].
+## The general term
+- The term containing $b^{r}$ is $\binom{n}{r}a^{n-r}b^{r}$ (formula booklet).
+- $r$ starts at 0, so the term in $b^{r}$ is term number [[r+1|r + 1]].
+- In $(x + 2)^{6}$ the term in $x^{4}$ has $r =$ [[2]], so its coefficient is $\binom{6}{2} \times 2^{2} =$ [[60]].
+- Put the whole term in brackets before using a power: the coefficient of $(-3x)^{2}$ is [[9]].`;
+  N['SL-2026-11-04'] = String.raw`## Finding a particular term
+- Write the general term, collect the powers of $x$, then solve for [[r]].
+- For the constant term (the term independent of $x$), the power of $x$ is [[0|zero]].
+- In $\left(x^{2} + \frac{1}{x}\right)^{6}$ the power of $x$ is $2(6 - r) - r = 12 - 3r$, so the constant term has $r =$ [[4]].
+## Working backwards
+- If a coefficient is given, write an equation in the unknown and solve it.
+- The coefficient of $x$ in $(1 + kx)^{5}$ is $5k$. If it equals 15, then $k =$ [[3]].
+- An even root gives [[two|2]] possible answers: check conditions such as $k > 0$.
+## Estimating with an expansion
+- Match the bracket to the number: $(1.02)^{5} = (1 + x)^{5}$ with $x =$ [[0.02]].
+- A few terms are enough because powers of a small $x$ quickly become [[very small|small|smaller|tiny]].
+- $(1.02)^{5} \approx 1 + 5(0.02) + 10(0.02)^{2} =$ [[1.104]].`;
+  N['SL-2026-11-06'] = String.raw`## What a proof does
+- A proof shows a statement is true for [[all|every|all values]] values, not just a few examples.
+- Trying numbers is not a proof, but one [[counterexample|counter-example|counter example]] is enough to show a statement is false.
+## LHS to RHS
+- Start from the left-hand side and work step by step until you reach the [[right-hand side|RHS|right hand side]].
+- Work on [[one side|one]] at a time: never move terms across the equals sign.
+- An even number can be written $2n$; an odd number can be written [[2n+1|2n + 1|2n-1|2n - 1]], where $n \in \mathbb{Z}$.
+- The symbol $\equiv$ shows an [[identity]]: true for every value of the variable.
+- End with a sentence such as "LHS = RHS, as required". In a markscheme this final line is marked [[AG]] (answer given).`;
+  N['SL-2026-11-10'] = String.raw`## Relations and functions
+- A relation links inputs to outputs. It is a function when every input has exactly [[one|1]] output.
+- One-to-one and [[many-to-one|many to one]] relations are functions; one-to-many relations are not.
+- Vertical line test: a graph shows a function if every vertical line meets it at most [[once|one time|1 time]].
+## Domain and range
+- The set of inputs is the [[domain]]; the set of outputs is the [[range]].
+- $x^{2} + y^{2} = 25$ is [[not a function|not]], because $x = 3$ gives $y = 4$ and $y = -4$.`;
+  N['SL-2026-11-13'] = String.raw`## Function notation
+- $f(x) = 3x - 1$ means "apply $f$ to $x$". So $f(2) =$ [[5]].
+- Replace every $x$: $f(a + 1) = 3(a + 1) - 1 =$ [[3a+2|3a + 2]].
+- To solve $f(x) = 11$, write $3x - 1 = 11$, so $x =$ [[4]].
+## Drawing graphs
+- The $y$-intercept is found by putting $x =$ [[0]].
+- The $x$-intercepts (zeros) are where $f(x) =$ [[0]].
+- On the NumWorks Grapher, use Calculate for zeros, maximum, minimum and intersection points.
+- "Draw" means an accurate graph with a scale; [[sketch]] means the shape and the key features, labelled.`;
+  N['SL-2026-11-17'] = String.raw`## Natural domain
+- You cannot divide by [[zero|0]]: $f(x) = \frac{1}{x - 3}$ has domain $x \ne$ [[3]].
+- You cannot take the square root of a [[negative|negative number]]: $\sqrt{x + 2}$ needs $x \ge$ [[-2]].
+## Range
+- Read the range from the graph: which [[y-values|y values|outputs|y]] does it reach?
+- $f(x) = (x - 2)^{2} + 5$ has range $f(x) \ge$ [[5]], because a square is never [[negative]].
+- On a restricted domain, check both end points and any turning point between them.
+- Write domains and ranges with inequalities, e.g. $-1 \le x < 4$.`;
+  N['SL-2026-11-19'] = String.raw`## Composite functions
+- $(f \circ g)(x) = f(g(x))$: apply [[g]] first, then $f$.
+- With $f(x) = 2x + 1$ and $g(x) = x^{2}$: $(f \circ g)(3) = f(9) =$ [[19]] and $(g \circ f)(3) = g(7) =$ [[49]].
+- So $f \circ g$ and $g \circ f$ are usually [[different|not the same|not equal]].
+- To find $(f \circ g)(x)$, replace every $x$ in $f$ with the whole of [[g(x)]].
+- The domain of $f \circ g$: inputs of $g$ whose outputs are allowed inputs of [[f]].`;
+  N['SL-2026-11-30'] = String.raw`## Inverse functions
+- $f^{-1}$ undoes $f$: if $f(a) = b$ then $f^{-1}(b) =$ [[a]].
+- Only [[one-to-one|one to one]] functions have an inverse function.
+- To find $f^{-1}(x)$: write $y = f(x)$, swap [[x and y|y and x]], then make $y$ the subject.
+- The graph of $y = f^{-1}(x)$ is the reflection of $y = f(x)$ in the line [[y=x|y = x]].
+- The domain of $f^{-1}$ is the [[range]] of $f$.
+- $(f \circ f^{-1})(x) =$ [[x]].
+- Careful: $f^{-1}(x)$ is not the same as $\frac{1}{f(x)}$.`;
+  N['SL-2026-12-04'] = String.raw`## Gradient
+- Gradient $m = \frac{y_{2} - y_{1}}{x_{2} - x_{1}}$ (formula booklet).
+- The gradient of the line through $(1, 2)$ and $(4, 11)$ is [[3]].
+- A positive gradient goes [[up|upwards]] from left to right.
+- A horizontal line has gradient [[0|zero]]; the gradient of a vertical line is [[undefined|not defined]].
+## Equations of lines
+- Gradient–intercept form $y = mx + c$, where $c$ is the [[y-intercept|y intercept]].
+- Point–gradient form $y - y_{1} = m(x - x_{1})$.
+- General form $ax + by + d = 0$, usually with integer $a$, $b$ and $d$.
+- The line through $(2, 5)$ with gradient 3 is $y - 5 = 3(x - 2)$, so $c =$ [[-1]].`;
+  N['SL-2026-12-08'] = String.raw`## Parallel and perpendicular lines
+- Parallel lines have [[equal|the same]] gradients.
+- Perpendicular lines: $m_{1} \times m_{2} =$ [[-1]] (negative reciprocals).
+- A line perpendicular to $y = 2x + 5$ has gradient [[-1/2|-0.5]].
+## Linear models
+- In the model $C = 3.5n + 20$, the gradient 3.5 is the rate of change, and 20 is the [[fixed cost|starting value|initial value|fixed]].
+- Where two lines meet: solve simultaneously, or use the NumWorks [[intersection|Intersection]] tool.`;
+  N['SL-2026-12-10'] = String.raw`## Translations
+- $y = f(x) + k$ moves the graph [[up|upwards]] by $k$.
+- $y = f(x - h)$ moves the graph [[right|to the right]] by $h$: watch the sign!
+## Reflections
+- $y = -f(x)$ reflects in the [[x-axis|x axis]]; $y = f(-x)$ reflects in the [[y-axis|y axis]].
+## Stretches
+- $y = pf(x)$: vertical stretch with scale factor [[p]].
+- $y = f(qx)$: horizontal stretch with scale factor [[$\frac{1}{q}$|1/q|1 / q]].
+- The point $(2, 3)$ on $y = f(x)$ moves to a point with $y$-coordinate [[6]] on $y = 2f(x)$.
+- When you combine transformations in the same direction, the [[order]] matters.`;
+  N['SL-2026-12-14'] = String.raw`## Three forms of a quadratic
+- $y = ax^{2} + bx + c$: the $y$-intercept is [[c]], and the axis of symmetry is $x = -\frac{b}{2a}$.
+- $y = a(x - h)^{2} + k$: the vertex is $(h, k)$.
+- $y = a(x - p)(x - q)$: the $x$-intercepts are [[p and q|p, q|p,q]].
+- If $a > 0$, the parabola opens [[upwards|up]] and the vertex is a [[minimum|min]].
+- $y = (x - 3)^{2} + 4$ has axis of symmetry $x =$ [[3]].
+- $y = 2x^{2} - 8x + 1$ has axis of symmetry $x =$ [[2]].`;
+  N['SL-2026-12-16'] = String.raw`## Solving by factorisation
+- First rearrange so that one side is [[0|zero]].
+- If $AB = 0$ then $A = 0$ or $B =$ [[0]].
+- $x^{2} - 5x + 6 = 0 \Rightarrow (x - 2)(x - 3) = 0$, so $x = 2$ or $x =$ [[3]].
+- Never divide both sides by $x$: you would lose the solution $x =$ [[0]].
+- $x^{2} - 9$ factorises as $(x - 3)$ times [[x+3|(x+3)|x + 3|(x + 3)]].
+## Completing the square
+- $x^{2} + 6x + 2 = (x + 3)^{2} -$ [[7]].`;
+  N['SL-2026-12-18'] = String.raw`## The quadratic formula
+- For $ax^{2} + bx + c = 0$: $x = \frac{-b \pm \sqrt{b^{2} - 4ac}}{2a}$ (formula booklet).
+- The discriminant is [[b^2-4ac|b²-4ac|b^2 - 4ac|b² - 4ac]].
+## The discriminant
+- $\Delta > 0$: two distinct real roots. $\Delta = 0$: [[equal roots|two equal roots|one repeated root|repeated root|one root|equal]]. $\Delta < 0$: [[no real roots|none|no roots]].
+- For $x^{2} + 4x + k = 0$ to have equal roots, $16 - 4k = 0$, so $k =$ [[4]].
+- Always write the equation as $ax^{2} + bx + c = 0$ [[before|first]] finding $\Delta$.`;
+  N['HL-2026-10-29'] = String.raw`## Functions
+- A function maps every element of its domain to exactly [[one|1]] element of its range.
+- Vertical line test: every vertical line meets the graph of a function at most [[once|one time|1 time]].
+- $f: x \mapsto 2x + 1$ means $f(x) =$ [[2x+1|2x + 1]].
+## Domain and range
+- $x \in [2, 5)$ means $2 \le x$ and $x$ [[<|less than]] 5.
+- $f(x) = \frac{1}{\sqrt{x - 1}}$ has domain $x >$ [[1]].
+- $f(x) = x^{2} - 4$, $x \in \mathbb{R}$, has range $f(x) \ge$ [[-4]].`;
+  N['HL-2026-11-04'] = String.raw`## Quadratic functions
+- The vertex of $y = ax^{2} + bx + c$ is at $x = -\frac{b}{2a}$. The graph is concave up when $a$ is [[positive|>0|> 0]].
+- $f(x) = 2(x + 1)^{2} - 3$ has range $f(x) \ge$ [[-3]].
+## Rational functions
+- For $f(x) = \frac{ax + b}{cx + d}$: vertical asymptote $x = -\frac{d}{c}$, horizontal asymptote $y = \frac{a}{c}$.
+- $f(x) = \frac{2x + 1}{x - 3}$: vertical asymptote $x =$ [[3]], horizontal asymptote $y =$ [[2]].
+- So the range of that function is $y \ne$ [[2]].
+## Radical functions
+- $y = \sqrt{x}$ needs $x \ge$ [[0]], and its outputs are never [[negative]].
+- $y = 2\sqrt{x - 1} + 3$ starts at the point with $y$-coordinate [[3]].`;
+  N['HL-2026-11-06'] = String.raw`## Absolute value
+- $|x| = x$ when $x \ge 0$, and $|x| =$ [[-x]] when $x < 0$.
+- $|x - 3|$ is the [[distance]] between $x$ and 3 on the number line.
+- $|2x - 1| = 5$: solve $2x - 1 = 5$ and $2x - 1 =$ [[-5]], so $x = 3$ or $x =$ [[-2]].
+- When the other side contains $x$ (e.g. $|x + 1| = 2x - 5$), [[check|substitute back|check your answers]] every answer: some fail.
+- $|x| < a$ means $-a < x < a$; $|x| > a$ means $x < -a$ or $x >$ [[a]].
+## Piecewise functions
+- Different rules apply on different parts of the domain.
+- The graph is continuous at a join when both pieces give the [[same|same value|same y-value]] there.
+## Rational functions
+- If the degree of the numerator is less than the degree of the denominator, the horizontal asymptote is $y =$ [[0]].`;
+  N['HL-2026-11-10'] = String.raw`## One-to-one and many-to-one
+- One-to-one: every output comes from exactly one input. Test with a [[horizontal|horizontal line]] line.
+- $f(x) = x^{2}$, $x \in \mathbb{R}$, is [[many-to-one|many to one]].
+- Only one-to-one functions have an [[inverse|inverse function]].
+## Onto
+- A function is onto when its range equals its [[codomain|co-domain]].
+## Odd and even
+- Even: $f(-x) =$ [[f(x)]]; the graph is symmetrical in the $y$-axis.
+- Odd: $f(-x) =$ [[-f(x)]]; the graph has rotational symmetry of order 2 about the [[origin]].
+- $x^{3} - 4x$ is [[odd]]; $x^{4} + x^{2}$ is [[even]]; $x^{2} + x$ is [[neither]].`;
+  N['HL-2026-11-13'] = String.raw`## Composite functions
+- $(f \circ g)(x) = f(g(x))$: $g$ acts [[first]].
+- $f \circ g$ exists only where the range of $g$ lies inside the [[domain]] of $f$.
+- With $f(x) = \sqrt{x}$ and $g(x) = x - 4$: $(f \circ g)(x) = \sqrt{x - 4}$, with domain $x \ge$ [[4]].
+- $f \circ g$ and $g \circ f$ are usually [[different|not equal|not the same]].
+- The identity function $I(x) = x$ leaves $f$ unchanged: $(f \circ I)(x) =$ [[f(x)]].`;
+  N['HL-2026-11-17'] = String.raw`## Inverse functions
+- $f^{-1}$ exists only when $f$ is [[one-to-one|one to one|bijective]]; restrict the domain if you need to.
+- $(f \circ f^{-1})(x) = (f^{-1} \circ f)(x) =$ [[x]].
+- Method: $y = f(x)$, interchange $x$ and $y$, then solve for [[y]].
+- $f(x) = 2x - 3$ gives $f^{-1}(x) = \frac{x + 3}{2}$, so $f^{-1}(7) =$ [[5]].
+- The domain of $f^{-1}$ is the [[range]] of $f$, and the range of $f^{-1}$ is the domain of $f$.
+- The graphs of $f$ and $f^{-1}$ are reflections in the line [[y=x|y = x]].
+- A self-inverse function has $f^{-1}(x) =$ [[f(x)]], for example $f(x) = \frac{1}{x}$.`;
+  N['HL-2026-11-19'] = String.raw`## Translations
+- $y = f(x) + k$: vertical translation by [[k]] units.
+- $y = f(x - h) + k$ is a translation by the vector $\begin{pmatrix} h \\ k \end{pmatrix}$.
+## Dilations
+- $y = pf(x)$: vertical stretch with scale factor [[p]].
+- $y = f(qx)$: horizontal stretch with scale factor [[$\frac{1}{q}$|1/q|1 / q]].
+## Reflections
+- $y = -f(x)$ reflects in the [[x-axis|x axis]]; $y = f(-x)$ reflects in the [[y-axis|y axis]].
+- Changes inside the bracket act on $x$ "backwards": $(4, 2)$ on $y = f(x)$ goes to the point with $x$-coordinate [[2]] on $y = f(2x)$.`;
+  N['HL-2026-11-30'] = String.raw`## The graph of $y = |f(x)|$
+- Keep the parts on or above the $x$-axis; reflect the parts below it in the [[x-axis|x axis]].
+- The graph of $y = |f(x)|$ never goes [[below the x-axis|below|negative]].
+## The graph of $y = f(|x|)$
+- Keep the graph for $x \ge 0$ and reflect it in the [[y-axis|y axis]]. The result is an [[even]] function.
+## The graph of $y = \frac{1}{f(x)}$
+- Zeros of $f$ become [[vertical asymptotes|vertical asymptote|asymptotes]].
+- Where $f(x) = 1$ or $f(x) = -1$, the two graphs [[meet|intersect|cross|touch]].
+- A positive maximum of $f$ becomes a [[minimum]] of $\frac{1}{f(x)}$.
+- As $f(x) \to \pm\infty$, $\frac{1}{f(x)} \to$ [[0]].`;
+  N['HL-2026-12-14'] = String.raw`## Quadratic equations
+- Solve by factorising, completing the square, the quadratic formula, or the NumWorks [[Equations|equations|solver]] app.
+- Two distinct real roots when $\Delta$ is [[positive|>0|> 0]]; equal roots when $\Delta = 0$; no real roots when $\Delta < 0$.
+## Quadratic inequalities
+- Solve the equation first to find the [[critical values|roots|zeros]], then sketch the parabola.
+- $x^{2} - x - 6 < 0$: the roots are $-2$ and 3, and the parabola is below the axis between them, so [[-2<x<3|-2 < x < 3]].
+- $x^{2} - x - 6 \ge 0$: $x \le -2$ or $x \ge$ [[3]].
+- $kx^{2} + 4x + 1 = 0$ has no real roots when $16 - 4k < 0$, so $k >$ [[4]].`;
+  N['HL-2026-12-16'] = String.raw`## The imaginary unit
+- $i^{2} =$ [[-1]], so $\sqrt{-9} =$ [[3i]].
+- In Cartesian form $z = a + bi$: the real part is $a$ and the imaginary part is [[b]] (not $bi$).
+- $\text{Im}(3 - 4i) =$ [[-4]].
+## Arithmetic with complex numbers
+- Add and subtract the real parts and the imaginary parts [[separately]].
+- $(2 + 3i)(1 - i) = 2 - 2i + 3i - 3i^{2} =$ [[5+i|5 + i]].
+- The modulus $|a + bi| = \sqrt{a^{2} + b^{2}}$, so $|3 + 4i| =$ [[5]].
+- Two complex numbers are equal when their real parts are equal and their [[imaginary parts|imaginary]] parts are equal.
+- Powers of $i$ repeat every [[4]] powers: $i^{3} = -i$, $i^{4} = 1$.`;
+  N['HL-2026-12-18'] = String.raw`## Conjugates
+- The conjugate of $z = a + bi$ is $z^{*} = a - bi$.
+- $zz^{*} = a^{2} + b^{2}$, which is always [[real|a real number]].
+- $(3 + 2i)(3 - 2i) =$ [[13]].
+## Division
+- To divide, multiply the top and bottom by the conjugate of the [[denominator|bottom]].
+- $\frac{5}{1 + 2i} = \frac{5(1 - 2i)}{5} =$ [[1-2i|1 - 2i]].
+## Complex roots of quadratics
+- When $\Delta < 0$, the roots are complex and come in [[conjugate pairs|conjugate pair|conjugates]].
+- $x^{2} + 2x + 5 = 0$ gives $x = \frac{-2 \pm \sqrt{-16}}{2} = -1 \pm$ [[2i]].`;
+  Hub.guidedNotes = { text: id => N[id] || '', has: id => !!N[id], ids: () => Object.keys(N) };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/lessons.js ---- */
 /* Lesson notebooks — one interactive notebook per calendar lesson, released by Miss Badmus to each day (A then B).
    Stored in the cloud as settings['lesson:<id>'] (teacher-only writes, merged per lesson so two lessons never clash).
@@ -4543,8 +4903,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 
   function create(row) {
     const gens = gensFor(row.skills);
-    const L = { id: row.id, course: row.course, title: row.title, dates: row.dates, eq: '', skills: row.skills.slice(), deck: null, doNow: true, keyIdeas: '',
-      examples: [], myExamples: [], homeworkId: null,
+    const L = { id: row.id, course: row.course, title: row.title, dates: row.dates, eq: '', skills: row.skills.slice(), deck: null, doNow: true,
+      examples: [], myExamples: Hub.textbook ? Hub.textbook.cards(row.id) : [], refsFilled: true, keyIdeas: Hub.guidedNotes ? Hub.guidedNotes.text(row.id) : '', notesFilled: true, homeworkId: null,
       tasks: gens.length ? [0, 1, 2].map(i => ({ gen: gens[i % gens.length], seed: newSeed() })) : [],
       exitTicketId: null, homework: '', homeworkUrl: '', reflect: true, release: {}, createdAt: nowISO() };
     put(L); Hub.store.log(`Created lesson notebook “${L.title}”`); return L;
@@ -4612,8 +4972,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /** A worked example typed by Miss Badmus (e.g. the textbook example used on her slides): question left, steps revealed one line at a time. */
   function myExampleHTML(e, i, showAll) {
     const steps = String(e.steps || '').split('\n').map(x => x.trim()).filter(Boolean).map(w => `<div class="step">${M(w)}</div>`);
-    return `<article class="ex" data-ex="my${i}"><div class="ex-q"><div class="q-head"><span class="q-num">${i + 1}</span>${e.ref ? `<div class="q-meta"><span class="pill blue">${esc(e.ref)}</span></div>` : ''}</div><div class="q-stem">${M(e.q || '')}</div></div>
-      <div class="ex-sol"><div class="hand ex-steps">${steps.map(x => showAll ? x : x.replace('class="step', 'hidden class="step')).join('')}</div>${showAll || !steps.length ? '' : `<div class="actions"><button type="button" class="btn small primary" data-next="my${i}">Show next step</button><button type="button" class="btn small ghost" data-allsteps="my${i}">Show all</button></div>`}</div></article>`;
+    return `<article class="ex${steps.length ? '' : ' ref-only'}" data-ex="my${i}"><div class="ex-q"><div class="q-head"><span class="q-num">${i + 1}</span>${e.ref ? `<div class="q-meta"><span class="pill blue">${esc(e.ref)}</span></div>` : ''}</div>${(e.q || '').trim() ? `<div class="q-stem">${M(e.q)}</div>` : `<p class="tb-ref">📖 Open your textbook${e.page ? ` to <b>page ${e.page}</b>` : ''} and try this example first. Then check it against the worked solution in the book and on today’s slides.</p>`}</div>
+      ${steps.length ? '' : '<!--'}<div class="ex-sol"><div class="hand ex-steps">${steps.map(x => showAll ? x : x.replace('class="step', 'hidden class="step')).join('')}</div>${showAll || !steps.length ? '' : `<div class="actions"><button type="button" class="btn small primary" data-next="my${i}">Show next step</button><button type="button" class="btn small ghost" data-allsteps="my${i}">Show all</button></div>`}</div>${steps.length ? '' : '-->'}</article>`;
   }
   /** Exit Ticket / homework from the Assessment Studio, as a link that works for students (their own day's due date) and in the teacher's preview. */
   function linkedTask(a, label, ctx, sid) {
@@ -4643,24 +5003,44 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const nb = blanksOf(L.keyIdeas).length;
       add('Key ideas', 'notes', `<div class="nb-notes" id="nb-notes">${notesHTML(L.keyIdeas, (r.blanks || {}), { dis, key: ctx.key })}</div>${nb && !ctx.key ? `<div class="actions"><button type="button" class="btn small" id="check-notes" ${dis}>Check my notes</button><button type="button" class="btn small ghost" id="show-notes" ${r.notesChecked || ctx.readOnly ? '' : 'hidden'}>Show the answers</button><span class="tiny muted" id="notes-score"></span></div>` : ''}`);
     }
-    const ex = examplesOf(L), mine = (L.myExamples || []).filter(e => (e.q || '').trim() || (e.steps || '').trim());
+    const ex = examplesOf(L), mine = (L.myExamples || []).filter(e => (e.ref || '').trim() || (e.q || '').trim() || (e.steps || '').trim());
     if (ex.length || mine.length) add('Worked examples', 'examples', `<p class="tiny muted">Try each one in your head first. Then reveal the solution one line at a time.</p>${mine.map((e, i) => myExampleHTML(e, i, ctx.key)).join('')}${ex.map((q, i) => exampleHTML(q, mine.length + i + 1, ctx.key)).join('')}`);
     const ts = tasksOf(L);
     if (ts.length) add('Your turn', 'yourturn', `<p class="tiny muted">Practice for you — checked straight away, never graded. Type fractions as 3/4, roots as sqrt(5).</p><form id="yt-form" novalidate>${ts.map((q, i) => U.question(q, i, { mode: ctx.key ? 'teacher' : 'answer', responses: r.tasks || {}, hints: !ctx.readOnly, disabled: ctx.readOnly, footer: ctx.key ? '' : `<div class="yt-foot"><button type="button" class="btn small" data-check="${q.id}" ${dis}>Check my answer</button><button type="button" class="btn small ghost" data-sol="${q.id}" ${(r.checked || {})[q.id] || ctx.readOnly ? '' : 'hidden'}>Show the solution</button></div><div class="yt-fb" id="fb-${q.id}"></div><div class="yt-sol" id="sol-${q.id}" hidden></div>` })).join('')}</form>`);
     if (L.exitTicketId) add('Exit Ticket', 'exit', linkedTask(Hub.assess.byId(L.exitTicketId), 'Exit Ticket', ctx, sid));
     const hwA = L.homeworkId ? Hub.assess.byId(L.homeworkId) : null;
     if (hwA || L.homeworkId || (L.homework || '').trim() || L.homeworkUrl) add('Homework', 'homework', `${L.homeworkId ? linkedTask(hwA, 'homework', ctx, sid) : ''}${L.homework ? `<p class="hw">${M(L.homework)}</p>` : ''}${/^https:\/\//.test(L.homeworkUrl || '') ? `<p><a class="btn small" href="${esc(L.homeworkUrl)}" target="_blank" rel="noopener">Open the homework ↗</a> <code class="link-text">${esc(L.homeworkUrl.replace(/^https?:\/\//, ''))}</code></p>` : ''}`);
+    if (!ctx.key) add('My own notes', 'mine', `<p class="tiny muted">Build your own page on top of today’s notebook: your notes, your own worked examples, key words, or a photo of your handwritten notes. Type maths between dollar signs: <code>$x^2$</code>, <code>$\\frac{3}{4}$</code>, <code>$\\sqrt{5}$</code>. It shows as maths underneath.</p><div id="mine-list">${mineHTML(r.mine || [], ctx)}</div>${ctx.readOnly ? '' : `<div class="actions mine-add"><button type="button" class="btn small" data-mine-add="note">+ Note</button><button type="button" class="btn small" data-mine-add="example">+ My worked example</button><button type="button" class="btn small" data-mine-add="term">+ Key word</button><label class="btn small ghost file-btn"><input type="file" accept="image/*" data-mine-photo capture="environment"> + Photo of my notes</label></div>`}`);
     if (L.reflect !== false) add('Reflection', 'reflect', `<fieldset class="rag"><legend>How confident do you feel about today’s lesson?</legend>${[['red', 'I’m stuck'], ['amber', 'Getting there'], ['green', 'I’ve got it']].map(([v, t]) => `<label class="rag-opt ${v}"><input type="radio" name="rag" value="${v}" ${r.rag === v ? 'checked' : ''} ${dis}> ${t}</label>`).join('')}</fieldset>
       <label>One thing I learned today<textarea id="nb-learned" rows="2" ${dis}>${esc(r.learned || '')}</textarea></label><label>A question I still have <span class="tiny muted">(Miss Badmus reads these)</span><textarea id="nb-question" rows="2" ${dis}>${esc(r.question || '')}</textarea></label>`);
     const eq = L.eq ? `<div class="eq-strip"><span class="eq-tag">Essential question</span> ${M(L.eq)}</div>` : '';
     return `${eq}<div class="chips nb-skills">${L.skills.map(s => U.skillChip(s)).join('')}</div>${secs.join('') || U.empty('This notebook is still empty.')}`;
   }
+  /** Student-built blocks: note, example, key word, photo. Editable for the student; read-only for the teacher. */
+  const MINE = { note: 'Note', example: 'My worked example', term: 'Key word', photo: 'Photo of my notes' };
+  const lines = t => String(t || '').split('\n').filter(x => x.trim()).map(x => `<div>${M(x)}</div>`).join('');
+  function mineView(b) {
+    if (b.type === 'term') return `<p><b>${esc(b.title || '')}</b>${b.text ? ' — ' + M(b.text) : ''}</p>`;
+    if (b.type === 'example') return `${b.title ? `<p><b>${esc(b.title)}</b></p>` : ''}<div class="q-stem">${lines(b.q)}</div><div class="hand">${lines(b.steps)}</div>`;
+    if (b.type === 'photo') return `${b.title ? `<p><b>${esc(b.title)}</b></p>` : ''}${b.upload ? `<figure class="mine-photo"><img data-up="${esc(b.upload.id)}" alt="${esc(b.title || 'Photo of notes')}"></figure>` : ''}`;
+    return `${b.title ? `<p><b>${esc(b.title)}</b></p>` : ''}<div class="mine-text">${lines(b.text)}</div>`;
+  }
+  function mineHTML(list, ctx) {
+    if (!list.length) return ctx.readOnly ? '<p class="tiny muted">Nothing added yet.</p>' : '';
+    return list.map((b, i) => {
+      if (ctx.readOnly) return `<article class="mine-blk"><span class="pill">${MINE[b.type] || 'Note'}</span>${mineView(b)}</article>`;
+      const fld = (k, label, rows, ph) => rows ? `<label>${label}<textarea data-mi="${i}" data-mk="${k}" rows="${rows}" placeholder="${esc(ph || '')}">${esc(b[k] || '')}</textarea></label>` : `<label>${label}<input data-mi="${i}" data-mk="${k}" value="${esc(b[k] || '')}" placeholder="${esc(ph || '')}"></label>`;
+      const body = b.type === 'term' ? fld('title', 'Key word') + fld('text', 'What it means', 2) : b.type === 'example' ? fld('title', 'Title (optional)', 0, 'e.g. My own version of Example 1') + fld('q', 'Question', 2) + fld('steps', 'My steps (one line each)', 4) : b.type === 'photo' ? fld('title', 'Caption (optional)') : fld('title', 'Heading (optional)') + fld('text', 'My note', 3);
+      return `<article class="mine-blk edit" data-mb="${i}"><div class="row-between"><span class="pill">${MINE[b.type] || 'Note'}</span><button type="button" class="btn small ghost danger" data-mine-del="${i}">Remove</button></div>${body}<div class="mine-pv" data-mpv="${i}">${b.type === 'photo' ? mineView(b) : `<span class="key-lab">Shows as</span>${mineView(b)}`}</div></article>`;
+    }).join('');
+  }
+  function loadPhotos(root) { $$('img[data-up]', root).forEach(img => { if (img.src) return; Hub.uploads.url(img.dataset.up).then(u => { if (u) img.src = u; }).catch(() => { img.replaceWith(Object.assign(document.createElement('p'), { className: 'tiny muted', textContent: 'Photo could not be loaded right now.' })); }); }); }
   /** Interactions for a rendered notebook. save(collected) is called on every change (debounced) unless read-only. */
   function bindNotebook(root, L, ctx) {
     const blanks = blanksOf(L.keyIdeas), ts = tasksOf(L), r = ctx.resp || {};
-    const state = { notesChecked: !!r.notesChecked, checked: Object.assign({}, r.checked || {}) };
+    const state = { notesChecked: !!r.notesChecked, checked: Object.assign({}, r.checked || {}), mine: JSON.parse(JSON.stringify(r.mine || [])) };
     const collect = () => {
-      const out = { blanks: {}, tasks: {}, checked: state.checked, notesChecked: state.notesChecked, rag: '', learned: '', question: '' };
+      const out = { blanks: {}, tasks: {}, checked: state.checked, notesChecked: state.notesChecked, mine: state.mine, rag: '', learned: '', question: '' };
       $$('.blank', root).forEach(b => { if (b.value.trim()) out.blanks[b.dataset.b] = b.value; });
       const f = $('#yt-form', root); if (f && ts.length) out.tasks = U.readResponses(f, ts);
       const rag = $('input[name="rag"]:checked', root); out.rag = rag ? rag.value : '';
@@ -4687,6 +5067,20 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $$('[data-check]', root).forEach(b => (b.onclick = () => { check(b.dataset.check); saveNow(); }));
     $$('[data-sol]', root).forEach(b => (b.onclick = () => { const q = ts.find(x => x.id === b.dataset.sol), box = $('#sol-' + q.id, root); box.hidden = !box.hidden; if (!box.hidden && !box.innerHTML) box.innerHTML = q.parts.map(p => `<div class="yt-sol-part"><b>(${esc(p.label)})</b> <span class="key-lab">Answer</span> ${U.answerDisplay(p)}<div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${U.numworks(p.numworks)}</div>`).join(''); b.textContent = box.hidden ? 'Show the solution' : 'Hide the solution'; }));
     if (ctx.readOnly) ts.forEach(q => { if ((r.checked || {})[q.id]) check(q.id); });
+    // my own notes
+    const mineBox = $('#mine-list', root);
+    const redrawMine = () => { if (mineBox) { mineBox.innerHTML = mineHTML(state.mine, ctx); loadPhotos(mineBox); } };
+    root.addEventListener('input', e => { const el = e.target.closest && e.target.closest('[data-mi]'); if (!el) return; const i = Number(el.dataset.mi); state.mine[i] = Object.assign({}, state.mine[i], { [el.dataset.mk]: el.value }); const pv = $(`[data-mpv="${i}"]`, root); if (pv && state.mine[i].type !== 'photo') pv.innerHTML = `<span class="key-lab">Shows as</span>${mineView(state.mine[i])}`; });
+    root.addEventListener('click', e => {
+      const a = e.target.closest && e.target.closest('[data-mine-add]'); if (a) { state.mine.push({ type: a.dataset.mineAdd, title: '', text: '', q: '', steps: '', at: nowISO() }); redrawMine(); saveNow(); const f = $(`[data-mb="${state.mine.length - 1}"] input, [data-mb="${state.mine.length - 1}"] textarea`, root); if (f) f.focus(); return; }
+      const d = e.target.closest && e.target.closest('[data-mine-del]'); if (d) { state.mine.splice(Number(d.dataset.mineDel), 1); redrawMine(); saveNow(); }
+    });
+    const ph = $('[data-mine-photo]', root); if (ph) ph.onchange = async () => {
+      const file = ph.files[0]; ph.value = ''; if (!file) return;
+      if (!ctx.save) { toast('Students can add photos from their own notebook.'); return; }
+      try { toast('Uploading your photo…'); const up = await Hub.uploads.add(file); state.mine.push({ type: 'photo', title: '', upload: up, at: nowISO() }); redrawMine(); saveNow(); toast('Photo added.'); } catch (err) { toast(err.message || 'Could not add the photo.', 'error'); }
+    };
+    loadPhotos(root);
     return { collect };
   }
   /** How far a student got (for the teacher's responses table and the student's list). */
@@ -4695,7 +5089,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const bl = blanksOf(L.keyIdeas), ts = tasksOf(L);
     const notesOK = bl.filter((a, k) => blankOK(a, (resp.blanks || {})[k])).length;
     let parts = 0, right = 0; ts.forEach(q => { if (!(resp.checked || {})[q.id]) return; q.parts.forEach(p => { if (p.answer.kind === 'open') return; parts++; if (Hub.math.markPart(p, ((resp.tasks || {})[q.id] || {})[p.id]).verdict === 'correct') right++; }); });
-    return { notes: bl.length ? `${notesOK}/${bl.length}` : '—', yt: parts ? `${right}/${parts}` : '—', rag: resp.rag || '', learned: resp.learned || '', question: resp.question || '' };
+    return { notes: bl.length ? `${notesOK}/${bl.length}` : '—', yt: parts ? `${right}/${parts}` : '—', own: (resp.mine || []).length, rag: resp.rag || '', learned: resp.learned || '', question: resp.question || '' };
   }
   const ragChip = v => v ? `<span class="rag-chip ${v}">${{ red: 'Stuck', amber: 'Getting there', green: 'Got it' }[v]}</span>` : '<span class="tiny muted">—</span>';
 
@@ -4725,6 +5119,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const mk = $('#mk'); if (mk) mk.onclick = () => { create(row); Hub.app.render(); };
       return;
     }
+    if (!L.notesFilled && Hub.guidedNotes && Hub.guidedNotes.has(L.id) && !(L.keyIdeas || '').trim()) { L.keyIdeas = Hub.guidedNotes.text(L.id); L.notesFilled = true; put(L); }
+    if (!L.refsFilled && Hub.textbook && Hub.textbook.has(L.id) && !(L.myExamples || []).length) { L.myExamples = Hub.textbook.cards(L.id); L.examples = []; L.refsFilled = true; put(L); }
     const view = params.view || 'edit', base = '#/lesson/' + encodeURIComponent(L.id);
     const nResp = groupsOf(L.course).reduce((n, g) => n + Hub.roster.inGroup(g).filter(s => S().progress[s.id + '|' + NB + L.id]).length, 0);
     const head = `<a class="back" href="#/lessons?course=${L.course}">← Lessons & notebooks</a>` + U.heading(`AA ${L.course} · ${['A', 'B'].filter(d => L.dates[d]).map(d => d + ' day ' + fmtDate(L.dates[d], true)).join(' · ')}`, esc(L.title), '',
@@ -4752,9 +5148,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <section class="card"><h2 class="bar-head green">Key ideas · guided notes</h2>
         <div class="grid g2"><label>Notes<textarea data-f="keyIdeas" rows="12" placeholder="## Key idea&#10;A function maps each input to [[exactly one]] output.&#10;- The set of inputs is the [[domain]].&#10;- $f(x)=x^2$: $f(3)=$ [[9]]">${esc(L.keyIdeas || '')}</textarea></label>
         <div><span class="key-lab">Students see</span><div class="nb-notes pv-box" id="notes-pv">${notesHTML(L.keyIdeas, {}, { dis: 'disabled' })}</div></div></div>
+        ${Hub.guidedNotes && Hub.guidedNotes.has(L.id) ? `<p class="tiny"><button class="btn small ghost" id="notes-reset" type="button">Use the ready-made guided notes for this lesson</button></p>` : ''}
         <p class="tiny muted"><b>[[answer]]</b> makes a blank (several accepted answers: [[domain|the domain]]). Maths in $…$, e.g. $\\frac{1}{2}$ (keep blanks outside the $…$). <b>## </b> starts a heading, <b>- </b> a bullet. Students check their blanks themselves.</p></section>
       <section class="card"><h2 class="bar-head blue">Worked examples <span class="tiny muted">· the examples from your slides · revealed one line at a time</span></h2>
         <div id="my-list">${(L.myExamples || []).map((e, i) => `<fieldset class="my-ex"><legend>Example ${i + 1}</legend><label>Reference (shown to students)<input data-my="${i}" data-k="ref" value="${esc(e.ref || '')}" placeholder="e.g. Example 31"></label><label>Question<textarea data-my="${i}" data-k="q" rows="2" placeholder="Type the question; maths in $…$">${esc(e.q || '')}</textarea></label><label>Solution steps (one line each, revealed one at a time)<textarea data-my="${i}" data-k="steps" rows="5">${esc(e.steps || '')}</textarea></label><button class="btn small ghost danger" type="button" data-mydel="${i}">Remove</button></fieldset>`).join('') || '<p class="tiny muted">None yet. Add the worked examples you use on your slides, so the notebook matches your lesson.</p>'}</div>
+        ${Hub.textbook && Hub.textbook.has(L.id) ? `<p class="tiny">📖 Textbook examples for this lesson: <b>${esc(Hub.textbook.summary(L.id))}</b> <button class="btn small ghost" id="tb-add" type="button">Add any missing as cards</button></p>` : ''}
         <div class="actions"><button class="btn small" id="my-add" type="button">+ Add a worked example</button></div>
         <details class="gen-extra"><summary>Extra examples with new numbers (optional)</summary><div id="ex-list">${qList('examples', L.examples || [])}</div>${gens.length ? `<div class="add-row"><select id="ex-gen">${genOpts}</select><button class="btn small" id="ex-add">+ Add example</button></div>` : ''}</details></section>
       <section class="card"><h2 class="bar-head amber">Your turn <span class="tiny muted">· self-check, never graded</span></h2><div id="yt-list">${qList('tasks', L.tasks || [])}</div>${gens.length ? `<div class="add-row"><select id="yt-gen">${genOpts}</select><label class="inline-check"><input type="checkbox" id="yt-ch"> Challenge</label><button class="btn small" id="yt-add">+ Add question</button></div>` : ''}</section>
@@ -4790,6 +5188,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const myTimers = {};
     $$('[data-my]', main).forEach(el => el.addEventListener('input', () => { const i = Number(el.dataset.my), k = el.dataset.k, key = i + k; clearTimeout(myTimers[key]); myTimers[key] = setTimeout(() => { L.myExamples = L.myExamples || []; L.myExamples[i] = Object.assign({}, L.myExamples[i], { [k]: el.value }); put(L); }, 500); }));
     $$('[data-mydel]', main).forEach(b => (b.onclick = () => { L.myExamples.splice(Number(b.dataset.mydel), 1); put(L); Hub.app.render(); }));
+    const nr = $('#notes-reset'); if (nr) nr.onclick = async () => { if ((L.keyIdeas || '').trim() && !(await U.confirmBox('Replace the notes in the box with the ready-made guided notes for this lesson?', 'Replace notes'))) return; L.keyIdeas = Hub.guidedNotes.text(L.id); put(L); Hub.app.render(); };
+    const tb = $('#tb-add'); if (tb) tb.onclick = () => { const have = new Set((L.myExamples || []).map(e => e.ref)); const add = Hub.textbook.cards(L.id).filter(c => !have.has(c.ref)); L.myExamples = (L.myExamples || []).concat(add); put(L); toast(add.length ? `${add.length} textbook example${add.length > 1 ? 's' : ''} added.` : 'All the textbook examples are already there.'); Hub.app.render(); };
     const ma = $('#my-add'); if (ma) ma.onclick = () => { (L.myExamples = L.myExamples || []).push({ ref: '', q: '', steps: '' }); put(L); Hub.app.render(); };
     const ea = $('#ex-add'); if (ea) ea.onclick = () => { (L.examples = L.examples || []).push({ gen: $('#ex-gen').value, seed: newSeed() }); put(L); Hub.app.render(); };
     const ya = $('#yt-add'); if (ya) ya.onclick = () => { (L.tasks = L.tasks || []).push({ gen: $('#yt-gen').value, seed: newSeed(), challenge: $('#yt-ch').checked }); put(L); Hub.app.render(); };
@@ -4804,7 +5204,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     main.innerHTML = head + groupsOf(L.course).map(g => { const st = Hub.roster.inGroup(g); const done = st.filter(s => S().progress[s.id + '|' + NB + L.id]).length; const qs = st.map(s => [s, summary(L, (S().progress[s.id + '|' + NB + L.id] || {}).responses)]).filter(([, x]) => x && x.question.trim());
       return `<section class="card scroll"><div class="row-between"><h2 class="bar-head blue">${C().GROUPS[g].label}</h2><span class="tiny muted">${done}/${st.length} opened · ${relLabel(L, g)[0]}</span></div>
       ${qs.length ? `<div class="sticky"><b>Questions from students</b><ul>${qs.map(([s, x]) => `<li><b>${esc(s.name)}:</b> ${esc(x.question)}</li>`).join('')}</ul></div>` : ''}
-      <table class="tbl"><thead><tr><th>Student</th><th>Confidence</th><th>Notes</th><th>Your turn</th><th>One thing learned</th><th>Updated</th></tr></thead><tbody>${st.map(s => { const p = S().progress[s.id + '|' + NB + L.id], x = p && summary(L, p.responses); return `<tr><td>${x ? `<a href="${base}?view=responses&sid=${encodeURIComponent(s.id)}">${esc(s.name)}</a>` : esc(s.name)}</td><td>${x ? ragChip(x.rag) : '<span class="tiny muted">not opened</span>'}</td><td>${x ? x.notes : ''}</td><td>${x ? x.yt : ''}</td><td class="small">${x ? esc(x.learned) : ''}</td><td class="tiny">${p ? fmtDateTime(p.updatedAt) : ''}</td></tr>`; }).join('')}</tbody></table></section>`; }).join('');
+      <table class="tbl"><thead><tr><th>Student</th><th>Confidence</th><th>Notes</th><th>Your turn</th><th>Own notes</th><th>One thing learned</th><th>Updated</th></tr></thead><tbody>${st.map(s => { const p = S().progress[s.id + '|' + NB + L.id], x = p && summary(L, p.responses); return `<tr><td>${x ? `<a href="${base}?view=responses&sid=${encodeURIComponent(s.id)}">${esc(s.name)}</a>` : esc(s.name)}</td><td>${x ? ragChip(x.rag) : '<span class="tiny muted">not opened</span>'}</td><td>${x ? x.notes : ''}</td><td>${x ? x.yt : ''}</td><td>${x ? x.own || '—' : ''}</td><td class="small">${x ? esc(x.learned) : ''}</td><td class="tiny">${p ? fmtDateTime(p.updatedAt) : ''}</td></tr>`; }).join('')}</tbody></table></section>`; }).join('');
   }
 
   /* ================= student ================= */
