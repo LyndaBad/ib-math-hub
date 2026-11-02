@@ -656,6 +656,39 @@ body.mp-on { padding-bottom: 76px; }
 .join-who { border-top: 1px dashed var(--line); padding: 8px 0; } .join-who > summary { cursor: pointer; font-family: var(--f-ui); }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
 .join .signin-card form .btn.primary { justify-content: center; font-size: 1.05rem; padding: 10px 16px; }
+
+/* ---------- IA studio ---------- */
+.ia-tabs { flex-wrap: wrap; }
+.tl-i.late a { border-color: #F2A3AB; background: var(--bad-bg); } .tl-i.late em { color: var(--bad); }
+.gc-ia-late a { color: var(--bad); }
+.w-grid { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+.w-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.w-aside { background: var(--cream); border-radius: var(--r-s); padding: 12px; display: flex; flex-direction: column; gap: 8px; position: sticky; top: 12px; }
+.w-tips { margin: 0; padding-left: 1.1em; font-size: .88rem; display: flex; flex-direction: column; gap: 4px; }
+.w-check { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.w-check .inline-check { font-size: .82rem; font-weight: 500; align-items: flex-start; }
+.w-sub { border: 2px dashed var(--line); border-radius: var(--r-s); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.w-ro { display: flex; flex-direction: column; gap: 4px; } .w-ro p { margin: 0 0 4px; }
+.draft.no-c { border-color: var(--amber); }
+.big-total { font-family: var(--f-head); font-size: 2.2rem; line-height: 1; } .big-total small { font-size: 1rem; color: var(--muted); }
+.mk-crit { border: 2px solid var(--line); border-radius: var(--r-s); padding: 10px 12px; margin: 0 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.mk-levels { display: flex; flex-direction: column; gap: 4px; }
+.mk-lv { display: grid; grid-template-columns: auto 28px 1fr; align-items: start; gap: 8px; padding: 6px 8px; border-radius: 10px; border: 2px solid transparent; font-weight: 500; font-size: .9rem; cursor: pointer; }
+.mk-lv b { font-family: var(--f-head); font-size: 1.1rem; } .mk-lv.on { border-color: var(--orange); background: #FFF0E6; }
+.ia-guide { display: flex; flex-direction: column; gap: 18px; }
+.guide-list { display: flex; flex-direction: column; gap: 6px; padding-left: 1.2em; margin: 0; }
+.crit-d { border-top: 1px dashed var(--line); padding: 10px 0; } .crit-d > summary { cursor: pointer; font-family: var(--f-ui); font-size: 1.05rem; }
+.crit-d p { margin: 8px 0; } .crit-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } .crit-cols ul { margin: 4px 0 8px; padding-left: 1.1em; font-size: .9rem; }
+.lv-list { font-size: .9rem; margin: 4px 0 0; padding-left: 1.6em; }
+.guide-edit summary { cursor: pointer; font-family: var(--f-ui); font-weight: 600; margin-top: 8px; } .guide-text p { margin: 0 0 6px; }
+.idea-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.idea { border: 2px solid var(--line); border-radius: var(--r-s); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--white); }
+.idea h4 { margin: 0; font-family: var(--f-head); } .idea.saved { border-color: var(--orange); background: #FFF0E6; } .idea .btn { align-self: flex-start; margin-top: auto; }
+.rq-shapes { background: var(--cream); border-radius: 10px; padding: 8px 12px; } .rq-shapes ul { margin: 4px 0 0; padding-left: 1.1em; }
+.ia-stats .stat { text-decoration: none; display: flex; flex-direction: column; gap: 2px; } .ia-stats .stat b { font-family: var(--f-head); font-size: 2rem; line-height: 1; } .ia-stats .stat.warn { border-color: var(--bad); }
+.ia-print { max-width: 760px; font-size: 1.05rem; line-height: 1.7; } .ia-print h2 { margin-top: 18px; } .ia-print h3 { font-size: 1rem; margin-top: 10px; }
+@media (max-width: 900px) { .w-grid { grid-template-columns: minmax(0, 1fr); } .w-aside { position: static; } .crit-cols { grid-template-columns: 1fr; } }
+.mnote { text-align: left; } .mnote.empty::before { display: inline-block; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -3825,7 +3858,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       return `<section class="card group-card ${g.course.toLowerCase()}"><div class="gc-head"><h3><a href="#/class/${g.id}">${g.label}</a></h3><span class="tiny muted">${g.block} · ${Hub.roster.inGroup(g.id).length} students</span></div>
         ${nl ? `<p class="gc-date">${fmtDate(nl.date, true)}</p><p class="gc-lesson">${esc(nl.activity)}</p><div class="chips">${nl.skills.map(s => U.skillChip(s)).join('')}</div>` : '<p>No more lessons in the calendar.</p>'}
         <div class="gc-actions">${nl && Hub.lessons.idFor(g.id, nl.date) ? `<a class="btn small ghost" href="#/lesson/${encodeURIComponent(Hub.lessons.idFor(g.id, nl.date))}">▣ Notebook</a>` : ''}<a class="btn small" href="#/studio?group=${g.id}">✎ Exit Ticket</a><a class="btn small ${dnCur && dn.status === 'published' ? 'ghost' : 'pink'}" href="#/donow?group=${g.id}">${dnCur ? (dn.status === 'published' ? '✓ Do Now published' : 'Approve Do Now') : '☀ Plan Do Now'}</a></div>
-        ${ia ? `<p class="tiny gc-ia">IA · ${esc(ia.short)} due ${fmtDate(ia.date)}</p>` : ''}
+        ${Hub.ia ? Hub.ia.cardLine(g.id) : ia ? `<p class="tiny gc-ia">IA · ${esc(ia.short)} due ${fmtDate(ia.date)}</p>` : ''}
         ${Hub.classdash ? Hub.classdash.cardSnippet(g.id) : ''}<a class="btn small primary gc-open" href="#/class/${g.id}">Class dashboard →</a></section>`;
     }).join('');
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
@@ -4281,96 +4314,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 })(window.Hub = window.Hub || {});
 
 /* ---- js/views_shared.js ---- */
-/* Shared views: IA Studio (student notebook + teacher overview/feedback), Course & pacing, Data & settings. */
+/* Shared views: Course & pacing, Data & settings. (The IA Studio is in js/ia.js.) */
 (function (Hub) {
   'use strict';
   const { esc, $, $$, fmtDate, fmtDateTime, toast, download, debounce, daysBetween, todayISO } = Hub.core;
   const U = Hub.ui, C = () => Hub.curriculum, S = () => Hub.store.state, M = t => Hub.math.render(t);
   const go = h => Hub.app.nav(h);
 
-  /* ================= IA Studio ================= */
-  const IA_SECTIONS = {
-    cp1: [['interests', 'Three things you are genuinely curious about (sports, music, money, health, games, your culture…)', 4], ['connections', 'Where is the mathematics in each? (rates, optimisation, probability, modelling, geometry…)', 3], ['working', 'Working title', 1]],
-    cp2: [['title', 'Final title', 1], ['why', 'Why me? — your personal connection', 3], ['aim', 'Aim — what you will find out', 2], ['planIntro', 'Plan — the steps of your exploration', 3], ['terms', 'Key terms you will define', 2]],
-    cp3: [['rq', 'Research question', 2], ['outline', 'Outline — sections and the mathematics in each', 5]],
-    cp4: [['intro', 'Introduction paragraph (your own words)', 9]],
-    cp5: [['peerGiven', 'Feedback I gave (criterion-referenced)', 4], ['peerReceived', 'Feedback I received and what I will change', 4]],
-    cp6: [['finalIntro', 'Final introduction paragraph', 9]],
-    ws: [['mathsPlan', 'Mathematical plan — methods, why they fit, what you will calculate', 5], ['beyond', 'Anything beyond the syllabus you will need to learn', 2]],
-    y1: [['explorationPlan', 'Exploration plan — the full structure, data and mathematics', 8]]
-  };
-  const TITLE_CHECK = [['QUESTION', 'Is it phrased as a question you can answer?'], ['FOCUSED', 'Is it narrow enough to explore in 12–20 pages?'], ['MATHS', 'Does it clearly need mathematics at the level of the course?'], ['PERSONAL', 'Does it come from your own interest or experience?'], ['DOABLE', 'Can you get the data or build the model you need?']];
-  function rqCheck(t) {
-    const s = String(t || '').trim(), w = s.split(/\s+/).filter(Boolean).length;
-    return [
-      ['Question', /\?\s*$/.test(s) || /^(how|to what extent|what|which|can|does|is|why|when)\b/i.test(s), 'Phrase it as a question.'],
-      ['Focused', w >= 8 && w <= 35, `About 8–35 words works well (yours: ${w}).`],
-      ['Mathematics named', /model|function|rate|optimi|maxim|minim|probab|regress|correlat|distribut|deriv|integr|area|volume|sequence|series|exponential|logarithm|trigon|vector|matri|statistic|calculus|geometr|graph|differential/i.test(s), 'Name the mathematics (a model, a rate of change, a regression…).'],
-      ['Data or model source', /data|measure|collect|record|experiment|survey|simulat|model|my |own /i.test(s), 'Make clear where the data or the model comes from.']
-    ];
-  }
-  const blankIA = () => ({ fields: {}, titleCheck: {}, status: {}, feedback: {}, versions: [], log: [], sources: [], self: {}, updatedAt: null });
-  function iaNote(sid) { const st = S(); if (!st.ia[sid]) st.ia[sid] = blankIA(); const n = st.ia[sid]; ['fields', 'titleCheck', 'status', 'feedback', 'self'].forEach(k => (n[k] = n[k] || {})); ['versions', 'log', 'sources'].forEach(k => (n[k] = n[k] || [])); return n; }
-
-  function iaStudent(main, sidParam) {
-    const teacher = Hub.auth.isTeacher() && !Hub.auth.isPreview(), sid = sidParam || Hub.auth.sid(), s = Hub.roster.byId(sid);
-    if (!s) { main.innerHTML = U.empty('Student not found.'); return; }
-    const n = iaNote(sid), sch = C().iaSchedule(s.group), asOf = Hub.mastery.asOf(), ro = teacher || Hub.auth.isPreview();
-    const nextCp = sch.find(x => x.date && x.date >= asOf);
-    main.innerHTML = (teacher ? `<a class="back" href="#/ia?group=${s.group}">← IA overview</a>` : '') + U.heading('INQUIRE · EXPLORE · REFLECT', teacher ? `IA notebook · ${esc(s.name)}` : 'My IA Studio', `${C().GROUPS[s.group].label} · the Mathematical Exploration (12–20 pages, 20 marks)`) +
-      `<div class="notice integrity">This is a <b>planning notebook</b>. Everything here is written by ${teacher ? 'the student' : 'you'}, in ${teacher ? 'their' : 'your'} own words. The Hub never writes IA text. Cite every source.</div>
-      <section class="card timeline"><h2 class="bar-head amber">Checkpoints</h2><ol class="tl">${sch.map(st => { const stt = n.status[st.id] || 'not-started'; const dd = st.date ? daysBetween(asOf, st.date) : null; return `<li class="tl-i ${stt} ${nextCp && nextCp.id === st.id ? 'next' : ''}"><a href="#ia-${st.id}"><b>${esc(st.short)}</b><span>${st.date ? fmtDate(st.date) : 'date tbc'}${dd !== null && dd >= 0 && dd < 40 ? ` · ${dd === 0 ? 'today' : dd + ' days'}` : ''}</span><em>${stt.replace('-', ' ')}</em></a></li>`; }).join('')}</ol><p class="tiny muted">Dates from the ${C().GROUPS[s.group].label} pacing calendar.</p></section>
-      <div class="ia-grid"><div class="ia-main">${sch.map(st => iaSection(st, n, s, ro, teacher)).join('')}
-        <section class="card" id="ia-sources"><h2 class="bar-head blue">Sources & data log</h2><table class="tbl small"><thead><tr><th>Source</th><th>Link</th><th>Accessed</th><th>Notes</th>${ro ? '' : '<th></th>'}</tr></thead><tbody>${n.sources.map((x, i) => `<tr><td>${esc(x.title)}</td><td>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">link</a>` : ''}</td><td>${esc(x.accessed || '')}</td><td>${esc(x.notes || '')}</td>${ro ? '' : `<td><button class="btn small ghost" data-rmsrc="${i}">Remove</button></td>`}</tr>`).join('') || `<tr><td colspan="5" class="muted">No sources yet.</td></tr>`}</tbody></table>
-        ${ro ? '' : `<form id="src-form" class="form-grid"><label>Title and author<input id="src-t" required></label><label>Link<input id="src-u" type="url" placeholder="https://"></label><label>Accessed<input id="src-d" type="date" value="${todayISO()}"></label><label>Notes (what you used it for)<input id="src-n"></label><div class="span2"><button class="btn small">Add source</button></div></form>`}</section>
-        <section class="card"><h2 class="bar-head green">Reflection log</h2>${n.log.slice().reverse().map(l => `<div class="log-i"><span class="tiny muted">${fmtDateTime(l.at)}</span><p>${esc(l.text)}</p></div>`).join('') || '<p class="muted">Reflections are part of criterion D — note what you tried, what changed and why.</p>'}${ro ? '' : '<form id="log-form"><label>New entry<textarea id="log-t" rows="2" placeholder="Today I…, which changed my plan because…"></textarea></label><button class="btn small">Add reflection</button></form>'}</section></div>
-        <aside class="ia-side"><section class="card criteria"><h2 class="bar-head pink">Criteria A–E</h2>${C().IA_CRITERIA.map(([k, name, max, d]) => `<div class="crit"><b>${k} · ${name}</b> <span class="tiny">/${max}</span><p class="tiny">${esc(d)}</p><label class="tiny">My confidence <input type="range" min="0" max="${max}" value="${n.self[k] ?? 0}" data-self="${k}" ${ro ? 'disabled' : ''}> <output>${n.self[k] ?? 0}</output></label></div>`).join('')}<p class="tiny muted">Self-check only — not a grade.</p></section>
-        <section class="card"><h2 class="bar-head blue">Versions</h2>${n.versions.length ? n.versions.slice().reverse().slice(0, 10).map((v, i) => `<div class="row-between small"><span>${fmtDateTime(v.at)}${v.label ? ' · ' + esc(v.label) : ''}</span>${ro ? '' : `<button class="btn small ghost" data-restore="${n.versions.length - 1 - i}">Restore</button>`}</div>`).join('') : '<p class="tiny muted">A version is kept each time you submit a checkpoint, and every 10 minutes while you write.</p>'}<p class="tiny muted" id="ia-saved">${n.updatedAt ? 'Saved ' + fmtDateTime(n.updatedAt) : ''}</p></section></aside></div>`;
-    bindIA(main, n, s, ro, teacher);
-  }
-  function iaSection(st, n, s, ro, teacher) {
-    const fields = IA_SECTIONS[st.id] || [], stt = n.status[st.id] || 'not-started', fb = n.feedback[st.id];
-    const extra = st.id === 'cp2' ? `<fieldset class="titlecheck"><legend>Title checklist</legend>${TITLE_CHECK.map(([k, q]) => `<label class="inline-check"><input type="checkbox" data-tc="${k}" ${n.titleCheck[k] ? 'checked' : ''} ${ro ? 'disabled' : ''}> <b>${k}</b> — ${esc(q)}</label>`).join('')}</fieldset>`
-      : st.id === 'cp3' ? `<div class="rq-check" id="rq-check">${rqCheckHtml(n.fields.rq)}</div>`
-      : st.id === 'ws' && s.course === 'HL' ? `<label>Is it HL enough? Which HL-level mathematics will you use and where?<textarea data-ia="hlEnough" rows="2" ${ro ? 'readonly' : ''}>${esc(n.fields.hlEnough || '')}</textarea></label>` : '';
-    const wc = ['intro', 'finalIntro'].map(k => fields.some(f => f[0] === k) ? `<p class="tiny muted" data-wc="${k}">${(n.fields[k] || '').split(/\s+/).filter(Boolean).length} words</p>` : '').join('');
-    return `<section class="card ia-sec ${stt}" id="ia-${st.id}"><div class="row-between"><h2 class="bar-head ${st.id === 'ws' || st.id === 'y1' ? 'blue' : 'green'}">${esc(st.title)}</h2><span class="pill ${stt === 'signed-off' ? 'green' : stt === 'submitted' ? 'blue' : stt === 'in-progress' ? 'amber' : 'grey'}">${stt.replace('-', ' ')}</span></div>
-      <p class="small">${esc(st.focus)} <span class="tiny muted">Criteria: ${st.criteria.join(', ')}${st.date ? ' · due ' + fmtDate(st.date) : ''}</span></p>
-      ${fields.map(([k, label, rows]) => `<label>${esc(label)}<textarea data-ia="${k}" rows="${rows}" ${ro ? 'readonly' : ''}>${esc(n.fields[k] || '')}</textarea></label>`).join('')}${extra}${wc}
-      ${fb ? `<div class="sticky"><b>Miss Badmus${fb.criteria && fb.criteria.length ? ' · ' + fb.criteria.join(', ') : ''}:</b> ${esc(fb.text)} <span class="tiny muted">${fmtDateTime(fb.at)}</span></div>` : ''}
-      ${!ro && ['not-started', 'in-progress'].includes(stt) ? `<button class="btn small" data-submit-cp="${st.id}">Submit this checkpoint for feedback</button>` : ''}
-      ${teacher ? `<form class="fb-form" data-cp="${st.id}"><label>Feedback<textarea rows="2" name="t">${esc(fb ? fb.text : '')}</textarea></label><div class="crit-pick">${['A', 'B', 'C', 'D', 'E'].map(k => `<label class="inline-check"><input type="checkbox" name="c" value="${k}" ${fb && fb.criteria && fb.criteria.includes(k) ? 'checked' : ''}> ${k}</label>`).join('')}</div><div class="actions"><button class="btn small" name="act" value="return">Save & return for edits</button><button class="btn small primary" name="act" value="sign">Sign off checkpoint</button></div></form>` : ''}</section>`;
-  }
-  const rqCheckHtml = t => `<p class="tiny"><b>Quick checks</b> (a prompt for thinking, not a judgement):</p><ul class="checks">${rqCheck(t).map(([k, ok, tip]) => `<li class="${ok ? 'ok' : ''}">${ok ? '✓' : '○'} <b>${k}</b>${ok ? '' : ' — ' + esc(tip)}</li>`).join('')}</ul>`;
-  function bindIA(main, n, s, ro, teacher) {
-    const saved = () => { n.updatedAt = new Date().toISOString(); const el = $('#ia-saved'); if (el) el.textContent = 'Saved ' + fmtDateTime(n.updatedAt); };
-    const snapshot = label => { const last = n.versions[n.versions.length - 1]; if (label || !last || (Date.now() - new Date(last.at)) > 10 * 60000) { n.versions.push({ at: new Date().toISOString(), label: label || '', fields: JSON.parse(JSON.stringify(n.fields)) }); if (n.versions.length > 25) n.versions.shift(); } };
-    if (!ro) {
-      const sectionOf = el => el.closest('.ia-sec') && el.closest('.ia-sec').id.replace('ia-', '');
-      const save = debounce(el => { n.fields[el.dataset.ia] = el.value; const cp = sectionOf(el); if (cp && (!n.status[cp] || n.status[cp] === 'not-started')) n.status[cp] = 'in-progress'; snapshot(); saved(); Hub.store.save(); }, 600);
-      $$('[data-ia]').forEach(t => t.addEventListener('input', () => { save(t); if (t.dataset.ia === 'rq') $('#rq-check').innerHTML = rqCheckHtml(t.value); const wc = $(`[data-wc="${t.dataset.ia}"]`); if (wc) wc.textContent = t.value.split(/\s+/).filter(Boolean).length + ' words'; }));
-      $$('[data-tc]').forEach(c => (c.onchange = () => { n.titleCheck[c.dataset.tc] = c.checked; saved(); Hub.store.save(); }));
-      $$('[data-self]').forEach(r => (r.oninput = () => { n.self[r.dataset.self] = Number(r.value); r.nextElementSibling.textContent = r.value; Hub.store.save(); }));
-      $$('[data-submit-cp]').forEach(b => (b.onclick = async () => { const cp = b.dataset.submitCp; if (!(await U.confirmBox('Submit this checkpoint to Miss Badmus? You can keep editing afterwards, and a copy of this version is kept.', 'Submit checkpoint'))) return; n.status[cp] = 'submitted'; snapshot('Submitted ' + cp.toUpperCase()); saved(); Hub.store.save(true); toast('Checkpoint submitted.'); Hub.app.render(); }));
-      const sf = $('#src-form'); if (sf) sf.onsubmit = e => { e.preventDefault(); n.sources.push({ title: $('#src-t').value.trim(), url: $('#src-u').value.trim(), accessed: $('#src-d').value, notes: $('#src-n').value.trim() }); saved(); Hub.store.save(true); Hub.app.render(); };
-      $$('[data-rmsrc]').forEach(b => (b.onclick = () => { n.sources.splice(Number(b.dataset.rmsrc), 1); Hub.store.save(true); Hub.app.render(); }));
-      const lf = $('#log-form'); if (lf) lf.onsubmit = e => { e.preventDefault(); const t = $('#log-t').value.trim(); if (!t) return; n.log.push({ at: new Date().toISOString(), text: t }); saved(); Hub.store.save(true); Hub.app.render(); };
-      $$('[data-restore]').forEach(b => (b.onclick = async () => { const v = n.versions[Number(b.dataset.restore)]; if (!(await U.confirmBox(`Restore the version from ${fmtDateTime(v.at)}? Your current text is kept as a version first.`, 'Restore'))) return; snapshot('Before restore'); n.fields = JSON.parse(JSON.stringify(v.fields)); saved(); Hub.store.save(true); Hub.app.render(); }));
-    }
-    if (teacher) $$('.fb-form').forEach(f => f.addEventListener('submit', e => { e.preventDefault(); const act = e.submitter ? e.submitter.value : 'return', cp = f.dataset.cp; n.feedback[cp] = { text: f.t.value.trim(), criteria: $$('input[name="c"]:checked', f).map(x => x.value), at: new Date().toISOString() }; n.status[cp] = act === 'sign' ? 'signed-off' : 'in-progress'; Hub.store.log(`IA feedback (${cp}) for ${s.name}`); Hub.store.save(true); toast(act === 'sign' ? 'Checkpoint signed off.' : 'Feedback saved and returned.'); Hub.app.render(); }));
-  }
-  function iaTeacher(main, params) {
-    if (params.id) return iaStudent(main, params.id);
-    const group = params.group || Hub.teacher.pref('group') || 'HL-A'; Hub.teacher.pref('group', group);
-    const sch = C().iaSchedule(group), students = Hub.roster.inGroup(group), asOf = Hub.mastery.asOf();
-    const waiting = students.filter(s => Object.values((S().ia[s.id] || {}).status || {}).includes('submitted'));
-    main.innerHTML = U.heading('INQUIRE · EXPLORE · REFLECT', 'IA overview', 'Checkpoint progress for every student, with dates from the pacing calendar. Students write; you give criterion-referenced feedback and sign off.', Hub.teacher.groupPick('ia-group', group)) +
-      `${waiting.length ? `<div class="notice">${waiting.length} student${waiting.length > 1 ? 's have' : ' has'} submitted a checkpoint for feedback.</div>` : ''}
-      <section class="card scroll"><table class="tbl ia-tbl"><thead><tr><th class="sticky-col">Student</th>${sch.map(st => `<th title="${esc(st.title)}"><div>${esc(st.short)}</div><span class="tiny ${st.date && st.date < asOf ? 'muted' : ''}">${st.date ? fmtDate(st.date) : ''}</span></th>`).join('')}<th>Title / RQ</th></tr></thead>
-      <tbody>${students.map(s => { const nn = S().ia[s.id] || {}; return `<tr><td class="sticky-col"><a href="#/ia/${s.id}">${esc(s.name)}</a></td>${sch.map(st => { const v = (nn.status || {})[st.id] || 'not-started', late = st.date && st.date < asOf && !['submitted', 'signed-off'].includes(v); return `<td><span class="ia-dot ${v} ${late ? 'late' : ''}" title="${v.replace('-', ' ')}${late ? ' · overdue' : ''}">${v === 'signed-off' ? '✓' : v === 'submitted' ? '●' : v === 'in-progress' ? '◐' : late ? '!' : '○'}</span></td>`; }).join('')}<td class="small">${esc(((nn.fields || {}).rq || (nn.fields || {}).title || (nn.fields || {}).working || '').slice(0, 70))}</td></tr>`; }).join('')}</tbody></table>
-      <p class="tiny muted">○ not started · ◐ in progress · ● submitted (waiting for you) · ✓ signed off · ! overdue</p></section>`;
-    $('#ia-group').onchange = e => go('#/ia?group=' + e.target.value);
-  }
+  // The IA Studio lives in js/ia.js (Hub.ia).
 
   /* ================= Course & pacing ================= */
   function course(main, params) {
@@ -4388,7 +4339,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 
   /* ================= Data & settings ================= */
   function settings(main) { main.textContent="Loading cloud settings…"; }
-  Hub.shared = { iaStudent, iaTeacher, course, settings, rqCheck };
+  Hub.shared = Object.assign(Hub.shared || {}, { course, settings });
 })(window.Hub = window.Hub || {});
 
 /* ---- js/rosterpdf.js ---- */
@@ -5745,12 +5696,404 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         ${recentNb ? (() => { const c = ragCounts(recentNb, studs), qs = studs.map(s => [s, ((S().progress[s.id + '|nb:' + recentNb.id] || {}).responses || {}).question]).filter(x => x[1] && x[1].trim()); return `<h3 class="sub-h">Latest released: ${esc(recentNb.title.slice(0, 60))}</h3><p class="small">${c.opened}/${studs.length} opened · <span class="rag-chip green">Got it ${c.green}</span> <span class="rag-chip amber">Getting there ${c.amber}</span> <span class="rag-chip red">Stuck ${c.red}</span></p>${qs.length ? `<div class="sticky"><b>Questions from students</b><ul>${qs.slice(0, 6).map(([s, q]) => `<li><b>${esc(firstName(s.name))}:</b> ${esc(q)}</li>`).join('')}</ul></div>` : ''}<a class="btn small ghost" href="#/lesson/${encodeURIComponent(recentNb.id)}?view=responses">All responses</a>`; })() : ''}</section>
       <section class="card"><h2 class="bar-head amber">Do Now · skills · IA</h2><p class="small">${dnCur ? (dn.status === 'published' ? '✓ Do Now published for the next lesson' : 'Do Now drafted — approve it') : 'No Do Now planned for the next lesson'} <a class="btn small ghost" href="#/donow?group=${g}">Do Now</a></p>
         ${skills.length ? `<p class="tiny"><b>Lowest class mastery:</b></p>${skills.map(([k, v]) => `<div class="snap"><span class="small">${esc(k.name)}</span><span>${v}%</span>${U.bar(v, v < 60 ? 'low' : '')}</div>`).join('')}` : '<p class="tiny muted">Not enough marked work yet for mastery.</p>'}<a class="btn small ghost" href="#/mastery?group=${g}">Mastery</a>
-        ${ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)}</p>` : ''}</section></div>
+        ${Hub.ia ? Hub.ia.cardLine(g) : ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)}</p>` : ''}<a class="btn small ghost" href="#/ia?group=${g}">IA overview</a></section></div>
       <section class="card scroll"><h2 class="bar-head blue">Students</h2><table class="tbl"><thead><tr><th>Student</th><th>Missing (3 weeks)</th><th>Overall mastery</th><th>Latest notebook</th></tr></thead><tbody>${studs.map(s => { const m = missBy[s.id] || [], p = recentNb && S().progress[s.id + '|nb:' + recentNb.id], r = p && (p.responses || {}).rag;
         return `<tr><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${m.length ? `<span class="pill red">${m.length}</span> <span class="tiny">${m.map(x => esc(x.a.type === 'Homework' ? 'HW' : 'ET') + ' ' + fmtDate(x.due)).join(', ')}</span>` : '<span class="tiny muted">—</span>'}</td><td>${Hub.mastery.overall(s.id) ?? '—'}${Hub.mastery.overall(s.id) !== null ? '%' : ''}</td><td>${recentNb ? (p ? (r ? `<span class="rag-chip ${r}">${{ red: 'Stuck', amber: 'Getting there', green: 'Got it' }[r]}</span>` : 'opened') + ` <a class="tiny" href="#/lesson/${encodeURIComponent(recentNb.id)}?view=responses&sid=${encodeURIComponent(s.id)}">open</a>` : '<span class="tiny muted">not opened</span>') : ''}</td></tr>`; }).join('') || '<tr><td colspan="4">No students in this class yet.</td></tr>'}</tbody></table></section>`;
     const cp = $('#copy-missing'); if (cp) cp.onclick = async () => { const txt = miss.filter(x => x.missing.length).map(x => `${x.a.type} – ${x.a.title} (due ${fmtDate(x.due)}): ${x.missing.map(s => s.name).join(', ')}`).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Copied.'); } catch (e) { toast('Could not copy here.', 'error'); } };
   }
   Hub.classdash = { view, missing, upcoming, cardSnippet };
+})(window.Hub = window.Hub || {});
+
+/* ---- js/ia.js ---- */
+/* IA Studio — the Mathematical Exploration, from first idea to a marked final version.
+   Student tabs: Plan (checkpoints from the pacing calendar) · Write (the IA in sections) · Drafts (uploads) · Guide · Topic finder.
+   Teacher: IA overview (progress, who is behind, drafts waiting, marks) · each student's IA with the same tabs + Marking (A–E)
+   · the Guide with her own guidance and files. The Hub never writes IA text for students: prompts, checklists and checks only.
+   Storage: the student's own work in ia[sid] (fields, write, checks, drafts, sources, log, versions, self, status);
+   the teacher's marks and draft comments in settings['iamark:'+sid] (so marking never clashes with a student typing);
+   her guidance in settings.iaguide. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, fmtDate, fmtDateTime, toast, download, debounce, daysBetween, todayISO, toCSV } = Hub.core;
+  const U = Hub.ui, C = () => Hub.curriculum, S = () => Hub.store.state, M = t => Hub.math.render(t);
+  const go = h => Hub.app.nav(h);
+  const teacherView = () => Hub.auth.isTeacher() && !Hub.auth.isPreview();
+  const words = t => String(t || '').replace(/\$[^$]*\$/g, ' x ').split(/\s+/).filter(Boolean).length;
+  const lines = t => String(t || '').split('\n').filter(x => x.trim()).map(x => `<p>${M(x)}</p>`).join('');
+
+  /* ================= what the IA is assessed on (paraphrased from the IB AA guide, 2021) ================= */
+  const CRIT = {
+    A: { name: 'Presentation', max: 4, means: 'The whole exploration is easy to follow: an introduction with a clear aim, a body that develops logically, and a conclusion that answers the aim. Concise means nothing repeated or irrelevant.',
+      levels: ['Does not reach level 1', 'Some coherence or some organisation', 'Some coherence and some organisation', 'Coherent and well organised', 'Coherent, well organised and concise'],
+      show: ['An introduction with a clear aim, a body, and a conclusion that returns to the aim', 'Headings (and a contents page) so a reader can find their way', 'Graphs and tables placed where you discuss them, not in an appendix', 'One worked example of each repeated calculation; the rest in a table', 'Appendices only for large data sets or extra tables'],
+      avoid: ['No clear aim, or a conclusion that never answers it', 'Pages of repeated calculations or graphs that add nothing', 'Key graphs hidden in the appendix'] },
+    B: { name: 'Mathematical communication', max: 4, means: 'You write mathematics properly: correct notation and vocabulary, variables and key terms defined, and the right representations (formulae, graphs, tables, diagrams) for your topic.',
+      levels: ['Does not reach level 1', 'Some relevant communication, only partly appropriate', 'Some relevant, appropriate communication', 'Relevant, appropriate and mostly consistent', 'Relevant, appropriate and consistent throughout'],
+      show: ['Proper notation — x², √, π, stacked fractions — never calculator syntax typed by hand', 'Every variable and key term defined the first time you use it', 'Graphs with titles, labelled axes and units; tables with headings', 'Equations referred to clearly (numbered if there are many)', 'Derivations and proofs laid out step by step'],
+      avoid: ['Typing 2*x^2 or sqrt(3) instead of real notation', 'Unlabelled graphs or axes', 'Variables used without being defined'] },
+    C: { name: 'Personal engagement', max: 3, means: 'The exploration is clearly yours: your questions, choices, data, predictions and ways of explaining. It is not a measure of effort — it is your thinking showing in the work, and it should drive the exploration forward.',
+      levels: ['Does not reach level 1', 'Some personal engagement', 'Significant: authentic engagement a few times, driving the exploration', 'Outstanding: many high-quality instances, driving it forward creatively'],
+      show: ['A personal reason for the topic that keeps coming back, not just in the introduction', 'Your own data, model or twist — not a textbook exercise', 'Predictions you make and then test', 'Decisions explained: why this method, why this model', 'Looking at the problem from more than one angle'],
+      avoid: ['A personal story at the start and never again', 'Copying a well-known derivation from a website', 'Saying “I was very interested” without showing it'] },
+    D: { name: 'Reflection', max: 3, means: 'You review, analyse and evaluate as you go — not only at the end. Describing results is limited reflection; asking what they mean, how reliable they are and what to do next is critical reflection.',
+      levels: ['Does not reach level 1', 'Limited reflection', 'Meaningful reflection', 'Substantial critical reflection, throughout'],
+      show: ['After each result: what does it mean, and does it make sense?', 'Link results back to your aim', 'Strengths and limitations of your method or model', 'Compare two approaches and say which works better and why', 'What next: implications and extensions'],
+      avoid: ['A single “limitations” paragraph at the end', 'Describing a graph instead of interpreting it', 'Ignoring results that do not fit'] },
+    E: { name: 'Use of mathematics', max: 6, means: 'Relevant mathematics at the level of the course, used correctly, with your understanding demonstrated — not just answers from a calculator. A few things done well beat many things done badly.',
+      levels: ['Does not reach level 1', 'Some relevant mathematics', 'Some relevant mathematics; limited understanding', 'Course-level mathematics; limited understanding', 'Course-level mathematics, partly correct; some knowledge and understanding', 'Course-level mathematics, mostly correct; good knowledge and understanding', 'Course-level mathematics, correct; thorough knowledge and understanding'],
+      levelsHL: ['Does not reach level 1', 'Some relevant mathematics; limited understanding', 'Some relevant mathematics, partly correct; some knowledge and understanding', 'Course-level mathematics, correct; some knowledge and understanding', 'Course-level mathematics, correct; good knowledge and understanding', 'Correct and shows sophistication or rigour; thorough knowledge and understanding', 'Precise and shows sophistication and rigour; thorough knowledge and understanding'],
+      show: ['Mathematics from the syllabus (or similar level) — not only prior learning', 'Explain each step: why it works, not just what you did', 'Use technology for results, but show the reasoning yourself', 'Correct answers with sensible accuracy', 'HL: justify or prove key claims, and use the mathematics in a sophisticated way'],
+      avoid: ['Only prior-learning maths (averages, bar charts, basic percentages)', 'Substituting into formulae without explaining', 'Complicated mathematics the exploration does not need'] }
+  };
+  const CRIT_KEYS = ['A', 'B', 'C', 'D', 'E'];
+  const levelsOf = (k, course) => k === 'E' && course === 'HL' ? CRIT.E.levelsHL : CRIT[k].levels;
+
+  /* ================= Plan: the Year 1 checkpoints (dates from the pacing calendar) ================= */
+  const IA_SECTIONS = {
+    cp1: [['interests', 'Three things you are genuinely curious about (sports, music, money, health, games, your culture…)', 4], ['connections', 'Where is the mathematics in each? (rates, optimisation, probability, modelling, geometry…)', 3], ['working', 'Working title', 1]],
+    cp2: [['title', 'Final title', 1], ['why', 'Why me? — your personal connection', 3], ['aim', 'Aim — what you will find out', 2], ['planIntro', 'Plan — the steps of your exploration', 3], ['terms', 'Key terms you will define', 2]],
+    cp3: [['rq', 'Research question', 2], ['outline', 'Outline — sections and the mathematics in each', 5]],
+    cp4: [['intro', 'Introduction paragraph (your own words)', 9]],
+    cp5: [['peerGiven', 'Feedback I gave (criterion-referenced)', 4], ['peerReceived', 'Feedback I received and what I will change', 4]],
+    cp6: [['finalIntro', 'Final introduction paragraph', 9]],
+    ws: [['mathsPlan', 'Mathematical plan — methods, why they fit, what you will calculate', 5], ['beyond', 'Anything beyond the syllabus you will need to learn', 2]],
+    y1: [['explorationPlan', 'Exploration plan — the full structure, data and mathematics', 8]]
+  };
+  const TITLE_CHECK = [['QUESTION', 'Is it phrased as a question you can answer?'], ['FOCUSED', 'Is it narrow enough to explore in 12–20 pages?'], ['MATHS', 'Does it clearly need mathematics at the level of the course?'], ['PERSONAL', 'Does it come from your own interest or experience?'], ['DOABLE', 'Can you get the data or build the model you need?']];
+  function rqCheck(t) {
+    const s = String(t || '').trim(), w = s.split(/\s+/).filter(Boolean).length;
+    return [
+      ['Question', /\?\s*$/.test(s) || /^(how|to what extent|what|which|can|does|is|why|when)\b/i.test(s), 'Phrase it as a question.'],
+      ['Focused', w >= 8 && w <= 35, `About 8–35 words works well (yours: ${w}).`],
+      ['Mathematics named', /model|function|rate|optimi|maxim|minim|probab|regress|correlat|distribut|deriv|integr|area|volume|sequence|series|exponential|logarithm|trigon|sinus|vector|matri|statistic|calculus|geometr|graph|differential|binomial|normal/i.test(s), 'Name the mathematics (a model, a rate of change, a regression…).'],
+      ['Data or model source', /data|measure|collect|record|experiment|survey|simulat|model|my |own /i.test(s), 'Make clear where the data or the model comes from.']
+    ];
+  }
+  const rqCheckHtml = t => `<p class="tiny"><b>Quick checks</b> (a prompt for thinking, not a judgement):</p><ul class="checks">${rqCheck(t).map(([k, ok, tip]) => `<li class="${ok ? 'ok' : ''}">${ok ? '✓' : '○'} <b>${k}</b>${ok ? '' : ' — ' + esc(tip)}</li>`).join('')}</ul>`;
+
+  /* ================= Write: the IA in the order it is read ================= */
+  const WRITE = [
+    { id: 'intro', title: 'Introduction', crit: ['A', 'C'], parts: [['why', 'Why this topic? Your personal connection — where the idea came from', 4], ['aim', 'The aim — what you want to find out, in one or two sentences', 2], ['rq', 'Your research question', 2], ['approach', 'How you will explore it — the plan, in order', 3]],
+      tips: ['Start with you: the moment or interest that led here.', 'State the aim clearly; the conclusion must answer it.', 'Finish by telling the reader what comes next.'] },
+    { id: 'background', title: 'Background & key terms', crit: ['B', 'A'], parts: [['context', 'Background the reader needs — the context, the science or the rules of the game', 4], ['terms', 'Key terms, variables and notation — define each one', 3]],
+      tips: ['Only what the reader needs to follow your mathematics.', 'Define every variable with its units.', 'Cite where background facts come from.'] },
+    { id: 'body', title: 'The mathematics', crit: ['E', 'B', 'D', 'C'], parts: [],
+      tips: ['One idea per sub-section, with a heading.', 'Show one worked example of each calculation; put the rest in a table.', 'After every result, say what it means — that is reflection (D).', 'Put each graph right where you discuss it.'] },
+    { id: 'conclusion', title: 'Conclusion & evaluation', crit: ['D', 'A'], parts: [['answer', 'The answer to your research question', 3], ['meaning', 'What your results mean — interpret them and link back to your aim', 3], ['limits', 'Strengths, limitations and assumptions of your method or model', 3], ['next', 'Extensions — what you would explore next, and why', 2]],
+      tips: ['Answer the question you asked — clearly.', 'Be honest about limitations and how they affect your answer.', 'No new mathematics here.'] },
+    { id: 'refs', title: 'References & appendices', crit: ['A'], parts: [['refs', 'References — every source in one consistent style (books, websites, data, software)', 3], ['appendix', 'Appendices — only large data sets or extra tables', 2]],
+      tips: ['Every source you used is listed — data and software too.', 'Use the same referencing style throughout.'] }
+  ];
+  const MAX_BODY = 10;
+
+  /* ================= Topic finder: ideas linked to the course ================= */
+  const AREAS = ['Sport', 'Music', 'Money', 'Health & biology', 'Games & chance', 'Design & architecture', 'Environment', 'Travel & maps', 'Everyday tech'];
+  const IDEAS = [
+    ['freethrow', 'Sport', 'Basketball free throws', 'Projectile model (quadratics); calculus to find the best release angle', 'both', 'What release angle gives the best chance of scoring from the free-throw line?'],
+    ['sprint', 'Sport', 'How fast can humans run?', 'Regression on record times; linear vs exponential models; limits of a model', 'both', 'Can a model of world-record times predict a limit to human speed?'],
+    ['penalty', 'Sport', 'Penalty kicks', 'Probability, expected value, conditional probability', 'both', 'Where should a penalty taker aim to maximise the chance of scoring?'],
+    ['waves', 'Music', 'Sound waves and chords', 'Sinusoidal functions, period and frequency, adding waves', 'both', 'Why do some chords sound smooth and others clash, mathematically?'],
+    ['frets', 'Music', 'Guitar fret spacing', 'Geometric sequences, exponentials and logarithms', 'both', 'How does the spacing of frets follow from the frequencies of notes?'],
+    ['loan', 'Money', 'Paying off a car or student loan', 'Geometric series, compound interest, logarithms', 'both', 'How do the interest rate and payment size change the time to pay off a loan?'],
+    ['savings', 'Money', 'Saving for university', 'Annuities as geometric series; solving for n with logarithms', 'both', 'What monthly saving reaches a target by graduation under different rates?'],
+    ['dose', 'Health & biology', 'Medicine in the bloodstream', 'Exponential decay; repeated doses as a geometric series', 'both', 'How does the dosing interval affect the long-term level of a medicine?'],
+    ['spread', 'Health & biology', 'How a rumour or virus spreads', 'Exponential and logistic models, rates of change (HL: differential equations)', 'both', 'How well does a logistic model describe the spread of …?'],
+    ['heart', 'Health & biology', 'Heart rate and exercise', 'Bivariate statistics: correlation, regression, residuals', 'both', 'How strongly is my recovery heart rate related to the intensity of exercise?'],
+    ['boardgame', 'Games & chance', 'Is a board game fair?', 'Probability, expected value, tree diagrams', 'both', 'Does the first player have an advantage in …?'],
+    ['lottery', 'Games & chance', 'Lotteries and raffles', 'Counting, combinations, binomial distribution', 'both', 'How unlikely is a win, and when (if ever) is a ticket worth buying?'],
+    ['shuffle', 'Games & chance', 'Shuffling cards', 'Permutations and probability (HL: counting principles in depth)', 'HL', 'How many riffle shuffles make a deck random enough?'],
+    ['arch', 'Design & architecture', 'Arches and bridges', 'Curve fitting (parabola vs other models); HL: arc length', 'both', 'Which function best models the shape of the … arch?'],
+    ['vase', 'Design & architecture', 'The volume of a vase or bottle', 'Modelling a profile with functions; volumes of revolution (integration)', 'both', 'How accurately can integration predict the capacity of …?'],
+    ['logo', 'Design & architecture', 'Curves in art and logos', 'Trigonometric and other functions; area by integration', 'both', 'Can I recreate … with functions and find its exact area?'],
+    ['ice', 'Environment', 'Arctic sea ice or CO₂', 'Regression; linear vs exponential models; the danger of extrapolating', 'both', 'Which model best fits the decline of Arctic sea ice, and what does it predict?'],
+    ['population', 'Environment', 'The population of a city', 'Exponential and logistic growth models', 'both', 'Is the growth of … better modelled exponentially or logistically?'],
+    ['flight', 'Travel & maps', 'The shortest flight path', 'Spherical geometry with trigonometry; HL: vectors in 3D', 'both', 'Why do flights from … to … curve north, and how much shorter is that route?'],
+    ['commute', 'Travel & maps', 'The fastest route', 'Optimisation with calculus; rates of change', 'both', 'Where should I cross … to minimise my journey time?'],
+    ['battery', 'Everyday tech', 'Phone battery drain', 'Linear and exponential models; rates of change', 'both', 'How does screen brightness change the rate my battery drains?'],
+    ['followers', 'Everyday tech', 'Views and followers', 'Exponential and logistic models; logarithms', 'both', 'Does the growth of views on … follow an exponential or a logistic model?'],
+    ['cooling', 'Everyday tech', 'A cooling drink', 'Exponential decay (Newton’s law of cooling; HL: differential equations)', 'both', 'How well does Newton’s law of cooling predict the temperature of my tea?'],
+    ['packaging', 'Everyday tech', 'Packaging design', 'Optimisation: least surface area for a fixed volume', 'both', 'Is a … can the most efficient shape for its volume?'],
+    ['fractal', 'Design & architecture', 'Fractals', 'Complex numbers, iteration, geometric series (HL)', 'HL', 'How does the boundary of … change as the iteration is repeated?']
+  ];
+
+  /* ================= data ================= */
+  const blankIA = () => ({ fields: {}, titleCheck: {}, status: {}, feedback: {}, write: {}, checks: {}, drafts: [], versions: [], log: [], sources: [], self: {}, updatedAt: null });
+  function note(sid) { const st = S(); if (!st.ia[sid]) st.ia[sid] = blankIA(); const n = st.ia[sid]; ['fields', 'titleCheck', 'status', 'feedback', 'self', 'write', 'checks'].forEach(k => (n[k] = n[k] || {})); ['versions', 'log', 'sources', 'drafts'].forEach(k => (n[k] = n[k] || [])); return n; }
+  const markOf = sid => (S().settings || {})['iamark:' + sid] || null;
+  function markFor(sid) { const st = S(), k = 'iamark:' + sid; st.settings[k] = st.settings[k] || { marks: {}, comments: {}, release: false }; const m = st.settings[k]; m.marks = m.marks || {}; m.comments = m.comments || {}; return m; }
+  const total = m => m && m.marks ? CRIT_KEYS.reduce((t, k) => t + (Number((m.marks[k] || {}).level) || 0), 0) : null;
+  const marked = m => !!(m && m.marks && CRIT_KEYS.some(k => m.marks[k] && m.marks[k].level !== undefined && m.marks[k].level !== ''));
+  const guide = () => (S().settings || {}).iaguide || { text: '', links: [], files: [] };
+  /** Past checkpoints that a student has not submitted (for the deadline tracker). */
+  function behind(groupId, asOf = Hub.mastery.asOf()) {
+    const sch = C().iaSchedule(groupId).filter(s => s.date && s.date < asOf), studs = Hub.roster.inGroup(groupId);
+    return sch.map(cp => ({ cp, students: studs.filter(s => !['submitted', 'signed-off'].includes(((S().ia[s.id] || {}).status || {})[cp.id])) })).filter(x => x.students.length);
+  }
+  const waitingDrafts = s => { const n = S().ia[s.id], m = markOf(s.id); return ((n && n.drafts) || []).filter(d => !(m && m.comments && m.comments[d.id])); };
+  const writeWords = n => { const w = n.write || {}; return Object.keys(w).filter(k => !/^b\d+t$/.test(k)).reduce((t, k) => t + words(w[k]), 0); };
+
+  /* ================= shared page head + tabs ================= */
+  const TABS = [['plan', 'Plan'], ['write', 'Write'], ['drafts', 'Drafts'], ['marks', 'Marking'], ['guide', 'Guide'], ['finder', 'Topic finder']];
+  function head(main, s, tab, teacher) {
+    const base = teacher ? `#/ia/${encodeURIComponent(s.id)}` : '#/ia', m = markOf(s.id);
+    const tabs = TABS.filter(([k]) => k !== 'marks' || teacher).map(([k, l]) => `<a class="tab ${k === tab ? 'on' : ''}" href="${base}?tab=${k}">${l}${k === 'drafts' && teacher && waitingDrafts(s).length ? ` <span class="pill amber">${waitingDrafts(s).length}</span>` : ''}</a>`).join('');
+    return (teacher ? `<a class="back" href="#/ia?group=${s.group}">← IA overview</a>` : '') +
+      U.heading('INQUIRE · EXPLORE · REFLECT', teacher ? `IA · ${esc(s.name)}` : 'My IA Studio', `${C().GROUPS[s.group].label} · the Mathematical Exploration · 12–20 pages · 20 marks${!teacher && m && m.release && marked(m) ? ` · <b>provisional mark ${total(m)}/20</b>` : ''}`, `<div class="tabs ia-tabs">${tabs}</div>`) +
+      (tab === 'guide' || tab === 'finder' ? '' : `<div class="notice integrity">Everything in the IA is written by ${teacher ? 'the student' : 'you'}, in ${teacher ? 'their' : 'your'} own words. The Hub gives prompts and checklists — it never writes IA text. Cite every source, including software and any AI tool you were allowed to use.</div>`);
+  }
+
+  /* ================= student entry ================= */
+  function student(main, params = {}) {
+    const teacher = teacherView(), sid = teacher ? params.id : (params.id && Hub.auth.isPreview() ? params.id : Hub.auth.sid()), s = Hub.roster.byId(sid);
+    if (!s) { main.innerHTML = U.empty('Student not found.'); return; }
+    const tab = TABS.some(([k]) => k === params.tab) && (params.tab !== 'marks' || teacher) ? params.tab : 'plan', ro = teacher || Hub.auth.isPreview();
+    const n = note(sid);
+    main.innerHTML = head(main, s, tab, teacher) + ({ plan: planHTML, write: writeHTML, drafts: draftsHTML, marks: marksHTML, guide: guideHTML, finder: finderHTML }[tab])(s, n, ro, teacher);
+    ({ plan: bindPlan, write: bindWrite, drafts: bindDrafts, marks: bindMarks, guide: bindGuide, finder: bindFinder }[tab])(main, s, n, ro, teacher);
+  }
+
+  /* ---------- Plan ---------- */
+  function planHTML(s, n, ro, teacher) {
+    const sch = C().iaSchedule(s.group), asOf = Hub.mastery.asOf(), nextCp = sch.find(x => x.date && x.date >= asOf);
+    return `<section class="card timeline"><h2 class="bar-head amber">Checkpoints</h2><ol class="tl">${sch.map(st => { const stt = n.status[st.id] || 'not-started'; const dd = st.date ? daysBetween(asOf, st.date) : null; const late = st.date && st.date < asOf && !['submitted', 'signed-off'].includes(stt); return `<li class="tl-i ${stt} ${nextCp && nextCp.id === st.id ? 'next' : ''} ${late ? 'late' : ''}"><a href="#ia-${st.id}"><b>${esc(st.short)}</b><span>${st.date ? fmtDate(st.date) : 'date tbc'}${dd !== null && dd >= 0 && dd < 40 ? ` · ${dd === 0 ? 'today' : dd + ' days'}` : ''}</span><em>${late ? 'overdue' : stt.replace('-', ' ')}</em></a></li>`; }).join('')}</ol><p class="tiny muted">Dates from the ${C().GROUPS[s.group].label} pacing calendar. After the checkpoints, write the full IA in the <a href="${teacher ? `#/ia/${encodeURIComponent(s.id)}` : '#/ia'}?tab=write">Write</a> tab.</p></section>
+      <div class="ia-grid"><div class="ia-main">${sch.map(st => planSection(st, n, s, ro, teacher)).join('')}
+        <section class="card" id="ia-sources"><h2 class="bar-head blue">Sources & data log</h2><table class="tbl small"><thead><tr><th>Source</th><th>Link</th><th>Accessed</th><th>Notes</th>${ro ? '' : '<th></th>'}</tr></thead><tbody>${n.sources.map((x, i) => `<tr><td>${esc(x.title)}</td><td>${/^https?:\/\//.test(x.url || '') ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">link</a>` : ''}</td><td>${esc(x.accessed || '')}</td><td>${esc(x.notes || '')}</td>${ro ? '' : `<td><button class="btn small ghost" data-rmsrc="${i}">Remove</button></td>`}</tr>`).join('') || `<tr><td colspan="5" class="muted">No sources yet.</td></tr>`}</tbody></table>
+        ${ro ? '' : `<form id="src-form" class="form-grid"><label>Title and author<input id="src-t" required></label><label>Link<input id="src-u" type="url" placeholder="https://"></label><label>Accessed<input id="src-d" type="date" value="${todayISO()}"></label><label>Notes (what you used it for)<input id="src-n"></label><div class="span2"><button class="btn small">Add source</button></div></form>`}</section>
+        <section class="card"><h2 class="bar-head green">Reflection log</h2>${n.log.slice().reverse().map(l => `<div class="log-i"><span class="tiny muted">${fmtDateTime(l.at)}</span><p>${esc(l.text)}</p></div>`).join('') || '<p class="muted">Reflections feed criterion D — note what you tried, what changed and why.</p>'}${ro ? '' : '<form id="log-form"><label>New entry<textarea id="log-t" rows="2" placeholder="Today I…, which changed my plan because…"></textarea></label><button class="btn small">Add reflection</button></form>'}</section></div>
+        <aside class="ia-side"><section class="card criteria"><h2 class="bar-head pink">How sure am I? A–E</h2>${CRIT_KEYS.map(k => `<div class="crit"><b>${k} · ${CRIT[k].name}</b> <span class="tiny">/${CRIT[k].max}</span><label class="tiny">My confidence <input type="range" min="0" max="${CRIT[k].max}" value="${n.self[k] ?? 0}" data-self="${k}" ${ro ? 'disabled' : ''}> <output>${n.self[k] ?? 0}</output></label></div>`).join('')}<p class="tiny muted">Self-check only — not a grade. What each criterion means is in the <a href="${teacher ? `#/ia/${encodeURIComponent(s.id)}` : '#/ia'}?tab=guide">Guide</a>.</p></section>
+        <section class="card"><h2 class="bar-head blue">Versions</h2>${n.versions.length ? n.versions.slice().reverse().slice(0, 10).map((v, i) => `<div class="row-between small"><span>${fmtDateTime(v.at)}${v.label ? ' · ' + esc(v.label) : ''}</span>${ro ? '' : `<button class="btn small ghost" data-restore="${n.versions.length - 1 - i}">Restore</button>`}</div>`).join('') : '<p class="tiny muted">A version is kept each time you submit a checkpoint, and every 10 minutes while you write.</p>'}<p class="tiny muted" id="ia-saved">${n.updatedAt ? 'Saved ' + fmtDateTime(n.updatedAt) : ''}</p></section></aside></div>`;
+  }
+  function planSection(st, n, s, ro, teacher) {
+    const fields = IA_SECTIONS[st.id] || [], stt = n.status[st.id] || 'not-started', fb = n.feedback[st.id];
+    const extra = st.id === 'cp2' ? `<fieldset class="titlecheck"><legend>Title checklist</legend>${TITLE_CHECK.map(([k, q]) => `<label class="inline-check"><input type="checkbox" data-tc="${k}" ${n.titleCheck[k] ? 'checked' : ''} ${ro ? 'disabled' : ''}> <b>${k}</b> — ${esc(q)}</label>`).join('')}</fieldset>`
+      : st.id === 'cp3' ? `<div class="rq-check" id="rq-check">${rqCheckHtml(n.fields.rq)}</div>${ro ? '' : `<p class="tiny"><a href="#/ia?tab=finder">Stuck? Use the research question builder in the Topic finder →</a></p>`}`
+      : st.id === 'ws' && s.course === 'HL' ? `<label>Is it HL enough? Which HL-level mathematics will you use and where?<textarea data-ia="hlEnough" rows="2" ${ro ? 'readonly' : ''}>${esc(n.fields.hlEnough || '')}</textarea></label>` : '';
+    const wc = ['intro', 'finalIntro'].map(k => fields.some(f => f[0] === k) ? `<p class="tiny muted" data-wc="${k}">${words(n.fields[k])} words</p>` : '').join('');
+    return `<section class="card ia-sec ${stt}" id="ia-${st.id}"><div class="row-between"><h2 class="bar-head ${st.id === 'ws' || st.id === 'y1' ? 'blue' : 'green'}">${esc(st.title)}</h2><span class="pill ${stt === 'signed-off' ? 'green' : stt === 'submitted' ? 'blue' : stt === 'in-progress' ? 'amber' : 'grey'}">${stt.replace('-', ' ')}</span></div>
+      <p class="small">${esc(st.focus)} <span class="tiny muted">Criteria: ${st.criteria.join(', ')}${st.date ? ' · due ' + fmtDate(st.date) : ''}</span></p>
+      ${fields.map(([k, label, rows]) => `<label>${esc(label)}<textarea data-ia="${k}" rows="${rows}" ${ro ? 'readonly' : ''}>${esc(n.fields[k] || '')}</textarea></label>`).join('')}${extra}${wc}
+      ${fb ? `<div class="sticky"><b>Miss Badmus${fb.criteria && fb.criteria.length ? ' · ' + fb.criteria.join(', ') : ''}:</b> ${esc(fb.text)} <span class="tiny muted">${fmtDateTime(fb.at)}</span></div>` : ''}
+      ${!ro && ['not-started', 'in-progress'].includes(stt) ? `<button class="btn small" data-submit-cp="${st.id}">Submit this checkpoint for feedback</button>` : ''}
+      ${teacher ? `<form class="fb-form" data-cp="${st.id}"><label>Feedback<textarea rows="2" name="t">${esc(fb ? fb.text : '')}</textarea></label><div class="crit-pick">${CRIT_KEYS.map(k => `<label class="inline-check"><input type="checkbox" name="c" value="${k}" ${fb && fb.criteria && fb.criteria.includes(k) ? 'checked' : ''}> ${k}</label>`).join('')}</div><div class="actions"><button class="btn small" name="act" value="return">Save & return for edits</button><button class="btn small primary" name="act" value="sign">Sign off checkpoint</button></div></form>` : ''}</section>`;
+  }
+  function stamp(n) { n.updatedAt = new Date().toISOString(); const el = $('#ia-saved'); if (el) el.textContent = 'Saved ' + fmtDateTime(n.updatedAt); }
+  function snapshot(n, label) { const last = n.versions[n.versions.length - 1]; if (label || !last || (Date.now() - new Date(last.at)) > 10 * 60000) { n.versions.push({ at: new Date().toISOString(), label: label || '', fields: JSON.parse(JSON.stringify(n.fields)), write: JSON.parse(JSON.stringify(n.write || {})) }); if (n.versions.length > 25) n.versions.shift(); } }
+  function bindPlan(main, s, n, ro, teacher) {
+    if (!ro) {
+      const sectionOf = el => el.closest('.ia-sec') && el.closest('.ia-sec').id.replace('ia-', '');
+      const save = debounce(el => { n.fields[el.dataset.ia] = el.value; const cp = sectionOf(el); if (cp && (!n.status[cp] || n.status[cp] === 'not-started')) n.status[cp] = 'in-progress'; snapshot(n); stamp(n); Hub.store.save(); }, 600);
+      $$('[data-ia]', main).forEach(t => t.addEventListener('input', () => { save(t); if (t.dataset.ia === 'rq') $('#rq-check').innerHTML = rqCheckHtml(t.value); const wc = $(`[data-wc="${t.dataset.ia}"]`); if (wc) wc.textContent = words(t.value) + ' words'; }));
+      $$('[data-tc]', main).forEach(c => (c.onchange = () => { n.titleCheck[c.dataset.tc] = c.checked; stamp(n); Hub.store.save(); }));
+      $$('[data-self]', main).forEach(r => (r.oninput = () => { n.self[r.dataset.self] = Number(r.value); r.nextElementSibling.textContent = r.value; Hub.store.save(); }));
+      $$('[data-submit-cp]', main).forEach(b => (b.onclick = async () => { const cp = b.dataset.submitCp; if (!(await U.confirmBox('Submit this checkpoint to Miss Badmus? You can keep editing afterwards, and a copy of this version is kept.', 'Submit checkpoint'))) return; n.status[cp] = 'submitted'; snapshot(n, 'Submitted ' + cp.toUpperCase()); stamp(n); Hub.store.save(true); toast('Checkpoint submitted.'); Hub.app.render(); }));
+      const sf = $('#src-form', main); if (sf) sf.onsubmit = e => { e.preventDefault(); n.sources.push({ title: $('#src-t').value.trim(), url: $('#src-u').value.trim(), accessed: $('#src-d').value, notes: $('#src-n').value.trim() }); stamp(n); Hub.store.save(true); Hub.app.render(); };
+      $$('[data-rmsrc]', main).forEach(b => (b.onclick = () => { n.sources.splice(Number(b.dataset.rmsrc), 1); Hub.store.save(true); Hub.app.render(); }));
+      const lf = $('#log-form', main); if (lf) lf.onsubmit = e => { e.preventDefault(); const t = $('#log-t').value.trim(); if (!t) return; n.log.push({ at: new Date().toISOString(), text: t }); stamp(n); Hub.store.save(true); Hub.app.render(); };
+      $$('[data-restore]', main).forEach(b => (b.onclick = async () => { const v = n.versions[Number(b.dataset.restore)]; if (!(await U.confirmBox(`Restore the version from ${fmtDateTime(v.at)}? Your current text is kept as a version first.`, 'Restore'))) return; snapshot(n, 'Before restore'); n.fields = JSON.parse(JSON.stringify(v.fields || {})); if (v.write) n.write = JSON.parse(JSON.stringify(v.write)); stamp(n); Hub.store.save(true); Hub.app.render(); }));
+    }
+    if (teacher) $$('.fb-form', main).forEach(f => f.addEventListener('submit', e => { e.preventDefault(); const act = e.submitter ? e.submitter.value : 'return', cp = f.dataset.cp; n.feedback[cp] = { text: f.t.value.trim(), criteria: $$('input[name="c"]:checked', f).map(x => x.value), at: new Date().toISOString() }; n.status[cp] = act === 'sign' ? 'signed-off' : 'in-progress'; Hub.store.log(`IA feedback (${cp}) for ${s.name}`); Hub.store.save(true); toast(act === 'sign' ? 'Checkpoint signed off.' : 'Feedback saved and returned.'); Hub.app.render(); }));
+  }
+
+  /* ---------- Write ---------- */
+  function bodyCount(n) { return Math.max(1, Math.min(MAX_BODY, Number(n.write.bodyCount) || 1)); }
+  function writeHTML(s, n, ro, teacher) {
+    const w = n.write, total = writeWords(n), sec = WRITE;
+    const field = (key, label, rows) => ro ? `<div class="w-ro"><span class="key-lab">${esc(label)}</span>${w[key] ? lines(w[key]) : '<p class="tiny muted">Nothing yet.</p>'}</div>` : `<div class="mfld"><span class="mfld-lab">${esc(label)}</span><textarea data-w="${key}" data-rich-ok rows="${rows}" placeholder="Write in your own words…">${esc(w[key] || '')}</textarea><span class="tiny muted" data-wwc="${key}">${words(w[key])} words</span></div>`;
+    const checklist = id => { const items = WRITE.find(x => x.id === id).crit.flatMap(k => CRIT[k].show.slice(0, 2).map((t, i) => [`${id}.${k}${i}`, k, t])); return `<div class="w-check"><span class="key-lab">Check before you move on</span>${items.map(([key, k, t]) => `<label class="inline-check"><input type="checkbox" data-wck="${key}" ${n.checks['w:' + key] ? 'checked' : ''} ${ro ? 'disabled' : ''}> <span class="pill">${k}</span> ${esc(t)}</label>`).join('')}</div>`; };
+    const body = () => { const nb = bodyCount(n); return Array.from({ length: nb }, (_, i) => { const k = 'b' + (i + 1); return `<div class="w-sub"><div class="row-between"><span class="key-lab">Part ${i + 1}</span>${!ro && nb > 1 && i === nb - 1 ? '<button class="btn small ghost danger" data-wrm type="button">Remove this part</button>' : ''}</div>${ro ? `<h4>${esc(w[k + 't'] || 'Part ' + (i + 1))}</h4>${w[k] ? lines(w[k]) : '<p class="tiny muted">Nothing yet.</p>'}` : `<label>Heading<input data-w="${k}t" value="${esc(w[k + 't'] || '')}" placeholder="e.g. Building the model"></label>${field(k, 'What you do, the working, and what each result means', 8)}`}</div>`; }).join('') + (!ro && nb < MAX_BODY ? '<button class="btn small" data-wadd type="button">+ Add another part</button>' : ''); };
+    return `<div class="w-root"><section class="card w-top"><div class="row-between"><h2 class="bar-head blue">Write your IA</h2><span class="small"><b id="w-total">${total}</b> words so far</span></div>
+      <p class="small">Write it here section by section, in the order a reader meets it. Use the maths keys for fractions, roots and powers. Graphs and tables go in your final document — note here where each one goes, e.g. <i>[Graph 1: …]</i>. The final IA is 12–20 pages with double line spacing, including graphs.</p>
+      <div class="actions"><a class="btn small ghost" href="#/iaprint${teacher ? '?sid=' + encodeURIComponent(s.id) : ''}" target="_blank" rel="noopener">🖨 Print / save as PDF</a></div></section>
+      ${sec.map((x, i) => `<section class="card w-sec" id="w-${x.id}"><div class="w-grid"><div class="w-main"><h2 class="bar-head ${['green', 'blue', 'amber', 'pink', 'green'][i]}">${i + 1} · ${esc(x.title)}</h2>
+        ${x.id === 'body' ? body() : x.parts.map(([k, l, r]) => field(k, l, r)).join('')}
+        ${x.id === 'refs' && n.sources.length ? `<p class="tiny muted">From your sources log: ${n.sources.map(z => esc(z.title)).join(' · ')}</p>` : ''}</div>
+        <aside class="w-aside"><span class="key-lab">Criteria</span><div class="chips">${x.crit.map(k => `<span class="pill pink">${k} · ${esc(CRIT[k].name)}</span>`).join('')}</div><ul class="w-tips">${x.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>${checklist(x.id)}</aside></div></section>`).join('')}
+      <p class="tiny muted" id="ia-saved">${n.updatedAt ? 'Saved ' + fmtDateTime(n.updatedAt) : ''}</p></div>`;
+  }
+  function bindWrite(main, s, n, ro) {
+    if (ro) return;
+    const root = $('.w-root', main);
+    if (Hub.mathpad) $$('.w-sec', root).forEach(sec => Hub.mathpad.richifyAll(sec));
+    const upd = () => { const t = $('#w-total', main); if (t) t.textContent = writeWords(n); };
+    const timers = {};
+    root.addEventListener('input', e => {
+      const el = e.target.closest && e.target.closest('[data-w]'); if (!el) return;
+      const k = el.dataset.w; const wc = $(`[data-wwc="${k}"]`, main); if (wc) wc.textContent = words(el.value) + ' words';
+      clearTimeout(timers[k]); timers[k] = setTimeout(() => { n.write[k] = el.value; snapshot(n); stamp(n); upd(); Hub.store.save(); }, 600);
+    });
+    $$('[data-wck]', main).forEach(c => (c.onchange = () => { n.checks['w:' + c.dataset.wck] = c.checked; Hub.store.save(); }));
+    const add = $('[data-wadd]', main); if (add) add.onclick = () => { n.write.bodyCount = bodyCount(n) + 1; Hub.store.save(true); Hub.app.render(); };
+    const rm = $('[data-wrm]', main); if (rm) rm.onclick = async () => { const k = 'b' + bodyCount(n); if ((n.write[k] || '').trim() && !(await U.confirmBox('Remove this part and its text? A copy is kept in Versions (Plan tab).', 'Remove'))) return; snapshot(n, 'Before removing a part'); delete n.write[k]; delete n.write[k + 't']; n.write.bodyCount = bodyCount(n) - 1; Hub.store.save(true); Hub.app.render(); };
+  }
+  /** Printable copy of the Write tab (browser print → Save as PDF). */
+  function print(main, params = {}) {
+    const teacher = teacherView(), sid = teacher ? params.sid : Hub.auth.sid(), s = Hub.roster.byId(sid); if (!s) { main.innerHTML = U.empty('Student not found.'); return; }
+    const n = note(sid), w = n.write, part = (k, label) => w[k] && w[k].trim() ? `<h3>${esc(label)}</h3>${lines(w[k])}` : '';
+    main.innerHTML = `<div class="no-print actions"><a class="back" href="${teacher ? `#/ia/${encodeURIComponent(sid)}` : '#/ia'}?tab=write">← Back</a><button class="btn primary" onclick="window.print()">🖨 Print / save as PDF</button></div>
+      <article class="ia-print"><h1>${esc(w.rq || n.fields.title || n.fields.rq || 'My exploration')}</h1><p class="tiny muted">Draft from the IB Math Hub · ${writeWords(n)} words · ${fmtDate(todayISO())}</p>
+      <h2>Introduction</h2>${part('why', 'Rationale')}${part('aim', 'Aim')}${part('rq', 'Research question')}${part('approach', 'Approach')}
+      <h2>Background</h2>${part('context', 'Context')}${part('terms', 'Key terms and variables')}
+      ${Array.from({ length: bodyCount(n) }, (_, i) => w['b' + (i + 1)] ? `<h2>${esc(w['b' + (i + 1) + 't'] || 'Part ' + (i + 1))}</h2>${lines(w['b' + (i + 1)])}` : '').join('')}
+      <h2>Conclusion</h2>${part('answer', 'Answer')}${part('meaning', 'Interpretation')}${part('limits', 'Strengths and limitations')}${part('next', 'Extensions')}
+      <h2>References</h2>${w.refs ? lines(w.refs) : ''}${n.sources.length ? `<ul>${n.sources.map(z => `<li>${esc(z.title)}${z.url ? ' — ' + esc(z.url) : ''}${z.accessed ? ` (accessed ${esc(z.accessed)})` : ''}</li>`).join('')}</ul>` : ''}
+      ${w.appendix ? `<h2>Appendix</h2>${lines(w.appendix)}` : ''}</article>`;
+  }
+
+  /* ---------- Drafts ---------- */
+  const KINDS = { checkpoint: 'Checkpoint draft', full: 'Full draft (for feedback)', final: 'Final version' };
+  function draftsHTML(s, n, ro, teacher) {
+    const m = markOf(s.id) || {}, fd = m.fullDraft, list = n.drafts.slice().reverse();
+    return `<section class="card"><h2 class="bar-head blue">Drafts</h2>
+      <p class="small">${teacher ? 'Students upload a PDF or photo of their draft, or paste a link to their Google Doc. Your comments appear here for them.' : 'Upload your draft as a PDF (in Word or Google Docs: File → Download → PDF), or paste a link to your Google Doc set to “Anyone with the link can comment”.'} <b>IB rule:</b> Miss Badmus can give written feedback on <b>one full draft</b> — make it your best work.${fd ? ` <span class="pill green">Full-draft feedback given ${fmtDate(String(fd.at).slice(0, 10))}</span>` : ''}</p>
+      ${ro ? '' : `<form id="dr-form" class="form-grid"><label>What is it?<select id="dr-kind">${Object.entries(KINDS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label><label>Note for Miss Badmus (optional)<input id="dr-note" placeholder="e.g. Checkpoint 4 introduction"></label>
+        <label class="btn small file-btn">📄 Upload a PDF or photo<input type="file" id="dr-file" accept="application/pdf,image/*"></label><label>…or paste a link<input id="dr-link" type="url" placeholder="https://docs.google.com/…"></label><div class="span2"><button class="btn small primary" id="dr-add" type="button">Hand in this draft</button> <span class="tiny muted" id="dr-msg"></span></div></form>`}</section>
+      ${list.map(d => { const c = (m.comments || {})[d.id], isFull = fd && fd.draftId === d.id; return `<section class="card draft ${c ? 'has-c' : 'no-c'}" data-draft="${esc(d.id)}"><div class="row-between"><h3>${esc(KINDS[d.kind] || 'Draft')}${isFull ? ' <span class="pill green">the full-draft feedback</span>' : ''}</h3><span class="tiny muted">${fmtDateTime(d.at)}</span></div>
+        ${d.note ? `<p class="small">${esc(d.note)}</p>` : ''}
+        <div class="actions">${d.upload ? `<button class="btn small" data-open="${esc(d.upload.id)}" type="button">Open ${esc(d.upload.type === 'application/pdf' ? 'PDF' : 'photo')}</button> <span class="tiny muted">${esc(d.upload.name || '')}</span>` : ''}${/^https:\/\//.test(d.link || '') ? `<a class="btn small" href="${esc(d.link)}" target="_blank" rel="noopener">Open link ↗</a>` : ''}</div>
+        ${c ? `<div class="sticky"><b>Miss Badmus:</b> ${esc(c.text)} <span class="tiny muted">${fmtDateTime(c.at)}</span></div>` : teacher ? '' : '<p class="tiny muted">Waiting for comments.</p>'}
+        ${teacher ? `<form class="dc-form" data-dc="${esc(d.id)}"><label>${c ? 'Edit your comment' : 'Your comment'}<textarea name="t" rows="3">${esc(c ? c.text : '')}</textarea></label>${d.kind === 'full' ? `<label class="inline-check"><input type="checkbox" name="full" ${isFull || !fd ? 'checked' : ''}> This is my one written feedback on a full draft</label>` : ''}<button class="btn small primary">Save comment</button></form>` : ''}</section>`; }).join('') || `<p class="muted">${teacher ? 'No drafts yet.' : 'No drafts handed in yet.'}</p>`}`;
+  }
+  function bindDrafts(main, s, n, ro, teacher) {
+    $$('[data-open]', main).forEach(b => (b.onclick = async () => { try { const u = await Hub.uploads.url(b.dataset.open); window.open(u, '_blank', 'noopener'); } catch (e) { toast(e.message, 'error'); } }));
+    const add = $('#dr-add', main); if (add) add.onclick = async () => {
+      const f = $('#dr-file', main).files[0], link = $('#dr-link', main).value.trim(), msg = $('#dr-msg', main);
+      if (!f && !link) return toast('Choose a file or paste a link.', 'error');
+      if (link && !/^https:\/\//.test(link)) return toast('The link must start with https://', 'error');
+      add.disabled = true; msg.textContent = f ? 'Uploading…' : '';
+      try {
+        const up = f ? await Hub.uploads.add(f) : null;
+        n.drafts.push({ id: 'dr-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: new Date().toISOString(), kind: $('#dr-kind', main).value, note: $('#dr-note', main).value.trim().slice(0, 300), upload: up, link: link || '' });
+        snapshot(n, 'Draft handed in'); stamp(n); Hub.store.save(true); await Hub.store.flush(); toast('Draft handed in.'); Hub.app.render();
+      } catch (e) { toast(e.message, 'error'); add.disabled = false; msg.textContent = ''; }
+    };
+    if (teacher) $$('.dc-form', main).forEach(f => (f.onsubmit = async e => {
+      e.preventDefault(); const id = f.dataset.dc, d = n.drafts.find(x => x.id === id), m = markFor(s.id), text = f.t.value.trim(); if (!text) return toast('Write a comment first.', 'error');
+      const wantFull = f.full && f.full.checked;
+      if (wantFull && m.fullDraft && m.fullDraft.draftId !== id && !(await U.confirmBox(`You already gave full-draft feedback on ${fmtDate(String(m.fullDraft.at).slice(0, 10))}. The IB allows written feedback on one draft only. Record this one as well?`, 'Record anyway', { danger: true }))) return;
+      m.comments[id] = { text, at: new Date().toISOString() }; if (wantFull && d && d.kind === 'full') m.fullDraft = { draftId: id, at: new Date().toISOString() };
+      Hub.store.log(`IA draft comment for ${s.name}`); Hub.store.save(true); toast('Comment saved.'); Hub.app.render();
+    }));
+  }
+
+  /* ---------- Marking (teacher) ---------- */
+  function marksHTML(s, n, ro, teacher) {
+    if (!teacher) return '';
+    const m = markOf(s.id) || { marks: {} }, mk = m.marks || {};
+    return `<section class="card"><div class="row-between"><h2 class="bar-head pink">Marking · A–E</h2><span class="big-total" id="mk-total">${total(m) ?? 0}<small>/20</small></span></div>
+      <p class="small">Choose the level that best fits each criterion (best-fit, using the IB descriptors), and add a note. ${s.course === 'HL' ? 'Criterion E uses the HL descriptors.' : 'Criterion E uses the SL descriptors.'}</p>
+      <form id="mk-form">${CRIT_KEYS.map(k => { const c = CRIT[k], lv = levelsOf(k, s.course), cur = mk[k] ? String(mk[k].level) : ''; return `<fieldset class="mk-crit"><legend><b>${k} · ${esc(c.name)}</b> <span class="tiny">/${c.max}</span></legend>
+        <div class="mk-levels">${lv.map((d, i) => `<label class="mk-lv ${cur === String(i) ? 'on' : ''}"><input type="radio" name="${k}" value="${i}" ${cur === String(i) ? 'checked' : ''}><b>${i}</b><span>${esc(d)}</span></label>`).join('')}</div>
+        <label class="tiny">Note<textarea name="${k}-note" rows="2" placeholder="Evidence, page numbers…">${esc((mk[k] || {}).note || '')}</textarea></label></fieldset>`; }).join('')}
+      <label class="inline-check"><input type="checkbox" name="release" ${m.release ? 'checked' : ''}> Show this provisional mark to ${esc(s.name.split(/[ ,]/)[0])}</label>
+      <div class="actions"><button class="btn primary">Save marks</button></div></form>
+      ${m.at ? `<p class="tiny muted">Last saved ${fmtDateTime(m.at)}</p>` : ''}</section>`;
+  }
+  function bindMarks(main, s) {
+    const f = $('#mk-form', main); if (!f) return;
+    const tot = () => { const t = CRIT_KEYS.reduce((a, k) => a + (Number((f.querySelector(`input[name="${k}"]:checked`) || {}).value) || 0), 0); $('#mk-total', main).innerHTML = `${t}<small>/20</small>`; };
+    f.addEventListener('change', e => { if (e.target.type === 'radio') { $$(`input[name="${e.target.name}"]`, f).forEach(r => r.closest('.mk-lv').classList.toggle('on', r.checked)); tot(); } });
+    f.onsubmit = e => { e.preventDefault(); const m = markFor(s.id); CRIT_KEYS.forEach(k => { const r = f.querySelector(`input[name="${k}"]:checked`); m.marks[k] = { level: r ? Number(r.value) : '', note: f[k + '-note'].value.trim() }; }); m.release = f.release.checked; m.at = new Date().toISOString(); Hub.store.log(`IA marks for ${s.name}: ${total(m)}/20`); Hub.store.save(true); toast(`Saved — ${total(m)}/20.`); Hub.app.render(); };
+  }
+
+  /* ---------- Guide ---------- */
+  function guideHTML(s, n, ro, teacher) {
+    const g = guide(), sch = s ? C().iaSchedule(s.group) : [];
+    const own = `<section class="card guide-own"><h2 class="bar-head green">Miss Badmus’ guidance</h2>${g.text ? `<div class="guide-text">${lines(g.text)}</div>` : '<p class="muted">Miss Badmus will add her own guidance here.</p>'}
+      ${(g.links || []).length ? `<ul>${g.links.map(l => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title || l.url)}</a></li>`).join('')}</ul>` : ''}
+      ${(g.files || []).length ? `<div class="actions">${g.files.map(f => `<button class="btn small" data-open="${esc(f.id)}" type="button">📄 ${esc(f.name)}</button>`).join('')}</div>` : ''}
+      ${teacher ? `<details class="guide-edit"><summary>Edit your guidance</summary><label>Text (one paragraph per line; maths in $…$)<textarea id="g-text" rows="8">${esc(g.text || '')}</textarea></label>
+        <label>Links (one per line: Title | https://…)<textarea id="g-links" rows="3">${esc((g.links || []).map(l => (l.title || '') + ' | ' + l.url).join('\n'))}</textarea></label>
+        <div class="actions"><button class="btn small primary" id="g-save" type="button">Save guidance</button><label class="btn small ghost file-btn">📄 Add a PDF for students<input type="file" id="g-file" accept="application/pdf,image/*"></label></div>
+        ${(g.files || []).length ? `<p class="tiny">Files: ${g.files.map((f, i) => `${esc(f.name)} <button class="btn small ghost danger" data-grm="${i}" type="button">Remove</button>`).join(' ')}</p>` : ''}</details>` : ''}</section>`;
+    return `<div class="ia-guide">${own}
+      <section class="card"><h2 class="bar-head blue">The IA at a glance</h2><ul class="guide-list"><li>An individual <b>exploration</b> of a mathematical question that interests you — 20% of your final grade.</li><li>About <b>12–20 pages</b> with double line spacing, including graphs and diagrams (the bibliography does not count).</li><li>Marked out of <b>20</b> by Miss Badmus and moderated by the IB: ${CRIT_KEYS.map(k => `${k} ${esc(CRIT[k].name)} (${CRIT[k].max})`).join(' · ')}.</li><li>You get written feedback on <b>one</b> full draft, so plan your time.</li></ul>
+        ${sch.length ? `<p class="small"><b>Your checkpoints:</b> ${sch.map(x => `${esc(x.short)}${x.date ? ' — ' + fmtDate(x.date) : ''}`).join(' · ')}</p>` : ''}</section>
+      <section class="card"><h2 class="bar-head amber">Structure — in this order</h2><ol class="guide-list">
+        <li><b>Title page</b> — your title (ideally your research question), the course and level, the session, the number of pages. Follow Miss Badmus’ instructions on names.</li>
+        <li><b>Contents</b> — sections and page numbers.</li>
+        <li><b>Introduction</b> — why this topic matters to you, the aim, the research question, and the plan.</li>
+        <li><b>Background</b> — only what the reader needs; define key terms and variables.</li>
+        <li><b>The mathematics</b> — the longest part: build the method step by step, show one example of each calculation, put graphs and tables where you discuss them, and reflect on every result.</li>
+        <li><b>Conclusion & evaluation</b> — answer the research question, interpret, discuss strengths, limitations and extensions.</li>
+        <li><b>References</b> — every source, data set and piece of software, in one consistent style.</li>
+        <li><b>Appendices</b> — only large data sets or extra tables.</li></ol></section>
+      <section class="card"><h2 class="bar-head pink">The criteria, in plain English</h2>${CRIT_KEYS.map(k => { const c = CRIT[k], lv = levelsOf(k, s ? s.course : 'SL'); return `<details class="crit-d" ${k === 'A' ? 'open' : ''}><summary><b>${k} · ${esc(c.name)}</b> <span class="tiny">/${c.max}</span></summary>
+        <p>${esc(c.means)}</p><div class="crit-cols"><div><span class="key-lab">Show it by</span><ul>${c.show.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div><div><span class="key-lab">Avoid</span><ul>${c.avoid.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></div>
+        <span class="key-lab">Levels${k === 'E' ? ` (${s ? s.course : 'SL'})` : ''}</span><ol class="lv-list" start="0">${lv.map(d => `<li>${esc(d)}</li>`).join('')}</ol></details>`; }).join('')}
+        <p class="tiny muted">Summarised from the IB Mathematics: analysis and approaches guide (assessment criteria, first assessment 2021). Your teacher marks with the full IB descriptors.</p></section>
+      <section class="card"><h2 class="bar-head green">Academic honesty</h2><ul class="guide-list"><li>Every word is yours. Paraphrasing a website still needs a reference.</li><li>Graphs and diagrams you did not make yourself must be cited.</li><li>Cite software and data sources. Follow Miss Badmus’ rules on AI tools — if any use is allowed, it must be acknowledged.</li><li>Keep your sources log and versions up to date — they show your process.</li></ul></section></div>`;
+  }
+  function bindGuide(main, s, n, ro, teacher) {
+    $$('[data-open]', main).forEach(b => (b.onclick = async () => { try { const u = await Hub.uploads.url(b.dataset.open); window.open(u, '_blank', 'noopener'); } catch (e) { toast(e.message, 'error'); } }));
+    if (!teacher) return;
+    const st = S(), g = () => (st.settings.iaguide = st.settings.iaguide || { text: '', links: [], files: [] });
+    const sv = $('#g-save', main); if (sv) sv.onclick = () => { const G = g(); G.text = $('#g-text', main).value; G.links = $('#g-links', main).value.split('\n').map(l => l.split('|').map(x => x.trim())).filter(([t, u]) => /^https:\/\//.test(u || t)).map(([t, u]) => u ? { title: t, url: u } : { title: t, url: t }); G.at = new Date().toISOString(); Hub.store.save(true); toast('Guidance saved — students can see it.'); Hub.app.render(); };
+    const gf = $('#g-file', main); if (gf) gf.onchange = async () => { const f = gf.files[0]; if (!f) return; try { toast('Uploading…'); const up = await Hub.uploads.add(f); g().files = (g().files || []).concat([up]); Hub.store.save(true); await Hub.store.flush(); toast('File added for students.'); Hub.app.render(); } catch (e) { toast(e.message, 'error'); } };
+    $$('[data-grm]', main).forEach(b => (b.onclick = () => { g().files.splice(Number(b.dataset.grm), 1); Hub.store.save(true); Hub.app.render(); }));
+  }
+  /** Teacher's own route to the guide (no student selected). */
+  function guidePage(main) { const s = null; main.innerHTML = `<a class="back" href="#/ia">← IA overview</a>` + U.heading('INQUIRE · EXPLORE · REFLECT', 'IA guide', 'What students see in their Guide tab. Add your own guidance, links and PDFs at the top.') + guideHTML(s, null, true, true); bindGuide(main, s, null, true, true); }
+
+  /* ---------- Topic finder ---------- */
+  function finderHTML(s, n, ro, teacher) {
+    const saved = IDEAS.filter(i => n.checks['idea:' + i[0]]), area = n.checks.area || '';
+    return `<section class="card"><h2 class="bar-head amber">1 · Start from what you love</h2><p class="small">Pick an area. Each idea shows the mathematics it needs and a starter question — a starting point to make your own, not a title to copy.</p>
+      <div class="tabs">${['', ...AREAS].map(a => `<button class="tab ${a === area ? 'on' : ''}" data-area="${esc(a)}" type="button">${a || 'All'}</button>`).join('')}</div>
+      <div class="idea-grid">${IDEAS.filter(i => (!area || i[1] === area) && (i[4] === 'both' || i[4] === s.course)).map(([id, a, t, m, lv, q]) => `<article class="idea ${n.checks['idea:' + id] ? 'saved' : ''}"><span class="tiny muted">${esc(a)}${lv === 'HL' ? ' · HL' : ''}</span><h4>${esc(t)}</h4><p class="small"><b>Maths:</b> ${esc(m)}</p><p class="small"><i>${esc(q)}</i></p>${ro ? '' : `<button class="btn small ${n.checks['idea:' + id] ? '' : 'ghost'}" data-idea="${id}" type="button">${n.checks['idea:' + id] ? '★ Saved' : '☆ Save idea'}</button>`}</article>`).join('')}</div></section>
+      <section class="card"><h2 class="bar-head green">2 · My saved ideas</h2>${saved.length ? `<ul>${saved.map(i => `<li><b>${esc(i[2])}</b> — ${esc(i[3])}</li>`).join('')}</ul>` : '<p class="muted">Save two or three ideas, then talk to Miss Badmus about them.</p>'}<p class="tiny muted">Your three interests go in Checkpoint 1 on the Plan tab.</p></section>
+      <section class="card"><h2 class="bar-head blue">3 · Build your research question</h2><p class="small">Fill in the blanks in your own words, then shape the sentence yourself.</p>
+        <div class="form-grid"><label>The real situation<input data-rq="sit" value="${esc(n.checks.rqSit || '')}" placeholder="e.g. free throws in basketball" ${ro ? 'readonly' : ''}></label><label>What you change or compare<input data-rq="var" value="${esc(n.checks.rqVar || '')}" placeholder="e.g. the release angle" ${ro ? 'readonly' : ''}></label>
+        <label>What you find, measure or predict<input data-rq="out" value="${esc(n.checks.rqOut || '')}" placeholder="e.g. the chance of scoring" ${ro ? 'readonly' : ''}></label><label>The mathematics<input data-rq="maths" value="${esc(n.checks.rqMaths || '')}" placeholder="e.g. a quadratic model and calculus" ${ro ? 'readonly' : ''}></label></div>
+        <div class="rq-shapes" id="rq-shapes"></div>
+        <label>My research question<textarea id="rq-mine" rows="2" ${ro ? 'readonly' : ''}>${esc(n.fields.rq || '')}</textarea></label><div id="rq-check2">${rqCheckHtml(n.fields.rq)}</div>
+        <fieldset class="titlecheck"><legend>Ask yourself</legend>${TITLE_CHECK.map(([k, q]) => `<p class="tiny"><b>${k}</b> — ${esc(q)}</p>`).join('')}</fieldset>
+        ${ro ? '' : '<div class="actions"><button class="btn small primary" id="rq-save" type="button">Save as my research question</button><span class="tiny muted">Saves to Checkpoint 3 and the Write tab.</span></div>'}</section>`;
+  }
+  function bindFinder(main, s, n, ro) {
+    const shapes = () => { const v = k => (n.checks['rq' + k] || '').trim() || '…', sit = v('Sit'), vr = v('Var'), out = v('Out'), ma = v('Maths');
+      $('#rq-shapes', main).innerHTML = `<span class="key-lab">Sentence shapes to try</span><ul class="tiny"><li>How does ${esc(vr)} affect ${esc(out)} in ${esc(sit)}?</li><li>To what extent can ${esc(ma)} model ${esc(out)} in ${esc(sit)}?</li><li>What ${esc(vr)} gives the greatest / least ${esc(out)} in ${esc(sit)}?</li></ul>`; };
+    shapes();
+    $$('[data-area]', main).forEach(b => (b.onclick = () => { n.checks.area = b.dataset.area; Hub.app.render(); }));
+    if (ro) return;
+    $$('[data-idea]', main).forEach(b => (b.onclick = () => { const k = 'idea:' + b.dataset.idea; n.checks[k] = !n.checks[k]; if (!n.checks[k]) delete n.checks[k]; Hub.store.save(true); Hub.app.render(); }));
+    const map = { sit: 'rqSit', var: 'rqVar', out: 'rqOut', maths: 'rqMaths' };
+    $$('[data-rq]', main).forEach(i => i.addEventListener('input', () => { n.checks[map[i.dataset.rq]] = i.value; shapes(); Hub.store.save(); }));
+    const mine = $('#rq-mine', main); mine.addEventListener('input', () => { $('#rq-check2', main).innerHTML = rqCheckHtml(mine.value); });
+    $('#rq-save', main).onclick = () => { const v = mine.value.trim(); if (!v) return toast('Write your research question first.', 'error'); n.fields.rq = v; n.write.rq = v; if (!n.status.cp3 || n.status.cp3 === 'not-started') n.status.cp3 = 'in-progress'; snapshot(n, 'Research question saved'); stamp(n); Hub.store.save(true); toast('Saved to Checkpoint 3 and the Write tab.'); };
+  }
+
+  /* ================= teacher overview ================= */
+  function teacher(main, params) {
+    if (params.id === 'guide') return guidePage(main);
+    if (params.id) return student(main, params);
+    const group = params.group || Hub.teacher.pref('group') || 'HL-A'; Hub.teacher.pref('group', group);
+    const sch = C().iaSchedule(group), students = Hub.roster.inGroup(group), asOf = Hub.mastery.asOf(), show = params.show || 'all';
+    const late = new Set(behind(group, asOf).flatMap(x => x.students.map(s => s.id)));
+    const waitCp = students.filter(s => Object.values((S().ia[s.id] || {}).status || {}).includes('submitted'));
+    const waitDr = students.filter(s => waitingDrafts(s).length);
+    const rows = students.filter(s => show === 'behind' ? late.has(s.id) : show === 'waiting' ? waitCp.includes(s) || waitDr.includes(s) : true);
+    main.innerHTML = U.heading('INQUIRE · EXPLORE · REFLECT', 'IA overview', 'Checkpoints, drafts and marks for every student. Click a name to open their IA.', Hub.teacher.groupPick('ia-group', group)) +
+      `<div class="grid g3 ia-stats"><a class="card stat ${late.size ? 'warn' : ''}" href="#/ia?group=${group}&show=behind"><b>${late.size}</b><span>behind on a past checkpoint</span></a><a class="card stat" href="#/ia?group=${group}&show=waiting"><b>${waitCp.length}</b><span>checkpoints waiting for you</span></a><a class="card stat" href="#/ia?group=${group}&show=waiting"><b>${waitDr.reduce((t, s) => t + waitingDrafts(s).length, 0)}</b><span>drafts waiting for comments</span></a></div>
+      <section class="card scroll"><div class="row-between"><div class="tabs">${[['all', 'Everyone'], ['behind', 'Behind'], ['waiting', 'Waiting for me']].map(([k, l]) => `<a class="tab ${k === show ? 'on' : ''}" href="#/ia?group=${group}&show=${k}">${l}</a>`).join('')}</div><div class="actions"><a class="btn small ghost" href="#/ia/guide">📘 Guide & your guidance</a><button class="btn small ghost" id="ia-csv" type="button">IA marks CSV</button></div></div>
+      <table class="tbl ia-tbl"><thead><tr><th class="sticky-col">Student</th>${sch.map(st => `<th title="${esc(st.title)}"><div>${esc(st.short)}</div><span class="tiny ${st.date && st.date < asOf ? 'muted' : ''}">${st.date ? fmtDate(st.date) : ''}</span></th>`).join('')}<th>Drafts</th><th>Mark</th><th>Research question</th></tr></thead>
+      <tbody>${rows.map(s => { const nn = S().ia[s.id] || {}, m = markOf(s.id), dr = nn.drafts || [], wd = waitingDrafts(s).length; return `<tr><td class="sticky-col"><a href="#/ia/${encodeURIComponent(s.id)}">${esc(s.name)}</a>${late.has(s.id) ? ' <span class="pill red">behind</span>' : ''}</td>${sch.map(st => { const v = (nn.status || {})[st.id] || 'not-started', lt = st.date && st.date < asOf && !['submitted', 'signed-off'].includes(v); return `<td><a class="ia-dot ${v} ${lt ? 'late' : ''}" href="#/ia/${encodeURIComponent(s.id)}?tab=plan#ia-${st.id}" title="${v.replace('-', ' ')}${lt ? ' · overdue' : ''}">${v === 'signed-off' ? '✓' : v === 'submitted' ? '●' : v === 'in-progress' ? '◐' : lt ? '!' : '○'}</a></td>`; }).join('')}
+        <td><a href="#/ia/${encodeURIComponent(s.id)}?tab=drafts">${dr.length}</a>${wd ? ` <span class="pill amber">${wd} new</span>` : ''}${m && m.fullDraft ? ' <span class="pill green" title="Full-draft feedback given">FD ✓</span>' : ''}</td>
+        <td>${marked(m) ? `<a href="#/ia/${encodeURIComponent(s.id)}?tab=marks"><b>${total(m)}</b>/20</a>` : `<a class="tiny muted" href="#/ia/${encodeURIComponent(s.id)}?tab=marks">mark</a>`}</td>
+        <td class="small">${esc(((nn.fields || {}).rq || (nn.fields || {}).title || (nn.fields || {}).working || '').slice(0, 70))}</td></tr>`; }).join('') || `<tr><td colspan="${sch.length + 4}" class="muted">${show === 'all' ? 'No students in this class yet.' : 'Nobody here — good news.'}</td></tr>`}</tbody></table>
+      <p class="tiny muted">○ not started · ◐ in progress · ● submitted (waiting for you) · ✓ signed off · ! overdue · FD ✓ full-draft feedback given</p></section>`;
+    $('#ia-group').onchange = e => go('#/ia?group=' + e.target.value);
+    $('#ia-csv').onclick = () => download(`ia_marks_${group}.csv`, toCSV([['Student', 'Group', ...CRIT_KEYS.map(k => k + ' ' + CRIT[k].name), 'Total /20', 'Released', 'Drafts', 'Full-draft feedback', 'Research question']].concat(students.map(s => { const m = markOf(s.id), nn = S().ia[s.id] || {}; return [s.name, s.group, ...CRIT_KEYS.map(k => m && m.marks && m.marks[k] ? m.marks[k].level : ''), marked(m) ? total(m) : '', m && m.release ? 'yes' : 'no', (nn.drafts || []).length, m && m.fullDraft ? String(m.fullDraft.at).slice(0, 10) : '', (nn.fields || {}).rq || '']; }))), 'text/csv');
+  }
+
+  /* ================= small pieces for the dashboards ================= */
+  /** One line for a class card: next IA step and who is behind. */
+  function cardLine(groupId) {
+    const asOf = Hub.mastery.asOf(), next = C().iaSchedule(groupId).find(s => s.date && s.date >= asOf), b = behind(groupId, asOf), names = [...new Set(b.flatMap(x => x.students.map(s => s.name)))];
+    return `${next ? `<p class="tiny gc-ia">IA · ${esc(next.short)} due ${fmtDate(next.date)}</p>` : ''}${names.length ? `<p class="tiny gc-ia-late"><a href="#/ia?group=${groupId}&show=behind"><b>IA: ${names.length} behind</b></a> — ${names.slice(0, 6).map(esc).join(', ')}${names.length > 6 ? ` +${names.length - 6}` : ''}</p>` : ''}`;
+  }
+
+  Hub.ia = { student, teacher, print, guidePage, behind, cardLine, rqCheck, CRIT, IDEAS, note, total, markOf };
+  Hub.shared = Object.assign(Hub.shared || {}, { iaStudent: student, iaTeacher: teacher, rqCheck });
 })(window.Hub = window.Hub || {});
 
 /* ---- js/app.js ---- */
@@ -5769,8 +6112,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.shared.iaTeacher(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
-    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: m => Hub.shared.iaStudent(m), course: (m, p) => Hub.shared.course(m, p) }
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p) }
   };
   function shell() {
     const sess = Hub.auth.current(), role = Hub.auth.role(), st = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null;
@@ -5802,7 +6145,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const key = sess.email + '|' + Hub.auth.role() + '|' + (Hub.auth.sid() || '') + '|' + Hub.assess.queue().length;
     if (shellFor !== key || !$('#main')) { shell(); shellFor = key; }
     const { page, params } = parse(), role = Hub.auth.role(), routes = ROUTES[role], fn = routes[page] || routes.home;
-    $$('[data-nav]').forEach(a => { const on = a.dataset.nav === page || (['edit', 'preview', 'print', 'analysis'].includes(page) && a.dataset.nav === 'studio') || (page === 'lesson' && a.dataset.nav === 'lessons') || (page === 'mark' && a.dataset.nav === 'marking') || (page === 'class' && a.dataset.nav === 'home') || (['task', 'result'].includes(page) && a.dataset.nav === 'home'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    $$('[data-nav]').forEach(a => { const on = a.dataset.nav === page || (['edit', 'preview', 'print', 'analysis'].includes(page) && a.dataset.nav === 'studio') || (page === 'lesson' && a.dataset.nav === 'lessons') || (page === 'mark' && a.dataset.nav === 'marking') || (page === 'class' && a.dataset.nav === 'home') || (page === 'iaprint' && a.dataset.nav === 'ia') || (['task', 'result'].includes(page) && a.dataset.nav === 'home'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     const main = $('#main');
     if (Hub.calc) Hub.calc.setAllowed(true);
     try { fn(main, params); } catch (e) { console.error(e); main.innerHTML = U.empty('Something went wrong showing this page. Your data is safe.', `<pre class="tiny">${esc(e.message)}</pre><a class="btn" href="#/home">Go home</a>`); }
