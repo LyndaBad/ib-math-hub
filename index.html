@@ -779,6 +779,7 @@ details.card > summary { cursor: pointer; } details.card > summary h2 { display:
 .ia-dot { font-family: system-ui, 'Segoe UI Symbol', 'Apple Symbols', sans-serif; line-height: 1; } .ia-dot sup { position: absolute; margin-left: 18px; margin-top: -14px; } .ia-dot { position: relative; }
 @media (max-width: 640px) { .ia-steps { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; scroll-snap-type: x proximity; } .ia-step { flex: 0 0 128px; scroll-snap-align: start; } }
 .tbl.pace { min-width: 1180px; } .tbl.pace td:first-child { min-width: 170px; } .tbl.pace td:nth-child(2) { min-width: 120px; }
+.bx-block { border-top: 2px dashed var(--line); padding-top: 8px; margin-top: 8px; } .bx-block:first-child { border-top: 0; margin-top: 0; }
 </style></head><body>
 <a class="sr" href="#main">Skip to content</a>
 <div id="app"><p style="padding:24px;font-family:Georgia,serif">Loading Miss Badmus’ IB Math Hub…</p></div>
@@ -4246,11 +4247,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return gens.filter(g => { const r = Hub.qcore.registry[g]; return r && (paper !== 'P1' || r.paper === 1) && (style === 'exam' ? r.exam : style === 'practice' ? !r.exam : true); });
   }
   function createDraft(o) {
-    const t = TYPES[o.type] || TYPES.Quiz, gens = pickGenerators(o.skills, o.paper, o.style);
-    if (!gens.length) return { ok: false, error: o.style === 'exam' ? 'No IB exam-style questions exist for those skills yet. Choose “Mixed”.' : o.paper === 'P1' ? 'No Paper 1 (non-calculator) questions exist for that selection yet. Try Mixed.' : 'Choose at least one skill.' };
-    const n = Math.max(1, Math.min(12, Number(o.count) || t.count)), qs = [];
+    const t = TYPES[o.type] || TYPES.Quiz, bk = o.book && o.book.exs && o.book.exs.length && Hub.bookex ? o.book : null;
+    // Book-exercise questions (new questions labelled with their exercise) can be added to any type of draft.
+    const bookQs = bk ? Hub.bookex.questions(o.course, bk.exs, bk.only, { hw: o.type === 'Homework', mc: !!o.mc }) : [];
+    if (bk && !bookQs.length) return { ok: false, error: 'Tick at least one book-exercise question.' };
+    if (!(o.skills || []).length) { if (!bookQs.length) return { ok: false, error: 'Tick at least one skill, or add a book exercise.' }; }
+    const gens = (o.skills || []).length ? pickGenerators(o.skills, o.paper, o.style) : [];
+    if ((o.skills || []).length && !gens.length) return { ok: false, error: o.style === 'exam' ? 'No IB exam-style questions exist for those skills yet. Choose “Mixed”.' : o.paper === 'P1' ? 'No Paper 1 (non-calculator) questions exist for that selection yet. Try Mixed.' : 'Choose at least one skill.' };
+    const cnt = o.count === 0 || o.count === '0' ? 0 : Number(o.count) || t.count, n = gens.length ? Math.max(bookQs.length ? 0 : 1, Math.min(12, cnt)) : 0, qs = [];
     for (let i = 0; i < n; i++) qs.push(buildQ(gens[i % gens.length], o.rigour === 'challenge', o.type === 'Homework', !!o.mc));
-    const a = { id: uid('a'), course: o.course, title: o.title || defaultTitle(o), type: o.type, lessonDate: o.lessonDate || null, skills: o.skills.slice(), paper: o.paper || 'Mixed', rigour: o.rigour || 'standard',
+    qs.push(...bookQs);
+    const exs = [...new Set(bookQs.map(q => q.bookRef.split(' ')[1]))], exText = exs.length ? `Exercise${exs.length > 1 ? 's' : ''} ${exs.join(', ')}` : '';
+    const skills = [...new Set([...(o.skills || []), ...bookQs.map(q => q.skill)])].filter(Boolean);
+    const a = { id: uid('a'), course: o.course, title: o.title || (n ? defaultTitle(o) + (exText ? ' + ' + exText : '') : `${o.course} · ${exText} · ${o.type}`), type: o.type, lessonDate: o.lessonDate || null, skills, paper: o.paper || 'Mixed', rigour: o.rigour || 'standard', ...(exs.length ? { book: { course: o.course, ex: exs[0], exs } } : {}),
       questions: qs, reviewed: {}, status: 'draft', version: 1, groups: o.groups || [], uploadRequired: t.upload, release: t.release, minutes: t.minutes, due: null, retestOf: o.retestOf || null, cap: o.type === 'Retest' ? 80 : null, createdAt: new Date().toISOString(), history: [] };
     hist(a, 'Draft generated'); S().assessments.unshift(a); Hub.store.log(`Generated draft “${a.title}”`); Hub.store.save(); return { ok: true, assessment: a };
   }
@@ -4745,8 +4754,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <label>Paper<select id="b-paper"><option value="P1">Paper 1 · no calculator</option><option value="Mixed" selected>Mixed (Paper 1 + Paper 2)</option></select></label>
         <label>Rigour<select id="b-rigour"><option value="standard">${course} course level</option><option value="challenge">Challenge (top band)</option></select></label>
         <label>Question style<select id="b-style"><option value="mixed">Mixed: exam-style + skill practice</option><option value="exam">IB exam-style only (multi-part)</option><option value="practice">Skill practice only</option></select></label>
-        <label>Questions<input id="b-count" type="number" min="1" max="12" value="2"></label>
+        <label>Generated questions <span class="tiny muted">(from the skills; 0 = book exercises only)</span><input id="b-count" type="number" min="0" max="12" value="2"></label>
         <fieldset class="skills-pick span2"><legend>Skills <span class="tiny muted">(${course} · ticked from the lesson; change freely)</span></legend><div id="b-skills" class="skill-grid">${C().skillsFor(course).map(s => `<label class="sk ${U.unitColour(s.unit)}"><input type="checkbox" value="${s.id}" ${nl && nl.skills.includes(s.id) ? 'checked' : ''}> ${U.skillLabel(s.id)}${C().isTaught(s.id, group, asOf) ? '' : ' <span class="tiny muted">(not yet taught)</span>'}</label>`).join('')}</div></fieldset>
+        <fieldset class="span2 bb-book"><legend>Book-exercise questions <span class="tiny muted">(optional · new questions labelled with the ${esc(Hub.bookex ? Hub.bookex.BOOK[course] : '')} exercise — add as many exercises as you like)</span></legend>${Hub.bookex ? `<div class="form-grid">${Hub.bookex.pickerHTML(course, 'bb', [], 'Add a book exercise to this draft')}</div><p class="tiny" id="bb-sum"></p>` : ''}</fieldset>
         <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework answers are typed by students and marked automatically; “show that” parts become self-check with the model answer.</span></div></form></section>
       <section class="card"><div class="row-between"><h2 class="bar-head blue">Library</h2><div class="tabs" role="tablist">${['all', 'draft', 'approved', 'published', 'closed', 'archived'].map(s => `<button role="tab" class="tab ${s === status ? 'on' : ''}" data-status="${s}" aria-selected="${s === status}">${s[0].toUpperCase() + s.slice(1)}</button>`).join('')}</div></div>
       ${list.length ? `<div class="lib">${list.map(libRow).join('')}</div>` : U.empty('Nothing here yet.')}</section>`;
@@ -4754,10 +4764,12 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#b-lesson').onchange = e => { const l = C().lessons(group).find(x => x.date === e.target.value); $$('#b-skills input').forEach(c => (c.checked = !!(l && l.skills.includes(c.value)))); };
     $('#b-type').onchange = e => { $('#b-count').value = Hub.assess.TYPES[e.target.value].count; };
     $$('.tab[data-status]').forEach(b => (b.onclick = () => { pref('studio-status', b.dataset.status); go('#/studio?status=' + b.dataset.status + '&group=' + group); }));
+    const bb = Hub.bookex ? Hub.bookex.bindPicker($('#build'), course, 'bb', api => { const n = api.chosen().length, q = api.only().length; $('#bb-sum').textContent = n ? `${n} exercise${n > 1 ? 's' : ''} · ${q} question${q === 1 ? '' : 's'} · ${api.marks()} marks added to this draft` : ''; }) : null;
     $('#build').onsubmit = e => {
-      e.preventDefault(); const skills = $$('#b-skills input:checked').map(c => c.value);
-      if (!skills.length) return toast('Tick at least one skill.', 'error');
-      const r = Hub.assess.createDraft({ course, type: $('#b-type').value, skills, paper: $('#b-paper').value, style: $('#b-style').value, rigour: $('#b-rigour').value, count: $('#b-count').value, lessonDate: $('#b-lesson').value || null, groups: [group] });
+      e.preventDefault(); const skills = $$('#b-skills input:checked').map(c => c.value), book = bb && bb.chosen().length ? { exs: bb.chosen(), only: bb.only() } : null;
+      if (!skills.length && !book) return toast('Tick at least one skill, or add a book exercise.', 'error');
+      const count = book && !skills.length ? 0 : $('#b-count').value;
+      const r = Hub.assess.createDraft({ course, type: $('#b-type').value, skills: book && Number(count) === 0 ? [] : skills, paper: $('#b-paper').value, style: $('#b-style').value, rigour: $('#b-rigour').value, count, lessonDate: $('#b-lesson').value || null, groups: [group], book });
       if (!r.ok) return toast(r.error, 'error'); toast('Draft ready — review each question.'); go('#/edit/' + r.assessment.id);
     };
     if (Hub.bookex) Hub.bookex.bindStudio(main, group);
@@ -5794,46 +5806,83 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const q = Hub.assess.buildQ(id, false, true, mc);
     q.bookRef = `Exercise ${q.gen.split('.')[2]} · Q${q.gen.split('.')[3]}`; return q;
   }
-  /** Homework assessment (a review draft) from an exercise. groups: the days it goes to. */
-  function draft(course, ex, opts = {}) {
-    const e = get(course, ex); if (!e || !e.ready) return { ok: false, error: 'There are no questions for that exercise yet.' };
-    const ids = opts.only && opts.only.length ? e.qs.filter(id => opts.only.includes(id)) : e.qs; if (!ids.length) return { ok: false, error: 'Tick at least one question.' };
+  /** Built questions (labelled with their exercise) for the ticked ids of the given exercises, in order.
+      hw: homework rules (typed answers, open parts self-check); otherwise open parts stay for the teacher to mark. */
+  function questions(course, exs, only, opts = {}) {
+    const list = [...new Set(exs || [])].map(ex => get(course, ex)).filter(e => e && e.ready);
+    const ids = list.flatMap(e => only && only.length ? e.qs.filter(id => only.includes(id)) : e.qs);
+    return ids.map(id => { const q = Hub.assess.buildQ(id, false, opts.hw !== false, opts.mc === true); q.bookRef = `Exercise ${q.gen.split('.')[2]} · Q${q.gen.split('.')[3]}`; return q; });
+  }
+  /** Homework assessment (a review draft) from one or more exercises, in the order given. groups: the days it goes to.
+      opts.only: the question ids to keep (from any of the exercises). */
+  function draft(course, exs, opts = {}) {
+    const list = [...new Set((Array.isArray(exs) ? exs : [exs]).filter(Boolean))].map(ex => get(course, ex));
+    if (!list.length || list.some(e => !e || !e.ready)) return { ok: false, error: 'There are no questions for that exercise yet.' };
+    const ids = list.flatMap(e => opts.only && opts.only.length ? e.qs.filter(id => opts.only.includes(id)) : e.qs); if (!ids.length) return { ok: false, error: 'Tick at least one question.' };
+    const used = list.filter(e => ids.some(id => e.qs.includes(id))), names = used.map(e => e.ex), titles = [...new Set(used.map(e => e.title))];
     const qs = ids.map(id => buildQ(id, opts.mc === true)), skills = [...new Set(qs.map(q => q.skill))];
-    const a = { id: uid('a'), course, title: `Exercise ${ex} · ${e.title}`, type: 'Homework', lessonDate: opts.lessonDate || null, skills, paper: 'Mixed', rigour: 'standard', book: { course, ex, page: e.page },
-      questions: qs, reviewed: {}, status: 'draft', version: 1, groups: opts.groups || [course + '-A', course + '-B'], uploadRequired: opts.upload === true, release: 'auto', minutes: 45, due: null, retestOf: null, cap: null, createdAt: new Date().toISOString(),
-      history: [{ at: new Date().toISOString(), who: Hub.auth.who(), what: `Draft made from ${BOOK[course]} Exercise ${ex} (new questions)` }] };
+    const title = used.length === 1 ? `Exercise ${names[0]} · ${used[0].title}` : `Exercises ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} · ${titles.length === 1 ? titles[0] : titles.join('; ')}`;
+    const a = { id: uid('a'), course, title: title.slice(0, 160), type: 'Homework', lessonDate: opts.lessonDate || null, skills, paper: 'Mixed', rigour: 'standard', book: { course, ex: names[0], exs: names, page: used[0].page, pages: used.map(e => e.page) },
+      questions: qs, reviewed: {}, status: 'draft', version: 1, groups: opts.groups || [course + '-A', course + '-B'], uploadRequired: opts.upload === true, release: 'auto', minutes: Math.min(120, 45 + 30 * (used.length - 1)), due: null, retestOf: null, cap: null, createdAt: new Date().toISOString(),
+      history: [{ at: new Date().toISOString(), who: Hub.auth.who(), what: `Draft made from ${BOOK[course]} Exercise${names.length > 1 ? 's' : ''} ${names.join(', ')} (new questions)` }] };
     S().assessments.unshift(a); Hub.store.log(`Made homework draft “${a.title}”`); Hub.store.save(); return { ok: true, assessment: a };
   }
 
-  /* ---------- Studio card ---------- */
+  /* ---------- Studio card: pick one or more exercises for one assignment ---------- */
   function options(course, pick) {
     const list = all()[course] || [], bySec = [];
     list.forEach(e => { const k = e.sec ? `${e.sec} ${e.title}` : e.title; let g = bySec.find(x => x[0] === k); if (!g) bySec.push(g = [k, []]); g[1].push(e); });
-    return bySec.map(([k, es]) => `<optgroup label="${esc(k)}">${es.map(e => `<option value="${e.ex}" ${e.ex === pick ? 'selected' : ''} ${e.ready ? '' : 'disabled'}>Exercise ${e.ex} · p. ${e.page}${e.ready ? ` · ${e.qs.length} question${e.qs.length > 1 ? 's' : ''}` : ' · coming soon'}</option>`).join('')}</optgroup>`).join('');
+    return `<option value="">Choose an exercise to add…</option>` + bySec.map(([k, es]) => `<optgroup label="${esc(k)}">${es.map(e => `<option value="${e.ex}" ${e.ready ? '' : 'disabled'}>Exercise ${e.ex} · p. ${e.page}${e.ready ? ` · ${e.qs.length} question${e.qs.length > 1 ? 's' : ''}` : ' · coming soon'}</option>`).join('')}</optgroup>`).join('');
   }
   function qList(e) {
     if (!e || !e.ready) return '<p class="tiny muted">New questions for this exercise are coming soon.</p>';
     return `<div class="bx-qs">${e.qs.map((id, i) => { let q; try { q = Hub.qcore.build(id, 7); } catch (_) { return ''; } const first = q.parts[0];
-      return `<label class="bx-q"><input type="checkbox" value="${id}" checked><span class="q-num">${i + 1}</span><span class="bx-q-t">${Hub.math.render(((q.stem ? q.stem + ' ' : '') + (first.command ? first.command + ' ' : '') + first.prompt).slice(0, 170))}${q.parts.length > 1 ? ` <span class="tiny muted">(${q.parts.length} parts)</span>` : ''}</span><span class="tiny muted">${q.marks} marks</span></label>`; }).join('')}</div>`;
+      return `<label class="bx-q"><input type="checkbox" value="${id}" data-marks="${q.marks}" checked><span class="q-num">${i + 1}</span><span class="bx-q-t">${Hub.math.render((t => { let x = t.slice(0, 170); if ((x.match(/\$/g) || []).length % 2) x = x.slice(0, x.lastIndexOf('$')); return x + (t.length > x.length ? '…' : ''); })((q.stem ? q.stem + ' ' : '') + (first.command ? first.command + ' ' : '') + first.prompt))}${q.parts.length > 1 ? ` <span class="tiny muted">(${q.parts.length} parts)</span>` : ''}</span><span class="tiny muted">${q.marks} marks</span></label>`; }).join('')}</div>`;
   }
+  const block = e => `<div class="bx-block" data-ex="${e.ex}"><div class="row-between"><b>Exercise ${e.ex} · ${esc(e.title)} <span class="tiny muted">p. ${e.page}</span></b><span class="actions"><button class="btn small ghost" type="button" data-bxall="${e.ex}">All / none</button><button class="btn small ghost danger" type="button" data-bxrm="${e.ex}">Remove</button></span></div>${qList(e)}</div>`;
   function studioCard(group) {
-    const g = C().GROUPS[group], course = g.course, nl = C().nextLesson(group, Hub.mastery.asOf()), sug = nl ? forLesson(course, nl.activity).find(e => e.ready) : null;
-    const first = sug || (all()[course] || []).find(e => e.ready), ready = (all()[course] || []).filter(e => e.ready).length;
-    return `<section class="card bx-card"><h2 class="bar-head amber">Homework from a book exercise</h2>
-      <p class="small">New questions for each exercise in the ${BOOK[course]} book — the same skills, style and level, with new numbers and wording, full M/A/R markschemes and model answers. Students see the exercise name (e.g. “Exercise ${first ? first.ex : '1O'}”). ${ready} exercise${ready === 1 ? '' : 's'} ready so far; more are being added.</p>
-      <div class="form-grid"><label>Exercise<select id="bx-ex">${options(course, first && first.ex)}</select></label>
+    const g = C().GROUPS[group], course = g.course, nl = C().nextLesson(group, Hub.mastery.asOf()), sugs = nl ? forLesson(course, nl.activity).filter(e => e.ready) : [];
+    const first = sugs[0] || (all()[course] || []).find(e => e.ready), ready = (all()[course] || []).filter(e => e.ready).length;
+    return `<section class="card bx-card"><h2 class="bar-head amber">Homework from book exercises</h2>
+      <p class="small">New questions for each exercise in the ${BOOK[course]} book — the same skills, style and level, with new numbers and wording, full M/A/R markschemes and model answers. Students see the exercise name on each question (e.g. “Exercise ${first ? first.ex : '1O'} · Q3”). ${ready} exercise${ready === 1 ? '' : 's'} ready so far; more are being added.</p>
+      <div class="form-grid"><label>Add an exercise to this homework<select id="bx-ex">${options(course)}</select></label>
       <label>Goes to<select id="bx-days"><option value="both">${course} A day and B day (one assignment)</option><option value="${course}-A">${course} A day only</option><option value="${course}-B">${course} B day only</option></select></label></div>
-      ${sug ? `<p class="tiny">Suggested for the next lesson (${Hub.core.fmtDate(nl.date)}): <b>${forLesson(course, nl.activity).filter(e => e.ready).map(e => 'Exercise ' + e.ex).join(', ')}</b></p>` : ''}
-      <div id="bx-list">${qList(first)}</div>
-      <div class="actions"><button class="btn primary" id="bx-make" type="button" ${first ? '' : 'disabled'}>Make homework draft →</button><span class="tiny muted">Students type their answers and the Hub marks them; “show that” and sketch parts are self-check with the model answer. No photo upload.</span></div></section>`;
+      <p class="tiny muted">Pick as many exercises as you like — each one is added below, in order, as one homework. Untick any questions you don’t want.</p>
+      ${sugs.length ? `<p class="tiny">Suggested for the next lesson (${Hub.core.fmtDate(nl.date)}): <b>${sugs.map(e => 'Exercise ' + e.ex).join(', ')}</b>${sugs.length > 1 ? ' <button class="btn small ghost" type="button" id="bx-sug">Add all of these</button>' : ''}</p>` : ''}
+      <div id="bx-list">${first ? block(first) : ''}</div>
+      <div class="actions"><button class="btn primary" id="bx-make" type="button" ${first ? '' : 'disabled'}>Make homework draft →</button><span class="tiny" id="bx-sum"></span></div>
+      <p class="tiny muted">Students type their answers and the Hub marks them; “show that” and sketch parts are self-check with the model answer. No photo upload.</p></section>`;
+  }
+  /** The exercise picker (select to add, one block per exercise with a question checklist). p = id prefix. */
+  function pickerHTML(course, p, initial, label) {
+    return `<label>${label || 'Add an exercise'}<select id="${p}-ex">${options(course)}</select></label><div id="${p}-list" class="bx-list span2">${(initial || []).map(e => block(e)).join('')}</div>`;
+  }
+  function bindPicker(root, course, p, onChange) {
+    const sel = $('#' + p + '-ex', root), list = $('#' + p + '-list', root), fire = () => onChange && onChange(api);
+    const api = { chosen: () => $$('.bx-block', list).map(b => b.dataset.ex), only: () => $$('input[type="checkbox"]:checked', list).map(c => c.value), marks: () => $$('input[type="checkbox"]:checked', list).reduce((t, c) => t + Number(c.dataset.marks || 0), 0),
+      add: ex => { const e = get(course, ex); if (!e || !e.ready) return; if (api.chosen().includes(ex)) return toast(`Exercise ${ex} is already in this homework.`); list.insertAdjacentHTML('beforeend', block(e)); fire(); } };
+    sel.onchange = () => { if (sel.value) api.add(sel.value); sel.value = ''; };
+    list.addEventListener('click', e => { const rm = e.target.closest('[data-bxrm]'), al = e.target.closest('[data-bxall]');
+      if (rm) { rm.closest('.bx-block').remove(); fire(); }
+      if (al) { const bs = $$('input[type="checkbox"]', al.closest('.bx-block')), on = bs.some(c => !c.checked); bs.forEach(c => (c.checked = on)); fire(); } });
+    list.addEventListener('change', fire); fire(); return api;
   }
   function bindStudio(main, group) {
     const card = $('.bx-card', main); if (!card) return;
-    const course = C().GROUPS[group].course, sel = $('#bx-ex', card);
-    sel.onchange = () => { $('#bx-list', card).innerHTML = qList(get(course, sel.value)); };
-    $('#bx-make', card).onclick = () => {
-      const days = $('#bx-days', card).value, only = $$('#bx-list input:checked', card).map(c => c.value);
-      const r = draft(course, sel.value, { groups: days === 'both' ? [course + '-A', course + '-B'] : [days], only });
+    const course = C().GROUPS[group].course, sel = $('#bx-ex', card), list = $('#bx-list', card), make = $('#bx-make', card);
+    const chosen = () => $$('.bx-block', list).map(b => b.dataset.ex);
+    const sum = () => { const n = chosen().length, ticks = $$('input[type="checkbox"]:checked', list), m = ticks.reduce((t, c) => t + Number(c.dataset.marks || 0), 0);
+      $('#bx-sum', card).textContent = n ? `${n} exercise${n > 1 ? 's' : ''} · ${ticks.length} question${ticks.length === 1 ? '' : 's'} · ${m} marks` : 'Add at least one exercise.'; make.disabled = !n || !ticks.length; };
+    const add = ex => { const e = get(course, ex); if (!e || !e.ready) return; if (chosen().includes(ex)) return toast(`Exercise ${ex} is already in this homework.`); list.insertAdjacentHTML('beforeend', block(e)); sum(); };
+    sel.onchange = () => { if (sel.value) add(sel.value); sel.value = ''; };
+    const sg = $('#bx-sug', card); if (sg) sg.onclick = () => { const nl = C().nextLesson(group, Hub.mastery.asOf()); forLesson(course, nl.activity).filter(e => e.ready).forEach(e => { if (!chosen().includes(e.ex)) add(e.ex); }); };
+    list.addEventListener('click', e => { const rm = e.target.closest('[data-bxrm]'), al = e.target.closest('[data-bxall]');
+      if (rm) { rm.closest('.bx-block').remove(); sum(); }
+      if (al) { const bs = $$('input[type="checkbox"]', al.closest('.bx-block')), on = bs.some(c => !c.checked); bs.forEach(c => (c.checked = on)); sum(); } });
+    list.addEventListener('change', sum); sum();
+    make.onclick = () => {
+      const days = $('#bx-days', card).value, only = $$('input:checked', list).map(c => c.value);
+      const r = draft(course, chosen(), { groups: days === 'both' ? [course + '-A', course + '-B'] : [days], only });
       if (!r.ok) return toast(r.error, 'error'); toast('Homework draft ready — review each question, then approve and publish.'); location.hash = '#/edit/' + r.assessment.id;
     };
   }
@@ -5841,17 +5890,17 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /* ---------- notebook shortcut (Lessons & notebooks → Homework) ---------- */
   function notebookButtons(L) {
     const es = forLesson(L.course, L.title).filter(e => e.ready); if (!es.length) return '';
-    return `<p class="small bx-nb">Book exercise homework (new questions): ${es.map(e => `<button class="btn small ghost" data-bxnb="${e.ex}" type="button">Make homework from Exercise ${e.ex}</button>`).join(' ')}</p>`;
+    return `<p class="small bx-nb">Book exercise homework (new questions): ${es.length > 1 ? `<button class="btn small" data-bxnb="${es.map(e => e.ex).join(',')}" type="button">Make one homework from Exercises ${es.map(e => e.ex).join(', ')}</button> ` : ''}${es.map(e => `<button class="btn small ghost" data-bxnb="${e.ex}" type="button">Make homework from Exercise ${e.ex}</button>`).join(' ')}</p>`;
   }
   function bindNotebook(main, L, after) {
     $$('[data-bxnb]', main).forEach(b => (b.onclick = () => {
-      const r = draft(L.course, b.dataset.bxnb, { lessonDate: (L.dates || {}).A || null }); if (!r.ok) return toast(r.error, 'error');
-      L.homeworkId = r.assessment.id; if (!(L.homework || '').trim()) L.homework = `Exercise ${b.dataset.bxnb} — on the Hub`; if (after) after(L);
+      const exs = b.dataset.bxnb.split(','), r = draft(L.course, exs, { lessonDate: (L.dates || {}).A || null }); if (!r.ok) return toast(r.error, 'error');
+      L.homeworkId = r.assessment.id; if (!(L.homework || '').trim()) L.homework = `Exercise${exs.length > 1 ? 's' : ''} ${exs.join(', ')} — on the Hub`; if (after) after(L);
       toast(`Homework draft “${r.assessment.title}” made and linked. Review and publish it in the Assessment Studio.`); Hub.app.render();
     }));
   }
 
-  Hub.bookex = { all, get, forLesson, draft, studioCard, bindStudio, notebookButtons, bindNotebook, marksOf, BOOK };
+  Hub.bookex = { all, get, forLesson, draft, questions, pickerHTML, bindPicker, studioCard, bindStudio, notebookButtons, bindNotebook, marksOf, BOOK };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/notes.js ---- */
