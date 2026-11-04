@@ -683,6 +683,10 @@ body.mp-on { padding-bottom: 76px; }
 .wtw-h { margin-top: 12px; } .wtw-mis { border-left: 4px solid var(--pink, #FF96D4); background: var(--cream); border-radius: 8px; padding: 8px 10px; margin: 6px 0; } .wtw-mis p { margin: 4px 0; }
 .pq-make { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; } .pq-make > div { border: 2px dashed var(--orange); border-radius: var(--r-s); padding: 12px; background: var(--cream); display: flex; flex-direction: column; gap: 6px; } .pq-make .btn { align-self: flex-start; margin-top: auto; }
 .pq-new { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; } .pq-new summary { cursor: pointer; }
+.pv-pick { margin: 14px 0 0; padding: 12px; border: 2px dashed var(--orange); border-radius: var(--r-s); background: var(--white); display: flex; flex-direction: column; gap: 8px; }
+.pv-pick label { font-family: var(--f-ui); font-weight: 700; display: flex; align-items: center; gap: 8px; } .pv-pick select { width: 100%; }
+.banner.preview { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; justify-content: space-between; } .pv-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .pv-bar select { max-width: 240px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -5145,7 +5149,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ${Hub.join ? Hub.join.loginCardHTML(s) : ''}
       <div class="card"><h2 class="bar-head green">Lesson notebooks</h2>${notebookList(s)}</div>
       <div class="card"><h2 class="bar-head amber">IA</h2>${iaSummary(s)}<a class="btn small" href="#/ia/${s.id}">Open notebook</a></div></section></div>`;
-    $('#view-as').onclick = () => { Hub.auth.viewAs(s.id); go('#/home'); };
+    $('#view-as').onclick = () => Hub.app.previewAs(s.id);
     if (Hub.join) Hub.join.bindManage(main, () => go('#/mastery?group=' + s.group));
   }
   /** Every notebook this student's course has, newest first, with how far they got and a link to read their whole notebook. */
@@ -7102,7 +7106,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         ${toMark ? `<p class="tiny"><span class="pill amber">${toMark} to mark</span> <a href="#/marking">Marking</a></p>` : ''}
         <details class="rd-list" open><summary><b>Not done (${not.length})</b></summary>${not.length ? `<p class="miss-names">${not.map(r => `<a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>`).join(', ')}</p>` : '<p class="tiny gc-ok">✓ Everyone has done it</p>'}</details>
         <details class="rd-list"><summary><b>Done (${did.length})</b></summary>${did.length ? `<table class="tbl rd-tbl"><tbody>${did.sort((p, q) => (q.sc.pct ?? -1) - (p.sc.pct ?? -1)).map(r => `<tr><td><a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a></td><td>${r.sc.pct === null || r.sc.pct === undefined ? '—' : r.sc.pct + '%'}</td><td>${r.t.status === 'submitted' ? '<span class="pill amber">to mark</span>' : r.t.status === 'released' ? '<span class="tiny muted">released</span>' : ''}</td><td><a class="tiny" href="#/mark/${r.t.id}">open</a></td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">Nobody yet.</p>'}</details></section>`; };
-    main.innerHTML = `<a class="back" href="#/home">← Dashboard</a>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
+    const pvStudent = Hub.roster.inGroup(g, true).find(x => x.test) || studs[0];
+    main.innerHTML = `<div class="row-between"><a class="back" href="#/home">← Dashboard</a>${pvStudent ? `<button class="btn small" id="cd-preview" type="button">👁 See this class’s student view</button>` : ''}</div>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
       `<div class="grid g2">${rundown('Exit Ticket', 'Latest Exit Ticket', 'pink', 'No Exit Ticket has been set for this class yet.')}${rundown('Homework', 'Latest homework', 'amber', 'No homework has been set for this class yet.')}</div>
       <div class="grid g2">
       <section class="card"><h2 class="bar-head green">Lesson notebook</h2>${recentNb ? (() => { const c = ragCounts(recentNb, studs), qs = studs.map(s => [s, ((S().progress[s.id + '|nb:' + recentNb.id] || {}).responses || {}).question]).filter(x => x[1] && x[1].trim()), notOpen = studs.filter(s => !S().progress[s.id + '|nb:' + recentNb.id]); return `<p class="rd-title">${esc(recentNb.title.slice(0, 70))}</p><p class="tiny muted">Latest released notebook</p><div class="rd-stats"><div><b>${c.opened}/${studs.length}</b><span>opened</span></div><div><b class="rag-chip green">${c.green}</b><span>got it</span></div><div><b class="rag-chip amber">${c.amber}</b><span>getting there</span></div><div><b class="rag-chip red">${c.red}</b><span>stuck</span></div></div>${notOpen.length ? `<details class="rd-list"><summary><b>Not opened (${notOpen.length})</b></summary><p class="miss-names">${notOpen.map(s => `<a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a>`).join(', ')}</p></details>` : ''}${qs.length ? `<div class="sticky"><b>Questions from students</b><ul>${qs.slice(0, 6).map(([s, q]) => `<li><b>${esc(firstName(s.name))}:</b> ${esc(q)}</li>`).join('')}</ul></div>` : ''}<div class="actions"><a class="btn small ghost" href="#/lesson/${encodeURIComponent(recentNb.id)}?view=responses">All responses</a></div>`; })() : '<p class="tiny muted">No notebook released to this class yet.</p>'}
@@ -7119,6 +7124,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
           <div class="pq-opt"><b>Quiz</b><span class="tiny muted">personalised version not built yet</span></div></div>
         <div><h3 class="sub-h">Skills</h3>${skills.length ? `<p class="tiny"><b>Lowest class mastery:</b></p>${skills.map(([k, v]) => `<div class="snap"><span class="small">${esc(k.name)}</span><span>${v}%</span>${U.bar(v, v < 60 ? 'low' : '')}</div>`).join('')}` : '<p class="tiny muted">Not enough marked work yet for mastery.</p>'}<a class="btn small ghost" href="#/mastery?group=${g}">Mastery</a>
         <h3 class="sub-h">IA</h3>${Hub.ia ? Hub.ia.cardLine(g) : ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)}</p>` : ''}<a class="btn small ghost" href="#/ia?group=${g}">IA overview</a></div></div></details>`;
+    const cdp = $('#cd-preview'); if (cdp) cdp.onclick = () => Hub.app.previewAs(pvStudent.id);
     const cp = $('#copy-missing'); if (cp) cp.onclick = async () => { const txt = miss.filter(x => x.missing.length).map(x => `${x.a.type} – ${x.a.title} (due ${fmtDate(x.due)}): ${x.missing.map(s => s.name).join(', ')}`).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Copied.'); } catch (e) { toast('Could not copy here.', 'error'); } };
   }
   Hub.classdash = { view, missing, upcoming, cardSnippet };
@@ -8804,7 +8810,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
   const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
-  const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Do Now'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar']];
+  const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
   /** Navigate. In the claude.ai preview frame the URL hash is not used (only plain #names pass through), so routes live in memory there. */
@@ -8824,10 +8830,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><a class="brand" href="#/home"><img src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"><span class="brand-text"><small>Miss Badmus’</small><b>IB Math Hub</b></span></a><p class="slogan">Inquirers. Thinkers. Reflective Learners.</p>
       <nav aria-label="Main">${navItems.map(([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}</a>`).join('')}</nav>
       <button class="calc-launch" type="button" data-calc aria-controls="calc-panel"><span class="ic" aria-hidden="true">▦</span>NumWorks calculator</button>
+      ${role === 'teacher' ? pickerHTML() : ''}
       <div class="side-foot"><span class="demo-badge">PRIVATE CLASSROOM</span><span class="tiny">Saved in Supabase</span></div></aside>
       <div class="main-col"><header class="top"><button class="menu-btn" id="menu" aria-label="Open menu" aria-expanded="false" aria-controls="side">☰</button><span class="top-title">${role === 'teacher' ? 'IB Mathematics: Analysis & Approaches' : esc(sub)}</span><span id="save-status" class="save-status" aria-live="polite"></span>
         <div class="user"><span class="avatar" aria-hidden="true">${esc(initials(name || 'MB'))}</span><span class="user-t"><b>${esc(name)}</b><small>${esc(sub)}</small></span><button class="btn small ghost" id="refresh-cloud">Refresh</button><button class="btn small ghost" id="signout">Sign out</button></div></header>
-        ${Hub.auth.isPreview() ? `<div class="banner preview" role="status">👁 Previewing as <b>${esc(name)}</b> — answers you submit are not saved and never change their record. <button class="btn small" id="end-preview">Back to teacher view</button></div>` : ''}
+        ${Hub.auth.isPreview() ? `<div class="banner preview" role="status"><span>👁 Previewing as <b>${esc(name)}</b> — answers you submit are not saved and never change their record.</span><span class="pv-bar"><label class="sr-only" for="pv-switch">Switch student</label><select id="pv-switch">${studentOptions(Hub.auth.sid())}</select><button class="btn small primary" id="end-preview">Back to teacher view</button></span></div>` : ''}
         ${(() => { const me = role === 'student' && !Hub.auth.isPreview() ? Hub.roster.byId(Hub.auth.sid()) : null; return me && me.test ? `<div class="banner test-banner" role="status">🧪 <b>Test student · ${esc((Hub.curriculum.GROUPS[me.group] || {}).label || me.group)}</b> — this is exactly what your students see. Work saves like a real student’s; clear it any time from Data & settings → Test students.</div>` : ''; })()}
         <div class="banner conflict" id="conflict-banner" role="alert" hidden><span><b>Not saved:</b> this item was also changed somewhere else (another tab or device).</span><button class="btn small primary" id="keep-mine">Keep my changes</button><button class="btn small ghost" id="load-cloud">Load the cloud copy</button></div>
         <main id="main" tabindex="-1"></main><footer class="foot">Miss Badmus’ IB Math Hub · Secure sign-in · cloud storage · Canvas link ready</footer></div></div>`;
@@ -8837,8 +8844,37 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#load-cloud').onclick = async () => { if (await U.confirmBox('Load the cloud copy? Edits made here since the last save will be discarded.', 'Load cloud copy', { danger: true })) { try { await Hub.store.reload(); toast('Cloud copy loaded.'); } catch (e) { toast(e.message, 'error'); } } };
     $('#refresh-cloud').onclick=async()=>{try{await Hub.store.refresh();toast('Latest classroom updates loaded.');}catch(e){toast(e.message,'error')}};
     $('#signout').onclick = async () => {try {await Hub.auth.signOut();shellFor=null;nav('#/home');}catch(e){toast(e.message,'error')}};
-    const ep = $('#end-preview'); if (ep) ep.onclick = () => { const sid = Hub.auth.sid(); Hub.auth.viewAs(null); shellFor = null; nav('#/student/' + sid); };
+    const ep = $('#end-preview'); if (ep) ep.onclick = endPreview;
+    const sw = $('#pv-switch'); if (sw) sw.onchange = () => previewAs(sw.value, true);
+    const pg = $('#pv-go'); if (pg) pg.onclick = () => previewAs($('#pv-sel').value);
     $('#menu').onclick = () => { const s = $('#side'), open = !s.classList.contains('open'); s.classList.toggle('open', open); $('#menu').setAttribute('aria-expanded', open); };
+  }
+  /* ---------- seeing the student view: one picker, from any page ---------- */
+  const PV_BACK = 'hub-preview-back', PV_LAST = 'hub-preview-last';
+  const ssGet = (k, st) => { try { return (st || sessionStorage).getItem(k); } catch (e) { return null; } };
+  const ssSet = (k, v, st) => { try { (st || sessionStorage).setItem(k, v); } catch (e) { /* storage blocked: fine */ } };
+  /** Options for every class: the class's test student first, then the class list. */
+  function studentOptions(selected) {
+    return Object.values(C().GROUPS).map(g => { const all = Hub.roster.inGroup(g.id, true); if (!all.length) return '';
+      const studs = all.filter(x => x.test).concat(all.filter(x => !x.test));
+      return `<optgroup label="${esc(g.label)}">${studs.map(x => `<option value="${esc(x.id)}"${x.id === selected ? ' selected' : ''}>${x.test ? '🧪 Test student' : esc(x.name)}</option>`).join('')}</optgroup>`; }).join('');
+  }
+  /** Preview as a student; Back returns to the teacher page you were on. */
+  function previewAs(sid, keepBack) {
+    if (!sid || !Hub.roster.byId(sid)) return;
+    if (!keepBack) ssSet(PV_BACK, currentHash() || '#/home');
+    ssSet(PV_LAST, sid, (() => { try { return localStorage; } catch (e) { return null; } })() || undefined);
+    Hub.auth.viewAs(sid); shellFor = null; nav('#/home');
+  }
+  function endPreview() {
+    const sid = Hub.auth.sid(), back = ssGet(PV_BACK); Hub.auth.viewAs(null); shellFor = null;
+    nav(back && !/^#\/?(home)?$/.test(back) ? back : (back || '#/student/' + sid));
+  }
+  function pickerHTML() {
+    let last = null; try { last = localStorage.getItem(PV_LAST); } catch (e) { /* none */ }
+    if (!Hub.roster.byId(last)) { const t = Hub.roster.all().find(x => x.test); last = t ? t.id : (Hub.roster.all()[0] || {}).id; }
+    if (!last) return '';
+    return `<div class="pv-pick"><label for="pv-sel"><span class="ic" aria-hidden="true">👁</span>Student view</label><select id="pv-sel">${studentOptions(last)}</select><button class="btn small primary" id="pv-go" type="button">See what they see</button></div>`;
   }
   let shellFor = null;
   function render() {
@@ -8890,7 +8926,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   // The join link typed or clicked while the sign-in page is showing (no reload).
   window.addEventListener('hashchange', () => { if (/^#\/join\b/.test(location.hash) && !Hub.auth.current() && Hub.join) Hub.join.page(); });
-  Hub.app = { render, boot, nav, currentHash };
+  Hub.app = { render, boot, nav, currentHash, previewAs, endPreview };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })(window.Hub = window.Hub || {});
 </script>
