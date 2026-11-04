@@ -675,6 +675,9 @@ body.mp-on { padding-bottom: 76px; }
 .dc-tbl .dc-all th, .dc-tbl .dc-all td { border-top: 2px solid var(--ink); } .dc-green { background: #EEF7E9; } .dc-amber { background: #FFF4E5; } .dc-red { background: #FDECEC; }
 .dc-chart { width: 100%; max-width: 900px; height: auto; display: block; margin: 0 auto; } .dc-key { display: flex; gap: 14px; justify-content: center; } .dc-key i { display: inline-block; width: 12px; height: 12px; border: 1.5px solid var(--ink); border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 .dc-below td { background: #FDECEC; } .dc-nums { display: flex; flex-wrap: wrap; gap: 12px; } .dc-nums label { flex: 1; min-width: 160px; } .dc-btbl input { width: 4.5em; text-align: center; }
+.iv-name { margin: 0; font-family: var(--f-ui); } .iv-list { margin: 4px 0 10px; padding-left: 1.1em; } .iv-list li { margin: 4px 0; } .iv-list .bar { max-width: 220px; }
+.iv-plan { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 6px; display: flex; flex-direction: column; gap: 8px; }
+@media print { .iv-plan select, .iv-plan textarea { border: none; } .iv-plan .actions { display: none; } .iv-card { break-inside: avoid; } }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -5571,12 +5574,54 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <div class="dc-key tiny"><span><i style="background:var(--orange)"></i>SL</span><span><i style="background:var(--blue, #9FC5E8)"></i>HL</span></div>`;
   }
 
+
+  const PLAN = ['Not started', 'Reteach planned', 'Retest set', 'Improved'];
+  /** Intervention tab: every student predicted below the cut, what they struggled with, and a plan you can record. */
+  function intervention(main, tabs, ok, ms, lastI) {
+    const head = U.heading('PLC GOAL · ACTION STEP', 'Intervention', `Students predicted below a ${cut()}, the skills they are struggling with and the misconceptions their wrong answers show.`, `<button class="btn" id="iv-print" type="button">Print plan</button>`, ) + tabs;
+    if (!ok || lastI < 0) { main.innerHTML = head + '<section class="card"><p>Enter your grade boundaries on the Overview tab first.</p></section>'; return; }
+    const r = count('ALL', ms[lastI].upTo), list = r.below.slice().sort((p, q) => p.p.pct - q.p.pct), today = Hub.mastery.asOf(), since = Hub.core.addDays(today, -56);
+    const plans = (view0().plans) || {};
+    const info = list.map(({ s, p }) => {
+      const sk = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null && x.status !== 'low-evidence').sort((a, b) => a.pct - b.pct);
+      const weak = sk.filter(x => x.pct < 60).slice(0, 4), weakest = weak.length ? weak : sk.slice(0, 2);
+      const mis = {}; S().evidence.forEach(e => { if (e.sid === s.id && !e.preview && e.date >= since) (e.tags || []).forEach(t => { const k = e.skill + '|' + t; mis[k] = mis[k] || { skill: e.skill, tag: t, n: 0 }; mis[k].n++; }); });
+      const need = Math.max(0, Math.ceil(+bounds(s.course)[cut()] - p.pct));
+      return { s, p, weakest, mis: Object.values(mis).sort((a, b) => b.n - a.n).slice(0, 4), need };
+    });
+    const agg = (pick, key) => { const o = {}; info.forEach(x => pick(x).forEach(it => { const k = key(it); o[k] = o[k] || { it, who: [] }; if (!o[k].who.includes(x.s)) o[k].who.push(x.s); })); return Object.values(o).sort((a, b) => b.who.length - a.who.length).slice(0, 8); };
+    const skillGroups = agg(x => x.weakest.filter(k => k.pct < 60), k => k.skill), misGroups = agg(x => x.mis, m => m.skill + '|' + m.tag);
+    const names = who => who.map(s => `<a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a>`).join(', ');
+    const card = x => { const pl = plans[x.s.id] || {};
+      return `<section class="card iv-card"><div class="row-between"><h3 class="iv-name"><a href="#/student/${encodeURIComponent(x.s.id)}">${esc(x.s.name)}</a></h3><span class="tiny muted">${esc((Hub.curriculum.GROUPS[x.s.group] || {}).label || x.s.group)}</span></div>
+        <div class="rd-stats"><div><b>${x.p.pct}%</b><span>average</span></div><div><b>${x.p.grade}</b><span>predicted</span></div><div><b>+${x.need}%</b><span>to reach a ${cut()}</span></div></div>
+        <p class="small"><b>Struggling with</b></p>${x.weakest.length ? `<ul class="iv-list">${x.weakest.map(k => `<li>${esc(U.skillName(k.skill))} <span class="tiny muted">${k.pct}%</span>${U.bar(k.pct, k.pct < 60 ? 'low' : '')}</li>`).join('')}</ul>` : '<p class="tiny muted">Not enough marked work per skill yet.</p>'}
+        <p class="small"><b>Misconceptions seen</b> <span class="tiny muted">(last 8 weeks)</span></p>${x.mis.length ? `<ul class="iv-list">${x.mis.map(m => `<li><b>${esc(Hub.mastery.tagText(m.tag))}</b> <span class="tiny muted">in ${esc(U.skillName(m.skill))}${m.n > 1 ? ` · ${m.n} times` : ''}</span></li>`).join('')}</ul>` : '<p class="tiny muted">No known misconceptions matched — check their working in Marking.</p>'}
+        <div class="iv-plan no-print-ctl"><label>Plan<select data-ivs="${esc(x.s.id)}">${PLAN.map(o => `<option${(pl.status || PLAN[0]) === o ? ' selected' : ''}>${o}</option>`).join('')}</select></label>
+        <label>Notes<textarea data-ivn="${esc(x.s.id)}" rows="2" placeholder="e.g. small-group reteach Tue, retest Fri">${esc(pl.note || '')}</textarea></label>
+        <div class="actions"><button class="btn small" data-ivsave="${esc(x.s.id)}" type="button">Save plan</button><a class="btn small ghost" href="#/student/${encodeURIComponent(x.s.id)}">Student record</a>${pl.at ? `<span class="tiny muted">saved ${fmtDate(String(pl.at).slice(0, 10))}</span>` : ''}</div></div></section>`; };
+    main.innerHTML = head + `<div class="dc-bigs"><div class="dc-big ${list.length ? 'red' : 'green'}"><span class="key-lab">Below a ${cut()} · ${esc(ms[lastI].name)}</span><b>${list.length}</b><span class="small">of ${r.of} assessed students</span></div>
+      <div class="dc-big"><span class="key-lab">Plans started</span><b>${list.filter(x => (plans[x.s.id] || {}).status && plans[x.s.id].status !== PLAN[0]).length}</b><span class="small">of ${list.length}</span></div>
+      <div class="dc-big green"><span class="key-lab">Marked improved</span><b>${list.filter(x => (plans[x.s.id] || {}).status === 'Improved').length}</b><span class="small">still below on current data</span></div></div>
+      ${list.length ? `<div class="grid g2"><section class="card"><h2 class="bar-head amber">Small groups: skills to reteach</h2>${skillGroups.length ? skillGroups.map(g => `<div class="miss-item"><b>${esc(U.skillName(g.it.skill))}</b> <span class="pill">${g.who.length}</span><p class="miss-names">${names(g.who)}</p></div>`).join('') : '<p class="tiny muted">No skill below 60% yet for these students.</p>'}</section>
+      <section class="card"><h2 class="bar-head pink">Common misconceptions</h2>${misGroups.length ? misGroups.map(g => `<div class="miss-item"><b>${esc(Hub.mastery.tagText(g.it.tag))}</b> <span class="tiny muted">${esc(U.skillName(g.it.skill))}</span> <span class="pill">${g.who.length}</span><p class="miss-names">${names(g.who)}</p></div>`).join('') : '<p class="tiny muted">No known misconceptions matched for these students yet.</p>'}
+        <p class="tiny muted">Detected automatically when a wrong answer matches a known error.</p></section></div>
+      <h2 class="sub-h">Each student</h2><div class="grid g2 iv-grid">${info.map(card).join('')}</div>` : `<section class="card"><p class="gc-ok">✓ No students are predicted below a ${cut()} right now.</p></section>`}
+      <p class="tiny muted">Skills and misconceptions use all marked work, homework included; the predicted grade uses Tests, Quizzes, Retests and Exit Tickets only.</p>`;
+    $('#iv-print').onclick = () => window.print();
+    $$('[data-ivsave]', main).forEach(b => (b.onclick = async () => { const id = b.dataset.ivsave, c = cfg(); c.plans = c.plans || {};
+      c.plans[id] = { status: $(`[data-ivs="${id}"]`, main).value, note: $(`[data-ivn="${id}"]`, main).value.trim().slice(0, 2000), at: new Date().toISOString() };
+      Hub.store.save(true); try { await Hub.store.flush(); toast('Plan saved.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); }));
+  }
   function view(main, params = {}) {
     const ms = months(), ok = COURSES.every(boundsOK), C = view0();
     const rowsBy = {}; ['SL', 'HL', 'ALL'].forEach(c => { rowsBy[c] = ms.map(m => m.upTo && ok ? count(c, m.upTo) : null); });
     const nowI = ms.findIndex(m => m.current), lastI = nowI >= 0 ? nowI : ms.map(m => !!m.upTo).lastIndexOf(true), now = c => lastI >= 0 ? rowsBy[c][lastI] : null;
     const big = (label, r) => `<div class="dc-big ${r ? tone(r.pct) : ''}"><span class="key-lab">${label}</span><b>${r && r.pct !== null ? r.pct + '%' : '—'}</b><span class="small">${r && r.of ? `${r.at} of ${r.of} students at ${cut()}+` : 'no assessed students yet'}</span></div>`;
     const monthName = lastI >= 0 ? ms[lastI].name : '';
+    const nBelow = ok && now('ALL') ? now('ALL').below.length : 0;
+    const tabs = `<div class="tabs no-print"><a class="tab ${params.tab === 'intervention' ? '' : 'on'}" href="#/datacycle">Overview</a><a class="tab ${params.tab === 'intervention' ? 'on' : ''}" href="#/datacycle?tab=intervention">Intervention${nBelow ? ` (${nBelow})` : ''}</a></div>`;
+    if (params.tab === 'intervention') return intervention(main, tabs, ok, ms, lastI);
     if (params.present) {
       main.innerHTML = `<div class="row-between no-print"><a class="back" href="#/datacycle">← Data cycle</a><button class="btn small" id="dc-print" type="button">Print / save as PDF</button></div>
         <section class="dc-present">${U.heading('IB MATH · PLC DATA CYCLE', 'IB Maths: Analysis & Approaches', esc(monthName ? `Predicted grades as of ${fmtDate(ms[lastI].upTo, true)}` : ''))}
@@ -5590,7 +5635,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const table = `<div class="scroll"><table class="tbl dc-tbl"><thead><tr><th></th>${ms.map(m => `<th>${m.short}</th>`).join('')}</tr></thead><tbody>${[['SL', 'AA SL'], ['HL', 'AA HL'], ['ALL', 'All IB AA']].map(([c, lab]) => `<tr class="${c === 'ALL' ? 'dc-all' : ''}"><th>${lab}</th>${rowsBy[c].map((r, i) => `<td class="${r && r.of ? 'dc-' + tone(r.pct) : ''}">${r && r.of ? `<b>${cell(r)}</b><span>${r.pct}%</span>` : ms[i].upTo ? '<span class="muted">—</span>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     const detail = c => { const r = now(c); if (!r) return ''; const list = r.all.slice().sort((p, q) => p.p.pct - q.p.pct);
       return `<details class="rd-list" ${c === 'SL' ? 'open' : ''}><summary><b>AA ${c}</b> · ${r.below.length} below a ${cut()}${r.notAssessed ? ` · ${r.notAssessed} not assessed yet` : ''}</summary>${list.length ? `<table class="tbl rd-tbl"><thead><tr><th>Student</th><th>Average</th><th>Predicted</th><th>Assessments</th></tr></thead><tbody>${list.map(({ s, p }) => `<tr class="${p.grade < cut() ? 'dc-below' : ''}"><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${p.pct}%</td><td><b>${p.grade}</b></td><td>${p.n}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No marked work yet.</p>'}</details>`; };
-    main.innerHTML = U.heading('PLC GOAL', 'Data cycle', `Predicted IB grades from Tests, Quizzes, Retests and Exit Tickets (not homework), counted each month as <b>students at ${cut()}+ / students assessed</b>.`, `<a class="btn primary" href="#/datacycle?present=1">Present to department →</a>`) +
+    main.innerHTML = U.heading('PLC GOAL', 'Data cycle', `Predicted IB grades from Tests, Quizzes, Retests and Exit Tickets (not homework), counted each month as <b>students at ${cut()}+ / students assessed</b>.`, `<a class="btn primary" href="#/datacycle?present=1">Present to department →</a>`) + tabs +
       (ok ? '' : `<section class="card warn-card"><p><b>Enter your grade boundaries below first.</b> Copy the lowest % for each grade from the latest IB grade boundaries for SL and HL. The counts appear as soon as they are saved.</p></section>`) +
       `<div class="dc-bigs">${big('AA SL' + (monthName ? ' · ' + monthName : ''), now('SL'))}${big('AA HL' + (monthName ? ' · ' + monthName : ''), now('HL'))}${big('All IB AA' + (monthName ? ' · ' + monthName : ''), now('ALL'))}</div>
       <section class="card"><div class="row-between"><h2 class="bar-head amber">Your row for the data sheet</h2><button class="btn small" id="dc-copy" type="button" ${ok ? '' : 'disabled'}>Copy for the spreadsheet</button></div>${table}
