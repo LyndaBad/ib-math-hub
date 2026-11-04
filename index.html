@@ -668,6 +668,15 @@ body.mp-on { padding-bottom: 76px; }
 .more-card > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; } .more-card > summary::-webkit-details-marker { display: none; } .more-card > summary h2 { margin: 0; }
 .more-card[open] > summary { margin-bottom: 12px; }
 .pq-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px dashed var(--line); } .pq-opt b { min-width: 90px; } .pq-opt .btn { margin-left: auto; }
+.dc-bigs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 0 0 16px; }
+.dc-big { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--white); border: 3px solid var(--orange); border-radius: var(--r-s); padding: 14px 10px; text-align: center; }
+.dc-big b { font-family: var(--f-ui); font-size: 2.6rem; line-height: 1.1; } .dc-big.green { border-color: #6AA84F; background: #EEF7E9; } .dc-big.amber { border-color: #F6B26B; background: #FFF4E5; } .dc-big.red { border-color: #E06666; background: #FDECEC; }
+.dc-tbl th, .dc-tbl td { text-align: center; white-space: nowrap; } .dc-tbl tbody th { text-align: left; } .dc-tbl td b { display: block; font-family: var(--f-ui); font-size: 1.05rem; } .dc-tbl td span { font-size: .78rem; }
+.dc-tbl .dc-all th, .dc-tbl .dc-all td { border-top: 2px solid var(--ink); } .dc-green { background: #EEF7E9; } .dc-amber { background: #FFF4E5; } .dc-red { background: #FDECEC; }
+.dc-chart { width: 100%; max-width: 900px; height: auto; display: block; margin: 0 auto; } .dc-key { display: flex; gap: 14px; justify-content: center; } .dc-key i { display: inline-block; width: 12px; height: 12px; border: 1.5px solid var(--ink); border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.dc-below td { background: #FDECEC; } .dc-nums { display: flex; flex-wrap: wrap; gap: 12px; } .dc-nums label { flex: 1; min-width: 160px; } .dc-btbl input { width: 4.5em; text-align: center; }
+.dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
+@media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
 .join .signin-card form .btn.primary { justify-content: center; font-size: 1.05rem; padding: 10px 16px; }
 
@@ -5500,6 +5509,118 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.join = { page, resume, cardHTML, testCardHTML, bind, newCode, loginCardHTML, bindManage, testUser };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/datacycle.js ---- */
+/* Data cycle (#/datacycle): the PLC goal "at least 60% of students hold a predicted grade of 4+ on IB-aligned assessments".
+   Predicted grade = average of a student's Tests, Quizzes and Retests so far (a retest replaces the original when higher),
+   converted to an IB grade with the teacher's own SL / HL boundaries. Counted month by month, September to May,
+   as "students at 4+ / students assessed" — the format of the school data sheet. Test students never count. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast, fmtDate } = Hub.core;
+  const U = Hub.ui, S = () => Hub.store.state;
+  const COUNTED = ['Test', 'Quiz', 'Retest'];
+  const COURSES = ['SL', 'HL'];
+  const MONTHS = ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May'];
+  const DEF_GOAL = 'By May 2027, at least 60% of IB Mathematics: Analysis & Approaches students (SL and HL) will hold a predicted grade of 4 or higher on BRHS IB DP-aligned assessments, measured monthly using the latest IB grade boundaries.';
+  const DEF_ACTION = 'Each month, IB math teachers convert common assessment scores to IB grades, identify every student predicted below a 4, and give them targeted reteaching and a retest or personalised Do Now within two weeks. Results are logged on the PLC data sheet.';
+  const cfg = () => { const st = S(); st.settings.dataCycle = st.settings.dataCycle || {}; const c = st.settings.dataCycle; c.bounds = c.bounds || { SL: {}, HL: {} }; return c; };
+  const view0 = () => (S().settings || {}).dataCycle || {};
+  const target = () => +(view0().target || 60), cut = () => +(view0().grade || 4);
+  const bounds = c => ((view0().bounds || {})[c]) || {};
+  /** Boundaries are usable when grades 2–7 all have a cut-off and they go up. */
+  function boundsOK(c) { const b = bounds(c), v = [2, 3, 4, 5, 6, 7].map(g => b[g]); return v.every(x => x !== '' && x !== undefined && x !== null && !isNaN(+x)) && v.every((x, i) => i === 0 || +x > +v[i - 1]); }
+  function toGrade(pct, c) { const b = bounds(c); let g = 1; for (let k = 2; k <= 7; k++) if (pct >= +b[k]) g = k; return g; }
+
+  /** The school year's months, with the date each is counted up to (month end, today for the current month, null for future months). */
+  function months() {
+    const today = Hub.mastery.asOf(), y = +today.slice(0, 4), m = +today.slice(5, 7), start = m >= 8 ? y : y - 1;
+    return MONTHS.map((name, i) => { const mm = ((8 + i) % 12) + 1, yy = mm >= 8 ? start : start + 1, first = `${yy}-${String(mm).padStart(2, '0')}-01`;
+      const last = new Date(Date.UTC(yy, mm, 0)).toISOString().slice(0, 10);
+      return { name, short: name.slice(0, 3), first, upTo: first > today ? null : (last < today ? last : today), current: first <= today && last >= today };
+    });
+  }
+  /** A student's counted scores up to a date: one per assessment (retest replaces the original when higher). */
+  function scores(sid, upTo) {
+    const best = {};
+    for (const t of S().attempts) {
+      if (t.sid !== sid || String(t.at || '').slice(0, 10) > upTo) continue;
+      const a = Hub.assess.byId(t.aid) || t.inline; if (!a || !COUNTED.includes(a.type)) continue;
+      const p = Hub.assess.score(t).capped; if (p === null || p === undefined || isNaN(p)) continue;
+      const key = a.retestOf || a.id; if (best[key] === undefined || p > best[key]) best[key] = p;
+    }
+    return Object.values(best);
+  }
+  function predicted(s, upTo) { const v = scores(s.id, upTo); if (!v.length) return null; const pct = Math.round(v.reduce((a, b) => a + b, 0) / v.length); return { pct, n: v.length, grade: boundsOK(s.course) ? toGrade(pct, s.course) : null }; }
+  /** {at, of, pct, below:[{s,p}], all:[{s,p}]} for a course ('SL', 'HL' or 'ALL') up to a date. */
+  function count(course, upTo) {
+    const studs = (course === 'ALL' ? COURSES.flatMap(c => Hub.roster.inCourse(c)) : Hub.roster.inCourse(course));
+    const all = studs.map(s => ({ s, p: predicted(s, upTo) })).filter(x => x.p && x.p.grade !== null);
+    const at = all.filter(x => x.p.grade >= cut()).length;
+    return { at, of: all.length, pct: all.length ? Math.round(100 * at / all.length) : null, below: all.filter(x => x.p.grade < cut()), all, notAssessed: studs.length - studs.filter(s => predicted(s, upTo)).length };
+  }
+  const cell = r => r && r.of ? `${r.at}/${r.of}` : '';
+  const tone = p => p === null ? '' : p >= target() ? 'green' : p >= target() - 15 ? 'amber' : 'red';
+
+  function chart(rowsBy, ms) {
+    const W = 560, H = 200, L = 34, B = 26, bw = (W - L - 10) / ms.length, y = v => H - B - (H - B - 10) * v / 100, ty = y(target());
+    const cols = { SL: 'var(--orange)', HL: 'var(--blue, #9FC5E8)' };
+    const bars = ms.map((m, i) => COURSES.map((c, j) => { const r = rowsBy[c][i]; if (!r || r.pct === null) return ''; const x = L + i * bw + 6 + j * ((bw - 12) / 2), w = (bw - 14) / 2; return `<rect x="${x}" y="${y(r.pct)}" width="${w}" height="${H - B - y(r.pct)}" rx="4" fill="${cols[c]}" stroke="var(--ink)" stroke-width="1.5"><title>${c} ${m.name}: ${r.pct}% (${cell(r)})</title></rect>`; }).join('')).join('');
+    const labels = ms.map((m, i) => `<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="12" fill="var(--ink)">${m.short}</text>`).join('');
+    const grid = [0, 50, 100].map(v => `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink)">${v}%</text><line x1="${L}" x2="${W - 6}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/>`).join('');
+    return `<svg class="dc-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Percentage of students at grade ${cut()} or higher, by month">${grid}<line x1="${L}" x2="${W - 6}" y1="${ty}" y2="${ty}" stroke="#D93025" stroke-width="2" stroke-dasharray="6 4"/><text x="${W - 8}" y="${ty - 5}" text-anchor="end" font-size="11" fill="#D93025">target ${target()}%</text>${bars}${labels}</svg>
+      <div class="dc-key tiny"><span><i style="background:var(--orange)"></i>SL</span><span><i style="background:var(--blue, #9FC5E8)"></i>HL</span></div>`;
+  }
+
+  function view(main, params = {}) {
+    const ms = months(), ok = COURSES.every(boundsOK), C = view0();
+    const rowsBy = {}; ['SL', 'HL', 'ALL'].forEach(c => { rowsBy[c] = ms.map(m => m.upTo && ok ? count(c, m.upTo) : null); });
+    const nowI = ms.findIndex(m => m.current), lastI = nowI >= 0 ? nowI : ms.map(m => !!m.upTo).lastIndexOf(true), now = c => lastI >= 0 ? rowsBy[c][lastI] : null;
+    const big = (label, r) => `<div class="dc-big ${r ? tone(r.pct) : ''}"><span class="key-lab">${label}</span><b>${r && r.pct !== null ? r.pct + '%' : '—'}</b><span class="small">${r && r.of ? `${r.at} of ${r.of} students at ${cut()}+` : 'no assessed students yet'}</span></div>`;
+    const monthName = lastI >= 0 ? ms[lastI].name : '';
+    if (params.present) {
+      main.innerHTML = `<div class="row-between no-print"><a class="back" href="#/datacycle">← Data cycle</a><button class="btn small" id="dc-print" type="button">Print / save as PDF</button></div>
+        <section class="dc-present">${U.heading('IB MATH · PLC DATA CYCLE', 'IB Maths: Analysis & Approaches', esc(monthName ? `Predicted grades as of ${fmtDate(ms[lastI].upTo, true)}` : ''))}
+        <div class="card dc-goal"><h2 class="bar-head pink">Goal</h2><p>${esc(C.goal || DEF_GOAL)}</p></div>
+        <div class="dc-bigs">${big('AA SL', now('SL'))}${big('AA HL', now('HL'))}${big('All IB AA', now('ALL'))}</div>
+        <div class="card"><h2 class="bar-head blue">Month by month</h2>${ok ? chart(rowsBy, ms) : '<p class="tiny muted">Grade boundaries not set yet.</p>'}</div>
+        <div class="card"><h2 class="bar-head green">Action step</h2><p>${esc(C.action || DEF_ACTION)}</p>${ok && now('ALL') ? `<p class="small"><b>${now('ALL').below.length}</b> student${now('ALL').below.length === 1 ? '' : 's'} currently predicted below a ${cut()} (${now('SL').below.length} SL, ${now('HL').below.length} HL) for targeted reteaching and retests.</p>` : ''}</div></section>`;
+      $('#dc-print').onclick = () => window.print(); return;
+    }
+    const brow = c => { const b = bounds(c); return `<tr><th>${c}</th>${[2, 3, 4, 5, 6, 7].map(g => `<td><input class="dc-b" data-c="${c}" data-g="${g}" type="number" min="0" max="100" inputmode="numeric" value="${b[g] ?? ''}" aria-label="${c} grade ${g} lowest %"></td>`).join('')}</tr>`; };
+    const table = `<div class="scroll"><table class="tbl dc-tbl"><thead><tr><th></th>${ms.map(m => `<th>${m.short}</th>`).join('')}</tr></thead><tbody>${[['SL', 'AA SL'], ['HL', 'AA HL'], ['ALL', 'All IB AA']].map(([c, lab]) => `<tr class="${c === 'ALL' ? 'dc-all' : ''}"><th>${lab}</th>${rowsBy[c].map((r, i) => `<td class="${r && r.of ? 'dc-' + tone(r.pct) : ''}">${r && r.of ? `<b>${cell(r)}</b><span>${r.pct}%</span>` : ms[i].upTo ? '<span class="muted">—</span>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const detail = c => { const r = now(c); if (!r) return ''; const list = r.all.slice().sort((p, q) => p.p.pct - q.p.pct);
+      return `<details class="rd-list" ${c === 'SL' ? 'open' : ''}><summary><b>AA ${c}</b> · ${r.below.length} below a ${cut()}${r.notAssessed ? ` · ${r.notAssessed} not assessed yet` : ''}</summary>${list.length ? `<table class="tbl rd-tbl"><thead><tr><th>Student</th><th>Average</th><th>Predicted</th><th>Assessments</th></tr></thead><tbody>${list.map(({ s, p }) => `<tr class="${p.grade < cut() ? 'dc-below' : ''}"><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${p.pct}%</td><td><b>${p.grade}</b></td><td>${p.n}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No marked tests or quizzes yet.</p>'}</details>`; };
+    main.innerHTML = U.heading('PLC GOAL', 'Data cycle', `Predicted IB grades from Tests, Quizzes and Retests, counted each month as <b>students at ${cut()}+ / students assessed</b>.`, `<a class="btn primary" href="#/datacycle?present=1">Present to department →</a>`) +
+      (ok ? '' : `<section class="card warn-card"><p><b>Enter your grade boundaries below first.</b> Copy the lowest % for each grade from the latest IB grade boundaries for SL and HL. The counts appear as soon as they are saved.</p></section>`) +
+      `<div class="dc-bigs">${big('AA SL' + (monthName ? ' · ' + monthName : ''), now('SL'))}${big('AA HL' + (monthName ? ' · ' + monthName : ''), now('HL'))}${big('All IB AA' + (monthName ? ' · ' + monthName : ''), now('ALL'))}</div>
+      <section class="card"><div class="row-between"><h2 class="bar-head amber">Your row for the data sheet</h2><button class="btn small" id="dc-copy" type="button" ${ok ? '' : 'disabled'}>Copy for the spreadsheet</button></div>${table}
+        <p class="tiny muted">Each month counts every marked Test, Quiz and Retest up to the end of that month (today for ${esc(ms[nowI] ? ms[nowI].name : 'this month')}). A retest replaces the original when it is higher. Test students never count. Target: <b>${target()}%</b> at grade ${cut()}+.</p></section>
+      <section class="card"><h2 class="bar-head blue">Month by month</h2>${ok ? chart(rowsBy, ms) : '<p class="tiny muted">Appears once boundaries are set.</p>'}</section>
+      <section class="card"><h2 class="bar-head pink">Who is below a ${cut()}${monthName ? ' · ' + monthName : ''}</h2>${ok ? detail('SL') + detail('HL') : '<p class="tiny muted">Appears once boundaries are set.</p>'}<p class="tiny muted">Names stay on this page — the department view shows counts only.</p></section>
+      <section class="card"><h2 class="bar-head green">Goal, action step and grade boundaries</h2>
+        <label>PLC goal<textarea id="dc-goal" rows="3">${esc(C.goal || DEF_GOAL)}</textarea></label>
+        <label>Action step<textarea id="dc-action" rows="3">${esc(C.action || DEF_ACTION)}</textarea></label>
+        <div class="dc-nums"><label>Target %<input id="dc-target" type="number" min="1" max="100" value="${target()}"></label><label>Grade counted as on track<input id="dc-grade" type="number" min="2" max="7" value="${cut()}"></label></div>
+        <p class="small"><b>Grade boundaries</b> — the lowest overall % for each grade.</p>
+        <div class="scroll"><table class="tbl dc-btbl"><thead><tr><th></th>${[2, 3, 4, 5, 6, 7].map(g => `<th>Grade ${g}</th>`).join('')}</tr></thead><tbody>${brow('SL')}${brow('HL')}</tbody></table></div>
+        <p id="dc-msg" class="tiny" role="status"></p><div class="actions"><button class="btn primary" id="dc-save" type="button">Save</button></div></section>`;
+    $('#dc-save').onclick = async () => {
+      const c = cfg(), nb = { SL: {}, HL: {} };
+      $$('.dc-b', main).forEach(i => { if (i.value !== '') nb[i.dataset.c][i.dataset.g] = +i.value; });
+      for (const k of COURSES) { const v = [2, 3, 4, 5, 6, 7].map(g => nb[k][g]); if (v.some(x => x !== undefined) && !v.every((x, i) => x !== undefined && (i === 0 || x > v[i - 1]))) { $('#dc-msg').textContent = `${k}: fill in grades 2 to 7, each higher than the one before.`; return; } }
+      Object.assign(c, { bounds: nb, goal: $('#dc-goal').value.trim(), action: $('#dc-action').value.trim(), target: Math.min(100, Math.max(1, +$('#dc-target').value || 60)), grade: Math.min(7, Math.max(2, +$('#dc-grade').value || 4)) });
+      Hub.store.log('Updated the data cycle settings'); Hub.store.save(true);
+      try { await Hub.store.flush(); toast('Saved to cloud.'); } catch (e) { toast(e.message, 'error'); }
+      Hub.app.render();
+    };
+    const cp = $('#dc-copy'); if (cp) cp.onclick = async () => {
+      const txt = [['', ...MONTHS], ...[['SL', 'Badmus AA SL'], ['HL', 'Badmus AA HL'], ['ALL', 'Badmus (all IB AA)']].map(([c, lab]) => [lab, ...rowsBy[c].map(cell)])].map(r => r.join('\t')).join('\n');
+      try { await navigator.clipboard.writeText(txt); toast('Copied — click the September cell in the sheet and paste.'); } catch (e) { toast('Could not copy here.', 'error'); }
+    };
+  }
+  Hub.datacycle = { view, count, predicted, months, toGrade, boundsOK };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/live.js ---- */
 /* Live behavior layered over the original classroom interface. */
 (function(Hub){
@@ -8508,7 +8629,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 (function (Hub) {
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
-  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
+  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
   const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Do Now'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
@@ -8519,7 +8640,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
     student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p) }
   };
   function shell() {
