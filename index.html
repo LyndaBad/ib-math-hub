@@ -695,6 +695,8 @@ body.mp-on { padding-bottom: 76px; }
 .reg-row { display: flex !important; flex-direction: row !important; align-items: center; gap: 8px; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; margin: 0; font-family: var(--f-body, inherit); font-weight: 400; }
 .reg-row .reg-tag { display: none; margin-left: auto; font-size: .75rem; font-weight: 700; color: #B03A2E; } .reg-row.is-absent { background: #FDECEC; border-color: #E06666; } .reg-row.is-absent .reg-tag { display: inline; }
 .reg-date select { min-width: 190px; } .absent-note { font-size: .85rem; font-weight: 700; color: #B03A2E; margin: 2px 0; }
+.due-big { font-family: var(--f-ui); font-size: 1.15rem; margin: 6px 0 8px; } .due-big b { font-size: 1.8rem; } .due-row { border-top: 1px dashed var(--line); padding: 6px 0; gap: 10px; } .due-row span { flex: 1; text-align: right; }
+.wtw-skill { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px dashed var(--line); } .wtw-skill > div { display: flex; flex-direction: column; } .wtw-wait { margin-top: 10px; }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -4845,6 +4847,20 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         ${Hub.ia ? Hub.ia.cardLine(g.id) : ia ? `<p class="tiny gc-ia">IA · ${esc(ia.short)} due ${fmtDate(ia.date)}</p>` : ''}
         ${Hub.classdash ? Hub.classdash.cardSnippet(g.id) : ''}<a class="btn small primary gc-open" href="#/class/${g.id}">Class dashboard →</a></section>`;
     }).join('');
+    // Exit Tickets and homework due on a day: completion across every class
+    const dueOn = D => { const out = { 'Exit Ticket': [], 'Homework': [] };
+      S().assessments.forEach(a => { if (!out[a.type] || !['published', 'closed'].includes(a.status)) return;
+        (a.groups || []).forEach(g => { if (Hub.assess.dueFor(a, g) !== D) return; const studs = Hub.roster.inGroup(g); if (!studs.length) return;
+          const done = studs.filter(st => Hub.assess.attemptsFor(a.id, st.id).length).length, absent = a.type === 'Exit Ticket' && Hub.attendance ? studs.filter(st => Hub.attendance.isAbsent(st.id, D)).length : 0;
+          out[a.type].push({ a, g, label: C().GROUPS[g].label, done, total: studs.length, absent }); }); });
+      return out; };
+    let dueDay = asOf, due = dueOn(dueDay), dueLabel = 'Due today';
+    if (!due['Exit Ticket'].length && !due.Homework.length) { const past = S().assessments.filter(a => ['Exit Ticket', 'Homework'].includes(a.type) && ['published', 'closed'].includes(a.status)).flatMap(a => (a.groups || []).map(g => Hub.assess.dueFor(a, g))).filter(d => d && d < dueDay).sort().pop();
+      if (past) { dueDay = past; due = dueOn(past); dueLabel = 'Nothing due today · last due ' + fmtDate(past, true); } }
+    const dueTile = (type, head) => { const rows = due[type], d = rows.reduce((n, r) => n + r.done, 0), t = rows.reduce((n, r) => n + r.total, 0), ab = rows.reduce((n, r) => n + r.absent, 0), pc = t ? Math.round(100 * d / t) : null;
+      return `<section class="card due-tile"><h3 class="bar-head ${type === 'Homework' ? 'amber' : 'pink'}">${head}</h3>${rows.length ? `<p class="due-big"><b>${d}/${t}</b> complete <span class="pill ${pc >= 90 ? 'green' : pc >= 70 ? 'amber' : 'red'}">${pc}%</span>${ab ? ` <span class="tiny muted">· ${ab} absent</span>` : ''}</p>
+        ${rows.map(r => `<div class="row-between small due-row"><a href="#/class/${r.g}">${esc(r.label)}</a><span class="tiny muted">${esc(r.a.title.replace(/^(SL|HL) · /, ''))}</span><b>${r.done}/${r.total}</b></div>`).join('')}` : `<p class="tiny muted">None ${dueLabel === 'Due today' ? 'due today' : 'due that day'}.</p>`}</section>`; };
+    const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
     main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', 'Inquirers. Thinkers. Reflective Learners.', `<img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo">`) +
       `<div class="attention">
@@ -4853,6 +4869,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <a class="att" href="#/studio?status=approved"><b>${S().assessments.filter(a => a.status === 'approved').length}</b><span>approved, not published</span></a>
         <a class="att" href="#/ia"><b>${Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length}</b><span>IA checkpoints waiting</span></a>
       </div>
+      ${dueHTML}
       <h2 class="sec">Next lessons</h2><div class="grid g4">${cards}</div>
       <div class="grid g2"><section class="card"><h2 class="bar-head amber">Misconception watchlist · last 4 weeks</h2>${mis.length ? `<ul class="mis">${mis.map(m => `<li><span class="mis-n">${m.students}</span><div><b>${esc(Hub.mastery.tagText(m.tag))}</b><br><span class="tiny muted">${C().GROUPS[m.g].label} · ${esc(U.skillName(m.skill))}</span></div></li>`).join('')}</ul>` : '<p>No misconceptions recorded yet.</p>'}<p class="tiny muted">Detected automatically when a wrong answer matches a known error (no AI involved).</p></section>
       <section class="card"><h2 class="bar-head blue">Class snapshot</h2>${['SL-A', 'SL-B', 'HL-A', 'HL-B'].map(g => { const sk = C().skillsFor(g.slice(0, 2)).filter(k => C().isTaught(k.id, g, asOf)); const avgs = sk.map(k => Hub.mastery.groupSkill(g, k.id).avg).filter(v => v !== null); const av = avgs.length ? Math.round(avgs.reduce((a, b) => a + b, 0) / avgs.length) : null; const low = sk.map(k => [k, Hub.mastery.groupSkill(g, k.id).avg]).filter(x => x[1] !== null).sort((a, b) => a[1] - b[1])[0];
@@ -5203,17 +5220,25 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <section class="card"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b>${Hub.attendance && Hub.attendance.absentAccess(a, s.id) ? '<div class="absent-note">You were absent — catch up on the lesson and complete this.</div>' : ''}<div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
         <section class="card"><h2 class="bar-head blue">Feedback</h2>${returned.length ? returned.map(t => `<div class="todo"><div><b>${esc(t.inline ? t.inline.title : (Hub.assess.byId(t.aid) || {}).title || t.type)}</b><div class="tiny muted">${fmtDate(t.date)} · ${Hub.assess.score(t).earned}/${t.max}${t.comment ? ' · 💬 comment from Miss Badmus' : ''}</div></div><a class="btn small ghost" href="#/result/${t.id}">Open</a></div>`).join('') : '<p>Marked work will appear here.</p>'}${tasks.filter(x => x.t && x.t.status === 'submitted').map(({ a, t }) => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">Submitted ${fmtDateTime(t.at)} · waiting for Miss Badmus</div></div><a class="btn small ghost" href="#/result/${t.id}">View</a></div>`).join('')}</section>
         <section class="card wtw"><h2 class="bar-head pink">What to work on</h2>${(() => {
-          // only skills where they have dropped marks (lowest first); a skill at 100% never appears here
-          const show = stats.filter(x => x.pct < 100).slice(0, 4);
-          const since = Hub.core.addDays(asOf, -56), mis = {};
-          S().attempts.filter(t => t.sid === s.id && t.status === 'released' && String(t.date || t.at || '').slice(0, 10) >= since && t.auto && t.auto.parts).forEach(t => {
-            const qs = (t.inline || Hub.assess.byId(t.aid) || {}).questions || [];
-            Object.entries(t.auto.parts).forEach(([k, r]) => { if (!r || !r.tag || r.verdict === 'correct') return; const q = qs.find(x => x.id === k.split('|')[0]); const key = r.tag + '|' + (q ? q.skill : '');
-              mis[key] = mis[key] || { tag: r.tag, skill: q ? q.skill : null, fb: r.feedback || '', n: 0 }; mis[key].n++; if (!mis[key].fb && r.feedback) mis[key].fb = r.feedback; }); });
+          const since = Hub.core.addDays(asOf, -56), mine = S().attempts.filter(t => t.sid === s.id && String(t.date || t.at || '').slice(0, 10) >= since);
+          // 1. skills from questions they actually lost marks on, in marked work (newest first)
+          const lost = {}, mis = {};
+          mine.filter(t => t.status === 'released' && t.auto && t.auto.parts).sort((p, q) => String(q.date || q.at).localeCompare(String(p.date || p.at))).forEach(t => {
+            const a = t.inline || Hub.assess.byId(t.aid) || {}, qs = a.questions || [], when = String(t.date || t.at || '').slice(0, 10);
+            qs.forEach(q => { let e = 0, m = 0; (q.parts || []).forEach(p => { const k = q.id + '|' + p.id, r = t.auto.parts[k]; if (!r) return; const fin = t.final && t.final.parts ? t.final.parts[k] : undefined; if (r.verdict === 'teacher' && fin === undefined) return; e += +(fin ?? r.earned) || 0; m += +p.marks || 0;
+                if (r.tag && r.verdict !== 'correct') { const key = r.tag + '|' + q.skill; mis[key] = mis[key] || { tag: r.tag, skill: q.skill, fb: r.feedback || '', n: 0 }; mis[key].n++; if (!mis[key].fb && r.feedback) mis[key].fb = r.feedback; } });
+              if (!q.skill || !m || e >= m) return; const x = lost[q.skill] = lost[q.skill] || { skill: q.skill, e: 0, m: 0, from: [] }; x.e += e; x.m += m;
+              const lab = `${a.type === 'Do Now' ? 'Do Now' : (a.type || 'Task')} · ${fmtDate(when)}`; if (!x.from.includes(lab)) x.from.push(lab); }); });
+          const fromWork = Object.values(lost).slice(0, 5);
+          // 2. other skills where their overall mastery is below 100%
+          const extra = stats.filter(x => x.pct < 100 && !lost[x.skill]).slice(0, Math.max(0, 5 - fromWork.length));
           const watch = Object.values(mis).sort((a, b) => b.n - a.n).slice(0, 3);
-          if (!show.length && !watch.length) return stats.length ? '<p class="gc-ok">✓ Nothing to fix right now — everything marked so far is right. Keep it going in <a href="#/practice">Practice</a>.</p>' : '<p>Complete some work to see your next steps.</p>';
-          return (show.length ? `<p class="small"><b>Skills to strengthen</b></p>${show.map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small ghost" href="#/practice?skill=${x.skill}">Practise</a></div>`).join('')}` : '') +
-            (watch.length ? `<p class="small wtw-h"><b>Mistakes to watch out for</b></p>${watch.map(m => `<div class="wtw-mis"><b>${esc(Hub.mastery.tagText(m.tag))}</b>${m.n > 1 ? ` <span class="tiny muted">× ${m.n}</span>` : ''}${m.fb ? `<p class="small">${esc(m.fb)}</p>` : ''}${m.skill ? `<a class="btn small ghost" href="#/practice?skill=${m.skill}">Practise ${esc(U.skillName(m.skill))}</a>` : ''}</div>`).join('')}` : '');
+          const waiting = mine.filter(t => t.status === 'submitted').length;
+          const wait = waiting ? `<p class="tiny wtw-wait">⏳ ${waiting} piece${waiting === 1 ? '' : 's'} of work ${waiting === 1 ? 'is' : 'are'} still being marked — more will appear here once ${waiting === 1 ? 'it is' : 'they are'} returned.</p>` : '';
+          if (!fromWork.length && !extra.length && !watch.length) return (stats.length || mine.some(t => t.status === 'released') ? '<p class="gc-ok">✓ Nothing to fix right now — everything marked so far is right. Keep it going in <a href="#/practice">Practice</a>.</p>' : '<p>Complete some work to see your next steps.</p>') + wait;
+          return (fromWork.length ? `<p class="small"><b>Marks you dropped</b></p>${fromWork.map(x => `<div class="wtw-skill"><div><b>${esc(U.skillName(x.skill))}</b><span class="tiny muted">${x.e}/${x.m} marks · ${esc(x.from.slice(0, 2).join(', '))}</span></div><a class="btn small primary" href="#/practice?skill=${x.skill}">Try a similar question</a></div>`).join('')}` : '') +
+            (extra.length ? `<p class="small wtw-h"><b>${fromWork.length ? 'Also worth strengthening' : 'Skills to strengthen'}</b></p>${extra.map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small ghost" href="#/practice?skill=${x.skill}">Practise</a></div>`).join('')}` : '') +
+            (watch.length ? `<p class="small wtw-h"><b>Mistakes to watch out for</b></p>${watch.map(m => `<div class="wtw-mis"><b>${esc(Hub.mastery.tagText(m.tag))}</b>${m.n > 1 ? ` <span class="tiny muted">× ${m.n}</span>` : ''}${m.fb ? `<p class="small">${esc(m.fb)}</p>` : ''}${m.skill ? `<a class="btn small ghost" href="#/practice?skill=${m.skill}">Practise ${esc(U.skillName(m.skill))}</a>` : ''}</div>`).join('')}` : '') + wait;
         })()}</section>
         ${(ns => ia || ns.length ? `<section class="card"><h2 class="bar-head blue">◇ My IA</h2>${ia ? `<p><b>${esc(ia.short)}</b> is due <b>${fmtDate(ia.date, true)}</b> <span class="tiny muted">(${daysBetween(asOf, ia.date)} days)</span></p>` : ''}${ns.length ? `<p class="small ia-new">🔓 <b>New in your IA Studio:</b> ${ns.map(st => `<a href="#/ia?tab=s-${st.id}">Stage ${st.n} · ${esc(st.title)}</a>`).join(', ')}</p>` : ''}<a class="btn small" href="#/ia">Open my IA studio →</a></section>` : '')(Hub.iastages ? Hub.iastages.newStages(s) : [])}
       </div>`;
