@@ -5709,12 +5709,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 
 
   const PLAN = ['Not started', 'Reteach planned', 'Retest set', 'Improved'];
+  /* Intervention plans are teacher-only, so they live in a progress record the server never sends to students
+     (students receive only their own "<id>|…" progress records; settings go to everyone). */
+  const TKEY = '_teacher|dcplans';
+  const plansGet = () => ((S().progress || {})[TKEY] || {}).plans || {};
+  function movePlansOutOfSettings() { const c = (S().settings || {}).dataCycle; if (!c || !c.plans) return false;
+    S().progress[TKEY] = { plans: Object.assign({}, c.plans, plansGet()), updatedAt: new Date().toISOString() }; delete c.plans; Hub.store.save(true); return true; }
   /** Intervention tab: every student predicted below the cut, what they struggled with, and a plan you can record. */
   function intervention(main, tabs, ok, ms, lastI) {
     const head = U.heading('PLC GOAL · ACTION STEP', 'Intervention', `Students predicted below a ${cut()}, the skills they are struggling with and the misconceptions their wrong answers show.`, `<button class="btn" id="iv-print" type="button">Print plan</button>`, ) + tabs;
     if (!ok || lastI < 0) { main.innerHTML = head + '<section class="card"><p>Enter your grade boundaries on the Overview tab first.</p></section>'; return; }
     const r = count('ALL', ms[lastI].upTo), list = r.below.slice().sort((p, q) => p.p.pct - q.p.pct), today = Hub.mastery.asOf(), since = Hub.core.addDays(today, -56);
-    const plans = (view0().plans) || {}, fbOf = {};
+    movePlansOutOfSettings();
+    const plans = plansGet(), fbOf = {};
     S().attempts.forEach(t => t.auto && t.auto.parts && Object.values(t.auto.parts).forEach(r => { if (r && r.tag && r.feedback && !fbOf[r.tag]) fbOf[r.tag] = r.feedback; }));
     const info = list.map(({ s, p }) => {
       const sk = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null && x.status !== 'low-evidence').sort((a, b) => a.pct - b.pct);
@@ -5743,12 +5750,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <h2 class="sub-h">Each student</h2><div class="grid g2 iv-grid">${info.map(card).join('')}</div>` : `<section class="card"><p class="gc-ok">✓ No students are predicted below a ${cut()} right now.</p></section>`}
       <p class="tiny muted">Skills and misconceptions use all marked work, homework included; the predicted grade uses Tests, Quizzes, Retests and Exit Tickets only.</p>`;
     $('#iv-print').onclick = () => window.print();
-    $$('[data-ivsave]', main).forEach(b => (b.onclick = async () => { const id = b.dataset.ivsave, c = cfg(); c.plans = c.plans || {};
-      c.plans[id] = { status: $(`[data-ivs="${id}"]`, main).value, note: $(`[data-ivn="${id}"]`, main).value.trim().slice(0, 2000), at: new Date().toISOString() };
+    $$('[data-ivsave]', main).forEach(b => (b.onclick = async () => { const id = b.dataset.ivsave, all = Object.assign({}, plansGet());
+      S().progress[TKEY] = { plans: all, updatedAt: new Date().toISOString() };
+      all[id] = { status: $(`[data-ivs="${id}"]`, main).value, note: $(`[data-ivn="${id}"]`, main).value.trim().slice(0, 2000), at: new Date().toISOString() };
       Hub.store.save(true); try { await Hub.store.flush(); toast('Plan saved.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); }));
   }
   function view(main, params = {}) {
     if (Hub.donow && Hub.donow.relabel) Hub.donow.relabel();
+    movePlansOutOfSettings();
     const ms = months(), ok = COURSES.every(boundsOK), C = view0();
     const rowsBy = {}; ['SL', 'HL', 'ALL'].forEach(c => { rowsBy[c] = ms.map(m => m.upTo && ok ? count(c, m.upTo) : null); });
     const nowI = ms.findIndex(m => m.current), lastI = nowI >= 0 ? nowI : ms.map(m => !!m.upTo).lastIndexOf(true), now = c => lastI >= 0 ? rowsBy[c][lastI] : null;
