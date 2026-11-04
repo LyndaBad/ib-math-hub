@@ -5511,14 +5511,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 
 /* ---- js/datacycle.js ---- */
 /* Data cycle (#/datacycle): the PLC goal "at least 60% of students hold a predicted grade of 4+ on IB-aligned assessments".
-   Predicted grade = average of a student's Tests, Quizzes and Retests so far (a retest replaces the original when higher),
+   Predicted grade = average of a student's Tests, Quizzes, Retests, homework and Exit Tickets so far (a retest replaces the original when higher),
    converted to an IB grade with the teacher's own SL / HL boundaries. Counted month by month, September to May,
    as "students at 4+ / students assessed" — the format of the school data sheet. Test students never count. */
 (function (Hub) {
   'use strict';
   const { esc, $, $$, toast, fmtDate } = Hub.core;
   const U = Hub.ui, S = () => Hub.store.state;
-  const COUNTED = ['Test', 'Quiz', 'Retest'];
+  const COUNTED = ['Test', 'Quiz', 'Retest', 'Homework', 'Exit Ticket'];
   const COURSES = ['SL', 'HL'];
   const MONTHS = ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May'];
   const DEF_GOAL = 'By May 2027, at least 60% of IB Mathematics: Analysis & Approaches students (SL and HL) will hold a predicted grade of 4 or higher on BRHS IB DP-aligned assessments, measured monthly using the latest IB grade boundaries.';
@@ -5589,12 +5589,12 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const brow = c => { const b = bounds(c); return `<tr><th>${c}</th>${[2, 3, 4, 5, 6, 7].map(g => `<td><input class="dc-b" data-c="${c}" data-g="${g}" type="number" min="0" max="100" inputmode="numeric" value="${b[g] ?? ''}" aria-label="${c} grade ${g} lowest %"></td>`).join('')}</tr>`; };
     const table = `<div class="scroll"><table class="tbl dc-tbl"><thead><tr><th></th>${ms.map(m => `<th>${m.short}</th>`).join('')}</tr></thead><tbody>${[['SL', 'AA SL'], ['HL', 'AA HL'], ['ALL', 'All IB AA']].map(([c, lab]) => `<tr class="${c === 'ALL' ? 'dc-all' : ''}"><th>${lab}</th>${rowsBy[c].map((r, i) => `<td class="${r && r.of ? 'dc-' + tone(r.pct) : ''}">${r && r.of ? `<b>${cell(r)}</b><span>${r.pct}%</span>` : ms[i].upTo ? '<span class="muted">—</span>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     const detail = c => { const r = now(c); if (!r) return ''; const list = r.all.slice().sort((p, q) => p.p.pct - q.p.pct);
-      return `<details class="rd-list" ${c === 'SL' ? 'open' : ''}><summary><b>AA ${c}</b> · ${r.below.length} below a ${cut()}${r.notAssessed ? ` · ${r.notAssessed} not assessed yet` : ''}</summary>${list.length ? `<table class="tbl rd-tbl"><thead><tr><th>Student</th><th>Average</th><th>Predicted</th><th>Assessments</th></tr></thead><tbody>${list.map(({ s, p }) => `<tr class="${p.grade < cut() ? 'dc-below' : ''}"><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${p.pct}%</td><td><b>${p.grade}</b></td><td>${p.n}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No marked tests or quizzes yet.</p>'}</details>`; };
-    main.innerHTML = U.heading('PLC GOAL', 'Data cycle', `Predicted IB grades from Tests, Quizzes and Retests, counted each month as <b>students at ${cut()}+ / students assessed</b>.`, `<a class="btn primary" href="#/datacycle?present=1">Present to department →</a>`) +
+      return `<details class="rd-list" ${c === 'SL' ? 'open' : ''}><summary><b>AA ${c}</b> · ${r.below.length} below a ${cut()}${r.notAssessed ? ` · ${r.notAssessed} not assessed yet` : ''}</summary>${list.length ? `<table class="tbl rd-tbl"><thead><tr><th>Student</th><th>Average</th><th>Predicted</th><th>Assessments</th></tr></thead><tbody>${list.map(({ s, p }) => `<tr class="${p.grade < cut() ? 'dc-below' : ''}"><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${p.pct}%</td><td><b>${p.grade}</b></td><td>${p.n}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No marked work yet.</p>'}</details>`; };
+    main.innerHTML = U.heading('PLC GOAL', 'Data cycle', `Predicted IB grades from Tests, Quizzes, Retests, homework and Exit Tickets, counted each month as <b>students at ${cut()}+ / students assessed</b>.`, `<a class="btn primary" href="#/datacycle?present=1">Present to department →</a>`) +
       (ok ? '' : `<section class="card warn-card"><p><b>Enter your grade boundaries below first.</b> Copy the lowest % for each grade from the latest IB grade boundaries for SL and HL. The counts appear as soon as they are saved.</p></section>`) +
       `<div class="dc-bigs">${big('AA SL' + (monthName ? ' · ' + monthName : ''), now('SL'))}${big('AA HL' + (monthName ? ' · ' + monthName : ''), now('HL'))}${big('All IB AA' + (monthName ? ' · ' + monthName : ''), now('ALL'))}</div>
       <section class="card"><div class="row-between"><h2 class="bar-head amber">Your row for the data sheet</h2><button class="btn small" id="dc-copy" type="button" ${ok ? '' : 'disabled'}>Copy for the spreadsheet</button></div>${table}
-        <p class="tiny muted">Each month counts every marked Test, Quiz and Retest up to the end of that month (today for ${esc(ms[nowI] ? ms[nowI].name : 'this month')}). A retest replaces the original when it is higher. Test students never count. Target: <b>${target()}%</b> at grade ${cut()}+.</p></section>
+        <p class="tiny muted">Each month counts every marked Test, Quiz, Retest, homework and Exit Ticket up to the end of that month (today for ${esc(ms[nowI] ? ms[nowI].name : 'this month')}). A retest replaces the original when it is higher. Test students never count. Target: <b>${target()}%</b> at grade ${cut()}+.</p></section>
       <section class="card"><h2 class="bar-head blue">Month by month</h2>${ok ? chart(rowsBy, ms) : '<p class="tiny muted">Appears once boundaries are set.</p>'}</section>
       <section class="card"><h2 class="bar-head pink">Who is below a ${cut()}${monthName ? ' · ' + monthName : ''}</h2>${ok ? detail('SL') + detail('HL') : '<p class="tiny muted">Appears once boundaries are set.</p>'}<p class="tiny muted">Names stay on this page — the department view shows counts only.</p></section>
       <section class="card"><h2 class="bar-head green">Goal, action step and grade boundaries</h2>
