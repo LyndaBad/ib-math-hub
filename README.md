@@ -16,6 +16,9 @@ Wait for “Saved to cloud” before closing. Use Refresh to receive work from a
 
 Data & settings exports roster, results and evidence CSVs and a full JSON data backup. The JSON contains attachment references; download individual files separately from marking. Add the live URL to Canvas as an external link. There is no Canvas grade sync or school integration.
 
+## Current source (4 November 2026)
+The root `index.html` is the live site and the source of truth. `ib-math-hub-source.zip` was refreshed from it: `src/js/` holds each module exactly as it appears in the live page, plus a copy of the live `index.html`. The `supabase/` folder in the zip is still the 1 November copy; see `SOURCE-NOTE.md` inside the zip.
+
 ## Source and deployment
 - `src/`: frontend source, original question generators, curriculum and pacing data.
 - `docs/`: built multi-file preview. The public repository hosts an equivalent bundled `index.html` at its root and a complete source ZIP.
