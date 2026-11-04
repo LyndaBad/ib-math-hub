@@ -3982,10 +3982,15 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   const isTaught = (skillId, groupId, asOf) => { const d = taughtDate(skillId, groupId); return !!d && d < asOf; };
   /** Next lesson on/after asOf (today's lesson counts), skipping no-class rows. */
-  function nextLesson(groupId, asOf) { return lessons(groupId).find(l => l.date >= asOf && l.kind !== 'none') || null; }
+  /** When each block finishes. After that time today, "next lesson" moves on to the following lesson. */
+  const BLOCK_END = { 'Block 1': '12:00', 'Block 4': '14:30' };
+  function nyNow() { const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map(x => [x.type, x.value])); return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` }; }
+  function lessonOver(groupId, date) { const g = GROUPS[groupId], end = g && BLOCK_END[g.block]; if (!end) return false; try { const n = nyNow(); return date === n.date && n.hm >= end; } catch (e) { return false; } }
+  const stillAhead = (groupId, l, asOf) => l.date > asOf || (l.date === asOf && !lessonOver(groupId, l.date));
+  function nextLesson(groupId, asOf) { return lessons(groupId).find(l => stillAhead(groupId, l, asOf) && l.kind !== 'none') || null; }
   /** Next lesson that actually introduces new skills (for Do Now bridging). */
-  function nextTeachingLesson(groupId, asOf) { return lessons(groupId).find(l => l.date >= asOf && l.skills.some(id => !isTaught(id, groupId, asOf))) || null; }
-  function upcoming(groupId, asOf, n = 8) { return lessons(groupId).filter(l => l.date >= asOf).slice(0, n); }
+  function nextTeachingLesson(groupId, asOf) { return lessons(groupId).find(l => stillAhead(groupId, l, asOf) && l.skills.some(id => !isTaught(id, groupId, asOf))) || null; }
+  function upcoming(groupId, asOf, n = 8) { return lessons(groupId).filter(l => stillAhead(groupId, l, asOf)).slice(0, n); }
 
   /* IA checkpoints (both calendars use the same names); dates differ for A and B days. */
   const IA_STEPS = [
@@ -5190,17 +5195,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <section class="card"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
         <section class="card"><h2 class="bar-head blue">Feedback</h2>${returned.length ? returned.map(t => `<div class="todo"><div><b>${esc(t.inline ? t.inline.title : (Hub.assess.byId(t.aid) || {}).title || t.type)}</b><div class="tiny muted">${fmtDate(t.date)} · ${Hub.assess.score(t).earned}/${t.max}${t.comment ? ' · 💬 comment from Miss Badmus' : ''}</div></div><a class="btn small ghost" href="#/result/${t.id}">Open</a></div>`).join('') : '<p>Marked work will appear here.</p>'}${tasks.filter(x => x.t && x.t.status === 'submitted').map(({ a, t }) => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">Submitted ${fmtDateTime(t.at)} · waiting for Miss Badmus</div></div><a class="btn small ghost" href="#/result/${t.id}">View</a></div>`).join('')}</section>
         <section class="card wtw"><h2 class="bar-head pink">What to work on</h2>${(() => {
-          const weak = stats.filter(x => x.status !== 'low-evidence' && x.pct < 80).slice(0, 4), show = weak.length ? weak : stats.slice(0, 2);
+          // only skills where they have dropped marks (lowest first); a skill at 100% never appears here
+          const show = stats.filter(x => x.pct < 100).slice(0, 4);
           const since = Hub.core.addDays(asOf, -56), mis = {};
           S().attempts.filter(t => t.sid === s.id && t.status === 'released' && String(t.date || t.at || '').slice(0, 10) >= since && t.auto && t.auto.parts).forEach(t => {
             const qs = (t.inline || Hub.assess.byId(t.aid) || {}).questions || [];
             Object.entries(t.auto.parts).forEach(([k, r]) => { if (!r || !r.tag || r.verdict === 'correct') return; const q = qs.find(x => x.id === k.split('|')[0]); const key = r.tag + '|' + (q ? q.skill : '');
               mis[key] = mis[key] || { tag: r.tag, skill: q ? q.skill : null, fb: r.feedback || '', n: 0 }; mis[key].n++; if (!mis[key].fb && r.feedback) mis[key].fb = r.feedback; }); });
           const watch = Object.values(mis).sort((a, b) => b.n - a.n).slice(0, 3);
-          if (!show.length && !watch.length) return '<p>Complete some work to see your next steps.</p>';
+          if (!show.length && !watch.length) return stats.length ? '<p class="gc-ok">✓ Nothing to fix right now — everything marked so far is right. Keep it going in <a href="#/practice">Practice</a>.</p>' : '<p>Complete some work to see your next steps.</p>';
           return (show.length ? `<p class="small"><b>Skills to strengthen</b></p>${show.map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small ghost" href="#/practice?skill=${x.skill}">Practise</a></div>`).join('')}` : '') +
             (watch.length ? `<p class="small wtw-h"><b>Mistakes to watch out for</b></p>${watch.map(m => `<div class="wtw-mis"><b>${esc(Hub.mastery.tagText(m.tag))}</b>${m.n > 1 ? ` <span class="tiny muted">× ${m.n}</span>` : ''}${m.fb ? `<p class="small">${esc(m.fb)}</p>` : ''}${m.skill ? `<a class="btn small ghost" href="#/practice?skill=${m.skill}">Practise ${esc(U.skillName(m.skill))}</a>` : ''}</div>`).join('')}` : '');
-        })()}${ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)} (${daysBetween(asOf, ia.date)} days) — <a href="#/ia">open my IA studio</a></p>` : ''}${(ns => ns.length ? `<p class="small ia-new">🔓 <b>New in your IA Studio:</b> ${ns.map(st => `<a href="#/ia?tab=s-${st.id}">Stage ${st.n} · ${esc(st.title)}</a>`).join(', ')}</p>` : '')(Hub.iastages ? Hub.iastages.newStages(s) : [])}</section>
+        })()}</section>
+        ${(ns => ia || ns.length ? `<section class="card"><h2 class="bar-head blue">◇ My IA</h2>${ia ? `<p><b>${esc(ia.short)}</b> is due <b>${fmtDate(ia.date, true)}</b> <span class="tiny muted">(${daysBetween(asOf, ia.date)} days)</span></p>` : ''}${ns.length ? `<p class="small ia-new">🔓 <b>New in your IA Studio:</b> ${ns.map(st => `<a href="#/ia?tab=s-${st.id}">Stage ${st.n} · ${esc(st.title)}</a>`).join(', ')}</p>` : ''}<a class="btn small" href="#/ia">Open my IA studio →</a></section>` : '')(Hub.iastages ? Hub.iastages.newStages(s) : [])}
       </div>`;
   }
 
