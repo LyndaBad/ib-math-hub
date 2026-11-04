@@ -657,6 +657,9 @@ body.mp-on { padding-bottom: 76px; }
 .join-already.bottom { background: transparent; border: 0; padding: 0; }
 .big-signin { font-size: 1.08rem; padding: 12px 18px; justify-content: center; background: var(--white); border: var(--bw) solid var(--ink); }
 .join-who { border-top: 1px dashed var(--line); padding: 8px 0; } .join-who > summary { cursor: pointer; font-family: var(--f-ui); }
+.join-add { margin-top: 10px; padding: 10px 12px; background: var(--cream); border: 2px dashed var(--orange); border-radius: var(--r-s); }
+.join-add .key-lab { margin: 0 0 6px; }
+.join-add-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; } .join-add-row label { flex: 1; min-width: 150px; }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
 .join .signin-card form .btn.primary { justify-content: center; font-size: 1.05rem; padding: 10px 16px; }
 
@@ -5343,19 +5346,21 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const cfg = () => { const st = S(); st.settings.join = st.settings.join || { codes: {} }; st.settings.join.codes = st.settings.join.codes || {}; return st.settings.join; };
   function newCode() { const used = new Set(Object.values(cfg().codes).map(c => c && c.code)); let c; do { const r = crypto.getRandomValues(new Uint32Array(6)); c = Array.from(r, x => ALPH[x % ALPH.length]).join(''); } while (used.has(c)); return c; }
   const isIn = s => !!(s && (s.joinedAt || s.email));
+  let openG = null; // the class whose list stays open after adding a student
   function cardHTML() {
     const J = (S().settings || {}).join || { codes: {} };
     const row = g => { const c = (J.codes || {})[g.id], studs = Hub.roster.inGroup(g.id), n = studs.filter(isIn).length;
       return `<tr><td><b>${esc(g.label)}</b></td><td>${c && c.code ? `<span class="join-code">${esc(c.code)}</span>` : '<span class="tiny muted">no code yet</span>'}</td><td>${c && c.code ? (c.open === false ? '<span class="pill grey">Closed</span>' : '<span class="pill green">Open</span>') : ''}</td><td>${n}/${studs.length}</td>
         <td><div class="join-act">${c && c.code ? `<button class="btn small ghost" data-jcopy="${g.id}" type="button">Copy for students</button><button class="btn small ghost" data-jtoggle="${g.id}" type="button">${c.open === false ? 'Open joining' : 'Close joining'}</button><button class="btn small ghost" data-jnew="${g.id}" type="button">New code</button>` : `<button class="btn small" data-jnew="${g.id}" type="button">Make a code</button>`}</div></td></tr>`; };
-    const who = Object.values(GROUPS()).map(g => { const studs = Hub.roster.inGroup(g.id); if (!studs.length) return ''; const yes = studs.filter(isIn);
-      return `<details class="join-who"><summary><b>${esc(g.label)}</b> · ${yes.length}/${studs.length} joined</summary><table class="tbl join-stu"><tbody>${studs.map(s => `<tr><td>${esc(s.name)}</td><td>${isIn(s) ? `<code>${esc(s.username || s.email || '')}</code>` : '<span class="tiny muted">not joined yet</span>'}</td><td><div class="join-act">${manageButtons(s)}</div></td></tr>`).join('')}</tbody></table></details>`; }).join('');
+    const who = Object.values(GROUPS()).map(g => { const studs = Hub.roster.inGroup(g.id); const yes = studs.filter(isIn);
+      return `<details class="join-who"${openG === g.id ? ' open' : ''}><summary><b>${esc(g.label)}</b> · ${studs.length ? `${yes.length}/${studs.length} joined` : 'no students yet'}</summary>${studs.length ? `<table class="tbl join-stu"><tbody>${studs.map(s => `<tr><td>${esc(s.name)}</td><td>${isIn(s) ? `<code>${esc(s.username || s.email || '')}</code>` : '<span class="tiny muted">not joined yet</span>'}</td><td><div class="join-act">${manageButtons(s)}</div></td></tr>`).join('')}</tbody></table>` : ''}
+        <form class="join-add" data-jadd="${g.id}" novalidate><p class="key-lab">Add a student to ${esc(g.label)}</p><div class="join-add-row"><label>First name<input name="first" autocomplete="off" spellcheck="false" required></label><label>Last name<input name="last" autocomplete="off" spellcheck="false" required></label><button class="btn small primary">Add student</button></div><p class="tiny muted">Type the name exactly as the student will type it when they join.</p></form></details>`; }).join('');
     return `<section class="card join-card"><h2 class="bar-head green">Class join codes</h2>
       <p>Give students the join link and their class code. They type the code and their first and last name, and choose a password. They are matched to your roster <b>automatically</b> and get a username (e.g. <code>amara.okafor</code>) to sign in with. No emails.</p>
       <div class="join-link"><span class="key-lab">Join link</span><code id="join-url">${esc(joinURL().replace(/^https?:\/\//, ''))}</code><button class="btn small ghost" id="join-copy-link" type="button">Copy link</button></div>
       <div class="scroll"><table class="tbl join-tbl"><thead><tr><th>Class</th><th>Code</th><th>Joining</th><th>Joined</th><th></th></tr></thead><tbody>${Object.values(GROUPS()).map(row).join('')}</tbody></table></div>
       <p class="tiny muted">If a student’s name is not found, check how it is spelled on your roster. A new code stops the old one working; close joining once everyone is in.</p>
-      <h3 class="sub-h">Your students</h3><p class="tiny muted"><b>Reset password</b> gives a student a new password to sign in with straight away. <b>Join again</b> lets them redo the class-code join (e.g. someone else used their name). <b>Delete</b> removes the student and all their work.</p>
+      <h3 class="sub-h">Your students</h3><p class="tiny muted"><b>Reset password</b> gives a student a new password to sign in with straight away. <b>Join again</b> lets them redo the class-code join (e.g. someone else used their name). <b>Delete</b> removes the student and all their work. To add one student, open their class and use <b>Add a student</b>.</p>
       ${who || '<p class="tiny muted">Upload a roster first.</p>'}</section>`;
   }
   function manageButtons(s) {
@@ -5470,6 +5475,17 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $$('[data-jnew]', main).forEach(b => (b.onclick = async () => { const g = b.dataset.jnew, had = J().codes[g] && J().codes[g].code; if (had && !(await Hub.ui.confirmBox(`Make a new code for ${esc(classLabel(g))}? The old code stops working. Students who have already joined are not affected.`, 'New code'))) return; J().codes[g] = { code: newCode(), open: true, at: new Date().toISOString() }; Hub.store.log(`New class join code for ${classLabel(g)}`); await saveNow('New code ready.'); }));
     $$('[data-jtoggle]', main).forEach(b => (b.onclick = async () => { const c = J().codes[b.dataset.jtoggle]; c.open = c.open === false; await saveNow(c.open ? 'Joining is open.' : 'Joining is closed for that class.'); }));
     $$('[data-jcopy]', main).forEach(b => (b.onclick = () => { const g = b.dataset.jcopy, c = J().codes[g]; copy(`Join Miss Badmus’ ${classLabel(g)} on the IB Math Hub: open ${joinURL()} , type the class code ${c.code}, your first and last name, and choose a password.`, 'Copied — paste it to your students.'); }));
+    $$('[data-jadd]', main).forEach(f => (f.onsubmit = async e => {
+      e.preventDefault(); const g = f.dataset.jadd, first = f.first.value.replace(/\s+/g, ' ').trim(), last = f.last.value.replace(/\s+/g, ' ').trim();
+      if (!first || !last) { toast('Type a first name and a last name.', 'error'); return (first ? f.last : f.first).focus(); }
+      const row = { name: first + ' ' + last, first, last, email: '', group: g, course: g.slice(0, 2) }, ex = Hub.roster.findExisting(row);
+      if (ex && ex.active !== false) { toast(`${ex.name} is already on the ${classLabel(g)} roster.`, 'error'); return f.first.focus(); }
+      const btn = f.querySelector('button'); btn.disabled = true;
+      try { Hub.roster.applyImport([row]); await Hub.store.flush(); toast(`${row.name} added to ${classLabel(g)}. They can now join with the class code.`); }
+      catch (err) { toast(err.message, 'error'); btn.disabled = false; return; }
+      openG = g; Hub.app.render();
+      setTimeout(() => { const i = document.querySelector(`[data-jadd="${g}"] input[name="first"]`); if (i) i.focus(); }, 0);
+    }));
     bindManage($('.join-card', main) || main);
     bindTests(main);
   }
