@@ -684,9 +684,13 @@ body.mp-on { padding-bottom: 76px; }
 .pq-make { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; } .pq-make > div { border: 2px dashed var(--orange); border-radius: var(--r-s); padding: 12px; background: var(--cream); display: flex; flex-direction: column; gap: 6px; } .pq-make .btn { align-self: flex-start; margin-top: auto; }
 .pq-new { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; } .pq-new summary { cursor: pointer; }
 .pv-pick { margin: 14px 0 0; padding: 12px; border: 2px dashed var(--orange); border-radius: var(--r-s); background: var(--white); display: flex; flex-direction: column; gap: 8px; }
-.pv-pick label { font-family: var(--f-ui); font-weight: 700; display: flex; align-items: center; gap: 8px; } .pv-pick select { width: 100%; }
+.pv-pick label { font-family: var(--f-ui); font-weight: 700; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; } .pv-pick label .ic { width: auto; } .pv-pick select { width: 100%; }
 .banner.preview { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; justify-content: space-between; } .pv-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .pv-bar select { max-width: 240px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ann-banner { border-color: var(--pink, #FF96D4); } .ann-item { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 8px 0; border-top: 1px dashed var(--line); } .ann-item:first-of-type { border-top: none; } .ann-item p { margin: 0 0 2px; font-size: 1.05rem; }
+.ann-groups { border: none; padding: 0; margin: 6px 0; display: flex; flex-wrap: wrap; gap: 6px 16px; } .ann-groups legend { margin-bottom: 4px; }
+.ann-t { border-top: 1px dashed var(--line); padding: 10px 0; } .ann-t > p:first-child { margin: 0 0 4px; font-size: 1.05rem; } .ann-t.past { opacity: .75; } .ann-reads details { margin: 4px 0; } .ann-reads summary { cursor: pointer; }
+.ann-old { margin-top: 16px; } .ann-old summary { cursor: pointer; }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -5188,7 +5192,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const todo = tasks.filter(x => !x.t), returned = S().attempts.filter(t => t.sid === s.id && t.status === 'released').slice().reverse().slice(0, 4);
     const stats = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null).sort((a, b) => a.pct - b.pct);
     const ia = C().iaSchedule(s.group).find(x => x.date && x.date >= asOf), hour = new Date().getHours();
-    main.innerHTML = `<section class="hero"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1><p class="lead">Inquirers. Thinkers. Reflective Learners.</p>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div><img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"></section>
+    main.innerHTML = `${Hub.announce ? Hub.announce.bannerHTML(s) : ''}<section class="hero"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1><p class="lead">Inquirers. Thinkers. Reflective Learners.</p>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div><img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"></section>
       <div class="grid g2">
         <section class="card donow-card"><h2 class="bar-head amber">☀ ${dn ? (dn.kind !== 'Do Now' ? 'Your personalised ' + esc(dn.kind) : 'Today’s Do Now') : 'Just for me'}</h2>${dn ? (dn.done ? `<p>Done — <b>${Hub.assess.score(dn.done).earned}/${dn.done.max}</b>.</p><a class="btn small" href="#/result/${dn.done.id}">See feedback</a>` : `<p>${dn.items.filter(it => it.question).length} questions picked just for you${dn.kind === 'Do Now' ? ' for ' + fmtDate(dn.rec.lessonDate, true) : ''}.</p><a class="btn primary" href="#/donow">Start my ${esc(dn.kind === 'Do Now' ? 'Do Now' : dn.kind)} →</a>`) : '<p>Your personalised Do Now, Exit Ticket or quiz appears here once Miss Badmus publishes it.</p>'}</section>
         ${(L => L ? `<section class="card"><h2 class="bar-head blue">▣ Lesson notebook</h2><p><b>${esc(L.title)}</b></p><a class="btn primary" href="#/notebook/${encodeURIComponent(L.id)}">Open today’s notebook →</a></section>` : '')(Hub.lessons && Hub.lessons.latestFor(s))}
@@ -5209,6 +5213,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         })()}</section>
         ${(ns => ia || ns.length ? `<section class="card"><h2 class="bar-head blue">◇ My IA</h2>${ia ? `<p><b>${esc(ia.short)}</b> is due <b>${fmtDate(ia.date, true)}</b> <span class="tiny muted">(${daysBetween(asOf, ia.date)} days)</span></p>` : ''}${ns.length ? `<p class="small ia-new">🔓 <b>New in your IA Studio:</b> ${ns.map(st => `<a href="#/ia?tab=s-${st.id}">Stage ${st.n} · ${esc(st.title)}</a>`).join(', ')}</p>` : ''}<a class="btn small" href="#/ia">Open my IA studio →</a></section>` : '')(Hub.iastages ? Hub.iastages.newStages(s) : [])}
       </div>`;
+    if (Hub.announce) { Hub.announce.bindBanner(main, s); if (!Hub.announce.unread(s).length) main.insertAdjacentHTML('beforeend', Hub.announce.earlierHTML(s)); }
   }
 
   /* ---------- taking work ---------- */
@@ -5813,6 +5818,89 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     };
   }
   Hub.datacycle = { view, count, predicted, months, toGrade, boundsOK, papers, weight };
+})(window.Hub = window.Hub || {});
+
+/* ---- js/announce.js ---- */
+/* Announcements (#/announce): a short message to one or more classes. Students see it as a banner on My day,
+   with a badge on the menu, until they press "Got it" (saved as their own "<id>|notice:<id>" progress record,
+   which is how the teacher sees who has read it). Each announcement can be copied for Canvas for anything urgent. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast, fmtDate } = Hub.core;
+  const U = Hub.ui, S = () => Hub.store.state, C = () => Hub.curriculum;
+  const SITE = 'https://missbadmusibmath.com/';
+  const list = () => ((S().settings || {}).announce || []).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const today = () => Hub.core.todayISO();
+  const live = a => !a.until || a.until >= today();
+  const forGroup = g => list().filter(a => live(a) && (a.groups || []).includes(g));
+  const isRead = (sid, id) => !!Hub.assess.getProgress(sid, 'notice:' + id);
+  const unread = s => s ? forGroup(s.group).filter(a => !isRead(s.id, a.id)) : [];
+  const body = t => esc(t).replace(/\n/g, '<br>');
+  const canvasText = a => `${a.text}\n\nOpen the IB Math Hub: ${SITE}`;
+
+  /* ---------- student ---------- */
+  function bannerHTML(s) {
+    const un = unread(s); if (!un.length) return '';
+    return `<section class="card ann-banner" aria-live="polite"><h2 class="bar-head pink">📣 From Miss Badmus</h2>${un.map(a => `<div class="ann-item"><div><p>${body(a.text)}</p><span class="tiny muted">${fmtDate(String(a.at).slice(0, 10), true)}</span></div><button class="btn small primary" data-annread="${esc(a.id)}" type="button">Got it ✓</button></div>`).join('')}</section>`;
+  }
+  function bindBanner(root, s) {
+    $$('[data-annread]', root).forEach(b => (b.onclick = async () => {
+      if (Hub.auth.isPreview()) { toast('Preview — this is not saved.'); b.closest('.ann-item').remove(); return; }
+      Hub.assess.saveProgress(s.id, 'notice:' + b.dataset.annread, { responses: { read: true }, createdAt: new Date().toISOString() });
+      try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); }
+      Hub.app.render();
+    }));
+  }
+  /** Earlier announcements for this class (already read), newest first. */
+  function earlierHTML(s) {
+    const old = forGroup(s.group).filter(a => isRead(s.id, a.id)).slice(0, 5); if (!old.length) return '';
+    return `<details class="ann-old"><summary class="small">Earlier announcements (${old.length})</summary>${old.map(a => `<p class="small">${body(a.text)} <span class="tiny muted">· ${fmtDate(String(a.at).slice(0, 10))}</span></p>`).join('')}</details>`;
+  }
+
+  /* ---------- teacher ---------- */
+  function readers(a) {
+    return (a.groups || []).map(g => { const studs = Hub.roster.inGroup(g), yes = studs.filter(s => isRead(s.id, a.id));
+      return { g, label: (C().GROUPS[g] || {}).label || g, read: yes.length, total: studs.length, not: studs.filter(s => !isRead(s.id, a.id)) }; });
+  }
+  function itemHTML(a, past) {
+    const rs = readers(a);
+    return `<div class="ann-t ${past ? 'past' : ''}"><p>${body(a.text)}</p>
+      <p class="tiny muted">Posted ${fmtDate(String(a.at).slice(0, 10), true)}${a.until ? ` · showing until ${fmtDate(a.until, true)}` : ''}</p>
+      <div class="ann-reads">${rs.map(r => `<details><summary><b>${esc(r.label)}</b> · ${r.read}/${r.total} read</summary>${r.not.length ? `<p class="miss-names small">Not read yet: ${r.not.map(s => `<a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a>`).join(', ')}</p>` : '<p class="tiny gc-ok">✓ Everyone has read it</p>'}</details>`).join('')}</div>
+      <div class="actions"><button class="btn small" data-anncopy="${esc(a.id)}" type="button">Copy for Canvas</button><button class="btn small ghost danger" data-anndel="${esc(a.id)}" type="button">Remove</button></div></div>`;
+  }
+  function view(main) {
+    const all = list(), cur = all.filter(live), past = all.filter(a => !live(a)).slice(0, 10);
+    main.innerHTML = U.heading('TELL YOUR CLASSES', 'Announcements', 'Students see these on My day, with a badge on the menu, until they press “Got it”. Copy anything urgent to Canvas too, so students are notified there.') +
+      `<section class="card"><h2 class="bar-head amber">New announcement</h2>
+        <label>Message <span class="tiny muted">(up to 500 characters)</span><textarea id="ann-text" rows="3" maxlength="500" placeholder="e.g. Retest on Friday — bring your corrections and your calculator."></textarea></label>
+        <fieldset class="ann-groups"><legend class="small"><b>Which classes?</b></legend>${Object.values(C().GROUPS).map(g => `<label class="inline-check"><input type="checkbox" class="ann-g" value="${g.id}" checked> ${esc(g.label)}</label>`).join('')}</fieldset>
+        <label>Show until <span class="tiny muted">(optional — leave empty to keep it until you remove it)</span><input id="ann-until" type="date"></label>
+        <div class="actions"><button class="btn primary" id="ann-post" type="button">Post to students</button><button class="btn ghost" id="ann-post-copy" type="button">Post and copy for Canvas</button></div>
+        <p class="tiny muted">For anything urgent, paste the copied text into a Canvas announcement — Canvas notifies students; the Hub shows it next time they open it.</p></section>
+      <section class="card"><h2 class="bar-head pink">Showing now</h2>${cur.length ? cur.map(a => itemHTML(a)).join('') : '<p class="tiny muted">Nothing showing to students right now.</p>'}</section>
+      ${past.length ? `<details class="card"><summary><b>Finished</b> (${past.length})</summary>${past.map(a => itemHTML(a, true)).join('')}</details>` : ''}`;
+    const post = async copy => {
+      const text = $('#ann-text').value.trim(), groups = $$('.ann-g', main).filter(i => i.checked).map(i => i.value), until = $('#ann-until').value || null;
+      if (!text) { toast('Type a message first.', 'error'); return $('#ann-text').focus(); }
+      if (!groups.length) { toast('Choose at least one class.', 'error'); return; }
+      const st = S(); st.settings.announce = (st.settings.announce || []).concat([{ id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: text.slice(0, 500), groups, until, at: new Date().toISOString() }]).slice(-60);
+      Hub.store.log('Posted an announcement to ' + groups.join(', ')); Hub.store.save(true);
+      try { await Hub.store.flush(); toast('Posted — students see it on My day.'); } catch (e) { toast(e.message, 'error'); return; }
+      if (copy) await copyText(canvasText({ text }));
+      Hub.app.render();
+    };
+    $('#ann-post').onclick = () => post(false);
+    $('#ann-post-copy').onclick = () => post(true);
+    $$('[data-anncopy]', main).forEach(b => (b.onclick = () => { const a = list().find(x => x.id === b.dataset.anncopy); if (a) copyText(canvasText(a)); }));
+    $$('[data-anndel]', main).forEach(b => (b.onclick = async () => {
+      if (!(await U.confirmBox('Remove this announcement? Students will no longer see it.', 'Remove'))) return;
+      const st = S(); st.settings.announce = (st.settings.announce || []).filter(x => x.id !== b.dataset.anndel); Hub.store.save(true);
+      try { await Hub.store.flush(); toast('Removed.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render();
+    }));
+  }
+  async function copyText(t) { try { await navigator.clipboard.writeText(t); toast('Copied — paste it into a Canvas announcement.'); } catch (e) { U.modal(`<h2 class="modal-title">Copy for Canvas</h2><textarea rows="6" readonly>${esc(t)}</textarea>`); } }
+  Hub.announce = { view, bannerHTML, bindBanner, earlierHTML, unread, forGroup };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/live.js ---- */
@@ -8825,7 +8913,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 (function (Hub) {
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
-  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
+  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['announce', '✉', 'Announcements'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
   const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
@@ -8836,7 +8924,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
     student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p) }
   };
   function shell() {
@@ -8844,7 +8932,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const navItems = role === 'teacher' ? TEACHER_NAV : STUDENT_NAV, q = role === 'teacher' ? Hub.assess.queue().length : 0;
     const name = role === 'student' ? (st ? st.name : '') : sess.name, sub = role === 'student' ? (st ? C().GROUPS[st.group].label : '') : 'Teacher · IB AA SL & HL';
     $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><a class="brand" href="#/home"><img src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"><span class="brand-text"><small>Miss Badmus’</small><b>IB Math Hub</b></span></a><p class="slogan">Inquirers. Thinkers. Reflective Learners.</p>
-      <nav aria-label="Main">${navItems.map(([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}</a>`).join('')}</nav>
+      <nav aria-label="Main">${navItems.map(([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && Hub.announce && st && Hub.announce.unread(st).length ? `<span class="badge">${Hub.announce.unread(st).length}</span>` : ''}</a>`).join('')}</nav>
       <button class="calc-launch" type="button" data-calc aria-controls="calc-panel"><span class="ic" aria-hidden="true">▦</span>NumWorks calculator</button>
       ${role === 'teacher' ? pickerHTML() : ''}
       <div class="side-foot"><span class="demo-badge">PRIVATE CLASSROOM</span><span class="tiny">Saved in Supabase</span></div></aside>
