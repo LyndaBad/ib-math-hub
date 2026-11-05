@@ -697,6 +697,15 @@ body.mp-on { padding-bottom: 76px; }
 .reg-date select { min-width: 190px; } .absent-note { font-size: .85rem; font-weight: 700; color: #B03A2E; margin: 2px 0; }
 .due-big { font-family: var(--f-ui); font-size: 1.15rem; margin: 6px 0 8px; } .due-big b { font-size: 1.8rem; } .due-row { border-top: 1px dashed var(--line); padding: 6px 0; gap: 10px; } .due-row span { flex: 1; text-align: right; }
 .wtw-skill { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px dashed var(--line); } .wtw-skill > div { display: flex; flex-direction: column; } .wtw-wait { margin-top: 10px; }
+.rel-all { border-color: #6AA84F; background: #EEF7E9; } .att-ready { font-weight: 700; color: #3B7A2A; }
+.ms-stu { margin-top: 8px; } .ms-stu summary { cursor: pointer; font-family: var(--f-ui); font-size: .9rem; }
+.ct-row { padding: 10px 0; border-top: 1px dashed var(--line); } .ct-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px 14px; margin-top: 6px; } .ct-item { display: flex; flex-direction: column; gap: 2px; } .iv-cmds { margin: 2px 0 10px; }
+.rt-item { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px dashed var(--line); } .rt-item > div { flex: 1; min-width: 220px; } .rt-item p { margin: 4px 0 0; }
+.today { margin-bottom: 16px; } .today-row { display: grid; grid-template-columns: minmax(170px, 1.3fr) repeat(3, minmax(130px, 1fr)); gap: 10px; align-items: stretch; padding: 10px 0; border-top: 1px dashed var(--line); }
+.today-class { display: flex; flex-direction: column; text-decoration: none; color: inherit; } .today-step { display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 8px 10px; border: 2px solid var(--line); text-decoration: none; color: var(--ink); font-family: var(--f-ui); font-size: .9rem; }
+.today-step span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--white); border: 2px solid currentColor; font-size: .75rem; flex: none; }
+.today-step.todo { border-color: #F6B26B; background: #FFF4E5; } .today-step.ok { border-color: #6AA84F; background: #EEF7E9; } .today-step.none { opacity: .6; }
+@media (max-width: 760px) { .today-row { grid-template-columns: 1fr 1fr; } .today-class { grid-column: 1 / -1; } }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -4495,6 +4504,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return n;
   }
   function queue() { return S().attempts.filter(t => t.status === 'submitted' && !t.inline).sort((x, y) => x.at < y.at ? -1 : 1); }
+  /** Waiting work that needs nothing from the teacher: no method-mark parts, and its upload if one is required. */
+  function readyToRelease() { return queue().filter(t => { const a = A(t.aid); return a && !Object.values(t.auto.parts || {}).some(r => r.verdict === 'teacher') && (!a.uploadRequired || (t.uploads || []).length); }); }
+  /** Release everything that is ready, across all assessments. */
+  function releaseAllReady() { const ids = [...new Set(readyToRelease().map(t => t.aid))]; return ids.reduce((n, aid) => n + releaseAuto(aid), 0); }
 
   /* ---------- analysis & gradebook ---------- */
   function itemAnalysis(aid) {
@@ -4519,7 +4532,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     });
     return toCSV(rows);
   }
-  Hub.assess = { selfCheck, SELF, CLOSE_AFTER_DAYS, dueFor, closesOn, isOpen, setDue, autoClose, destroy, TYPES, createDraft, updatePart, updateStem, regenerate, removeQ, addQ, setReviewed, setAllReviewed, problems, approve, publish, unpublish, close, archive, duplicate, remove, forStudent, attemptsFor, saveProgress, getProgress, submit, autoMark, release, releaseAuto, queue, itemAnalysis, gradebookCSV, score, questionsOf, toMC, valueTex, buildQ, byId: A };
+  Hub.assess = { selfCheck, SELF, CLOSE_AFTER_DAYS, dueFor, closesOn, isOpen, setDue, autoClose, destroy, TYPES, createDraft, updatePart, updateStem, regenerate, removeQ, addQ, setReviewed, setAllReviewed, problems, approve, publish, unpublish, close, archive, duplicate, remove, forStudent, attemptsFor, saveProgress, getProgress, submit, autoMark, release, releaseAuto, queue, itemAnalysis, gradebookCSV, score, questionsOf, toMC, valueTex, buildQ, byId: A, readyToRelease, releaseAllReady };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/donow.js ---- */
@@ -4796,8 +4809,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ${r.feedback ? `<div class="sticky"><b>Spotted:</b> ${M(r.feedback)}</div>` : ''}
       ${r.error && r.verdict === 'invalid' ? `<div class="tiny muted">${esc(r.error)}</div>` : ''}
       ${showKey ? `<details class="working" ${r.verdict !== 'correct' ? 'open' : ''}><summary>Worked solution</summary><div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${p.kfig ? `<div class="q-fig">${p.kfig}</div>` : ''}${numworks(p.numworks)}</details>` : ''}
-      ${opts.teacher ? `<div class="ms small">${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>` : ''}</div>`;
+      ${opts.teacher ? `<div class="ms small">${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>` : ''}
+      ${!opts.teacher && showKey && p.ms && p.ms.length ? `<details class="ms-stu"><summary>How the marks are given · IB markscheme</summary><div class="ms small">${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>
+        <p class="tiny muted">${[...new Set(p.ms.map(([m]) => String(m).replace(/[^A-Z]/g, '').split('').filter(Boolean)).flat())].map(k => MS_KEY[k]).filter(Boolean).join(' · ')}</p></details>` : ''}</div>`;
   }
+  const MS_KEY = { M: '<b>M</b> method mark — for a correct method, even if the final answer is wrong', A: '<b>A</b> accuracy mark — for a correct answer or step, usually only after the M mark before it', R: '<b>R</b> reasoning mark — for a clear justification', G: '<b>AG</b> answer given — show the working that reaches it' };
 
   /* ---------- modal (no native alert/confirm) ---------- */
   function modal(html, { onClose, wide } = {}) {
@@ -4862,11 +4878,21 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const dueTile = (type, head) => { const rows = due[type], d = rows.reduce((n, r) => n + r.done, 0), t = rows.reduce((n, r) => n + r.total, 0), ab = rows.reduce((n, r) => n + r.absent, 0), pc = t ? Math.round(100 * d / t) : null;
       return `<section class="card due-tile"><h3 class="bar-head ${type === 'Homework' ? 'amber' : 'pink'}">${head}</h3>${rows.length ? `<p class="due-big"><b>${d}/${t}</b> complete <span class="pill ${pc >= 90 ? 'green' : pc >= 70 ? 'amber' : 'red'}">${pc}%</span>${ab ? ` <span class="tiny muted">· ${ab} absent</span>` : ''}</p>
         ${rows.map(r => `<div class="row-between small due-row"><a href="#/class/${r.g}">${esc(r.label)}</a><span class="tiny muted">${esc(r.a.title.replace(/^(SL|HL) · /, ''))}</span><b>${r.done}/${r.total}</b></div>`).join('')}` : `<p class="tiny muted">None ${dueLabel === 'Due today' ? 'due today' : 'due that day'}.</p>`}</section>`; };
+    const todayRows = Object.values(C().GROUPS).map(g => { const L = C().lessons(g.id).find(l => l.date === asOf && l.kind !== 'none'); if (!L) return null;
+      const studs = Hub.roster.inGroup(g.id), ids = new Set(studs.map(x => x.id)), reg = Hub.attendance ? Hub.attendance.registerTaken(g.id, asOf) : null;
+      const ets = S().assessments.filter(a => a.type === 'Exit Ticket' && ['published', 'closed'].includes(a.status) && (a.groups || []).includes(g.id) && Hub.assess.dueFor(a, g.id) === asOf);
+      const etDone = ets.reduce((n, a) => n + studs.filter(st => Hub.assess.attemptsFor(a.id, st.id).length).length, 0), etTotal = ets.length * studs.length;
+      const toMark = Hub.assess.queue().filter(t => ids.has(t.sid)).length;
+      return `<div class="today-row"><a class="today-class" href="#/class/${g.id}"><b>${esc(g.label)}</b><span class="tiny muted">${esc(g.block)} · ${esc((L.activity || '').slice(0, 48))}</span></a>
+        <a class="today-step ${reg ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>1</span>${reg ? `Register ✓${reg.absent ? ` · ${reg.absent} absent` : ''}` : 'Take the register'}</a>
+        <a class="today-step ${!ets.length ? 'none' : etDone >= etTotal ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>2</span>${ets.length ? `Exit Ticket ${etDone}/${etTotal} done` : 'No Exit Ticket due'}</a>
+        <a class="today-step ${toMark ? 'todo' : 'ok'}" href="#/marking"><span>3</span>${toMark ? `${toMark} to mark` : 'Marking ✓'}</a></div>`; }).filter(Boolean);
+    const todayHTML = `<section class="card today"><h2 class="bar-head green">Today · ${fmtDate(asOf, true)}</h2>${todayRows.length ? todayRows.join('') : '<p class="tiny muted">No lessons today.</p>'}</section>`;
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
     main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', 'Inquirers. Thinkers. Reflective Learners.', `<img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo">`) +
-      `<div class="attention">
-        <a class="att ${q.length ? 'hot' : ''}" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark</span></a>
+      todayHTML + `<div class="attention">
+        <a class="att ${q.length ? 'hot' : ''}" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark${(r => r ? `<br><small class="att-ready">${r} ready to release</small>` : '')(Hub.assess.readyToRelease().length)}</span></a>
         <a class="att ${drafts.length ? 'warm' : ''}" href="#/studio?status=draft"><b>${drafts.length}</b><span>draft${drafts.length === 1 ? '' : 's'} to review</span></a>
         <a class="att" href="#/studio?status=approved"><b>${S().assessments.filter(a => a.status === 'approved').length}</b><span>approved, not published</span></a>
         <a class="att" href="#/ia"><b>${Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length}</b><span>IA checkpoints waiting</span></a>
@@ -5074,11 +5100,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const q = Hub.assess.queue(), by = {};
     q.forEach(t => (by[t.aid] = by[t.aid] || []).push(t));
     main.innerHTML = U.heading('FEEDBACK THAT MOVES LEARNING', 'Marking queue', 'Typed answers are auto-marked and checked against known misconceptions. You confirm method marks from the uploaded working, then release.') +
+      (n => n ? `<section class="card rel-all"><div class="row-between"><div><b>${n} piece${n === 1 ? '' : 's'} of work ${n === 1 ? 'is' : 'are'} fully marked and ready to release.</b><p class="tiny muted">No method marks needed. Releasing lets students see their feedback and updates What to work on, the snapshots, the Data cycle and Intervention.</p></div><button class="btn primary" id="rel-everything" type="button">✓ Release all ready (${n})</button></div></section>` : '')(Hub.assess.readyToRelease().length) +
       `<div class="notice ai-off"><b>AI reading of handwritten photos is switched off.</b> The analysis shown here is free and runs in the browser: answer checking (exact / 3 s.f.), misconception matching and item analysis. Reading photos with AI needs a paid service you have not approved yet.</div>` +
       (Object.keys(by).length ? Object.entries(by).map(([aid, ts]) => { const a = Hub.assess.byId(aid); const ready = ts.filter(t => !Object.values(t.auto.parts).some(r => r.verdict === 'teacher') && (!a.uploadRequired || t.uploads.length)).length;
         return `<section class="card"><div class="row-between"><h2 class="bar-head blue">${esc(a.title)}</h2><div class="actions"><a class="btn small ghost" href="#/analysis/${aid}">Item analysis</a>${ready ? `<button class="btn small" data-relall="${aid}">Release all ${ready} auto-marked</button>` : ''}</div></div>
         <table class="tbl"><thead><tr><th>Student</th><th>Group</th><th>Submitted</th><th>Working</th><th>Auto score</th><th>Flags</th><th></th></tr></thead><tbody>${ts.map(t => { const s = Hub.roster.byId(t.sid), sc = Hub.assess.score(t), tags = [...new Set(Object.values(t.auto.parts).map(r => r.tag).filter(Boolean))];
           return `<tr><td><b>${esc(s ? s.name : t.sid)}</b></td><td>${s ? C().GROUPS[s.group].label.replace('AA ', '') : ''}</td><td>${fmtDateTime(t.at)}</td><td>${t.uploads.length ? `📷 ${t.uploads.length}` : a.uploadRequired ? '<span class="pill red">missing</span>' : '—'}</td><td>${sc.earned}/${sc.max} (${sc.pct}%)</td><td>${tags.length ? tags.map(x => `<span class="pill pink tiny">${esc(Hub.mastery.tagText(x))}</span>`).join(' ') : ''}${Object.values(t.auto.parts).some(r => r.verdict === 'teacher') ? '<span class="pill amber tiny">needs your marks</span>' : ''}</td><td><a class="btn small" href="#/mark/${t.id}">Mark →</a></td></tr>`; }).join('')}</tbody></table></section>`; }).join('') : U.empty('Nothing waiting. Lovely.'));
+    const rev = $('#rel-everything'); if (rev) rev.onclick = async () => { if (!(await U.confirmBox('Release every piece of work that needs no method marks? You can still review each one afterwards in the gradebook.', 'Release all'))) return;
+      const n = Hub.assess.releaseAllReady(); try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); } toast(`${n} result${n === 1 ? '' : 's'} released.`); Hub.app.render(); };
     $$('[data-relall]').forEach(b => (b.onclick = async () => { if (await U.confirmBox('Release the auto-marked results for every student whose work needs no method marks? You can still review each one afterwards in the gradebook.', 'Release')) { const n = Hub.assess.releaseAuto(b.dataset.relall); toast(`${n} result${n === 1 ? '' : 's'} released.`); Hub.app.render(); } }));
   }
   async function mark(main, params) {
@@ -5673,7 +5702,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   'use strict';
   const { esc, $, $$, toast, fmtDate } = Hub.core;
   const U = Hub.ui, S = () => Hub.store.state;
-  const COUNTED = ['Test', 'Quiz', 'Retest', 'Exit Ticket'];
+  const COUNTED = ['Unit test', 'Test', 'Quiz', 'Retest', 'Exit Ticket'];   // the studio's tests are type 'Unit test'
   const COURSES = ['SL', 'HL'];
   const MONTHS = ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May'];
   const DEF_GOAL = 'By May 2027, at least 60% of IB Mathematics: Analysis & Approaches students (SL and HL) will hold a predicted grade of 4 or higher on BRHS IB DP-aligned assessments, measured monthly using the latest IB grade boundaries.';
@@ -5683,7 +5712,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const target = () => +(view0().target || 60), cut = () => +(view0().grade || 4);
   const bounds = c => ((view0().bounds || {})[c]) || {};
   const DEFW = { 'Test': 3, 'Retest': 3, 'Quiz': 2, 'Exit Ticket': 1 };
-  const weight = type => { const w = (view0().weights || {})[type]; return w === undefined || w === null || isNaN(+w) ? DEFW[type] : Math.max(0, +w); };
+  const weight = type => { if (type === 'Unit test') type = 'Test'; const w = (view0().weights || {})[type]; return w === undefined || w === null || isNaN(+w) ? DEFW[type] : Math.max(0, +w); };
   /** Boundaries are usable when grades 2–7 all have a cut-off and they go up. */
   function boundsOK(c) { const b = bounds(c), v = [2, 3, 4, 5, 6, 7].map(g => b[g]); return v.every(x => x !== '' && x !== undefined && x !== null && !isNaN(+x)) && v.every((x, i) => i === 0 || +x > +v[i - 1]); }
   function toGrade(pct, c) { const b = bounds(c); let g = 1; for (let k = 2; k <= 7; k++) if (pct >= +b[k]) g = k; return g; }
@@ -5722,6 +5751,23 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     }
     [1, 2].forEach(k => { out[k].pct = out[k].m ? Math.round(100 * out[k].e / out[k].m) : null; });
     return out;
+  }
+  /** % of marks earned per command term on counted work up to a date, for a set of students. */
+  function commandStats(sids, upTo) {
+    const ids = new Set(sids), out = {};
+    for (const t of S().attempts) {
+      if (!ids.has(t.sid) || String(t.at || '').slice(0, 10) > upTo || !t.auto || !t.auto.parts || t.status !== 'released') continue;
+      const a = Hub.assess.byId(t.aid) || t.inline; if (!a) continue;
+      for (const q of a.questions || []) for (const part of q.parts || []) { const term = part.command; if (!term) continue; const k = q.id + '|' + part.id, r = t.auto.parts[k]; if (!r) continue;
+        const fin = t.final && t.final.parts ? t.final.parts[k] : undefined; if (r.verdict === 'teacher' && fin === undefined) continue;
+        const o = out[term] = out[term] || { term, e: 0, m: 0, n: 0 }; o.e += +(fin ?? r.earned) || 0; o.m += +part.marks || 0; o.n++; }
+    }
+    return Object.values(out).filter(o => o.m > 0).map(o => Object.assign(o, { pct: Math.round(100 * o.e / o.m) })).sort((a, b) => a.pct - b.pct);
+  }
+  function commandCard(upTo) {
+    const row = c => { const st = commandStats(Hub.roster.inCourse(c).map(s => s.id), upTo).filter(o => o.n >= 2);
+      return `<div class="ct-row"><b>AA ${c}</b>${st.length ? `<div class="ct-list">${st.slice(0, 6).map(o => `<div class="ct-item">${U.cmd(o.term)}<span class="pp-n small">${o.pct}%</span>${U.bar(o.pct, o.pct < 60 ? 'low' : '')}<span class="tiny muted">${o.n} part${o.n === 1 ? '' : 's'}</span></div>`).join('')}</div>` : '<p class="tiny muted">Not enough marked work yet.</p>'}</div>`; };
+    return `<section class="card"><h2 class="bar-head pink">Command terms</h2>${row('SL')}${row('HL')}<p class="tiny muted">% of marks earned on question parts with each command term in marked work (weakest first). IB marks against the command term, so a low “Show that” or “Hence” usually means students need to see what the term demands.</p></section>`;
   }
   function paperCard(upTo) {
     const row = (c) => { const r = papers(c, upTo), d = r[1].pct !== null && r[2].pct !== null ? r[1].pct - r[2].pct : null;
@@ -5770,16 +5816,18 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const weak = sk.filter(x => x.pct < 60).slice(0, 4), weakest = weak.length ? weak : sk.slice(0, 2);
       const mis = {}; S().evidence.forEach(e => { if (e.sid === s.id && !e.preview && e.date >= since) (e.tags || []).forEach(t => { const k = e.skill + '|' + t; mis[k] = mis[k] || { skill: e.skill, tag: t, n: 0 }; mis[k].n++; }); });
       const need = Math.max(0, Math.ceil(+bounds(s.course)[cut()] - p.pct));
-      return { s, p, weakest, mis: Object.values(mis).sort((a, b) => b.n - a.n).slice(0, 4), need };
+      const cmds = commandStats([s.id], today).filter(o => o.pct < 60);
+      return { s, p, weakest, mis: Object.values(mis).sort((a, b) => b.n - a.n).slice(0, 4), need, cmds: cmds.slice(0, 3) };
     });
     const agg = (pick, key) => { const o = {}; info.forEach(x => pick(x).forEach(it => { const k = key(it); o[k] = o[k] || { it, who: [] }; if (!o[k].who.includes(x.s)) o[k].who.push(x.s); })); return Object.values(o).sort((a, b) => b.who.length - a.who.length).slice(0, 8); };
-    const skillGroups = agg(x => x.weakest.filter(k => k.pct < 60), k => k.skill), misGroups = agg(x => x.mis, m => m.skill + '|' + m.tag);
+    const skillGroups = agg(x => x.weakest.filter(k => k.pct < 60), k => k.skill), misGroups = agg(x => x.mis, m => m.skill + '|' + m.tag), cmdGroups = agg(x => x.cmds, o => o.term);
     const names = who => who.map(s => `<a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a>`).join(', ');
     const card = x => { const pl = plans[x.s.id] || {};
       return `<section class="card iv-card"><div class="row-between"><h3 class="iv-name"><a href="#/student/${encodeURIComponent(x.s.id)}">${esc(x.s.name)}</a></h3><span class="tiny muted">${esc((Hub.curriculum.GROUPS[x.s.group] || {}).label || x.s.group)}${Hub.attendance ? (n => n ? ` · <b>absent ${n} lesson${n === 1 ? '' : 's'}</b> in 8 weeks` : '')(Hub.attendance.absences(x.s.id, since)) : ''}</span></div>
         <div class="rd-stats"><div><b>${x.p.pct}%</b><span>average</span></div><div><b>${x.p.grade}</b><span>predicted</span></div><div><b>+${x.need}%</b><span>to reach a ${cut()}</span></div></div>
         <p class="small"><b>Struggling with</b></p>${x.weakest.length ? `<ul class="iv-list">${x.weakest.map(k => `<li>${esc(U.skillName(k.skill))} <span class="tiny muted">${k.pct}%</span>${U.bar(k.pct, k.pct < 60 ? 'low' : '')}</li>`).join('')}</ul>` : '<p class="tiny muted">Not enough marked work per skill yet.</p>'}
         <p class="small"><b>Misconceptions seen</b> <span class="tiny muted">(last 8 weeks)</span></p>${x.mis.length ? `<ul class="iv-list">${x.mis.map(m => `<li><b>${esc(Hub.mastery.tagText(m.tag))}</b> <span class="tiny muted">in ${esc(U.skillName(m.skill))}${m.n > 1 ? ` · ${m.n} times` : ''}</span>${fbOf[m.tag] ? `<br><span class="tiny">Fix: ${esc(fbOf[m.tag])}</span>` : ''}</li>`).join('')}</ul>` : '<p class="tiny muted">No known misconceptions matched — check their working in Marking.</p>'}
+        ${x.cmds.length ? `<p class="small"><b>Command terms to practise</b></p><p class="iv-cmds">${x.cmds.map(o => `${U.cmd(o.term)} <span class="tiny muted">${o.pct}%</span>`).join(' · ')}</p>` : ''}
         <div class="iv-plan no-print-ctl"><label>Plan<select data-ivs="${esc(x.s.id)}">${PLAN.map(o => `<option${(pl.status || PLAN[0]) === o ? ' selected' : ''}>${o}</option>`).join('')}</select></label>
         <label>Notes<textarea data-ivn="${esc(x.s.id)}" rows="2" placeholder="e.g. small-group reteach Tue, retest Fri">${esc(pl.note || '')}</textarea></label>
         <div class="actions"><button class="btn small" data-ivsave="${esc(x.s.id)}" type="button">Save plan</button><a class="btn small ghost" href="#/student/${encodeURIComponent(x.s.id)}">Student record</a>${pl.at ? `<span class="tiny muted">saved ${fmtDate(String(pl.at).slice(0, 10))}</span>` : ''}</div></div></section>`; };
@@ -5789,9 +5837,12 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ${list.length ? `<div class="grid g2"><section class="card"><h2 class="bar-head amber">Small groups: skills to reteach</h2>${skillGroups.length ? skillGroups.map(g => `<div class="miss-item"><b>${esc(U.skillName(g.it.skill))}</b> <span class="pill">${g.who.length}</span><p class="miss-names">${names(g.who)}</p></div>`).join('') : '<p class="tiny muted">No skill below 60% yet for these students.</p>'}</section>
       <section class="card"><h2 class="bar-head pink">Common misconceptions</h2>${misGroups.length ? misGroups.map(g => `<div class="miss-item"><b>${esc(Hub.mastery.tagText(g.it.tag))}</b> <span class="tiny muted">${esc(U.skillName(g.it.skill))}</span> <span class="pill">${g.who.length}</span><p class="miss-names">${names(g.who)}</p></div>`).join('') : '<p class="tiny muted">No known misconceptions matched for these students yet.</p>'}
         <p class="tiny muted">Detected automatically when a wrong answer matches a known error.</p></section></div>
+      ${cmdGroups.length ? `<section class="card"><h2 class="bar-head blue">Command terms these students find hard</h2>${cmdGroups.map(g => `<div class="miss-item">${U.cmd(g.it.term)} <span class="pill">${g.who.length}</span><p class="miss-names">${names(g.who)}</p></div>`).join('')}<p class="tiny muted">Below 60% of marks on parts with that command term.</p></section>` : ''}
+      ${Hub.retake ? Hub.retake.cardHTML(null) : ''}
       <h2 class="sub-h">Each student</h2><div class="grid g2 iv-grid">${info.map(card).join('')}</div>` : `<section class="card"><p class="gc-ok">✓ No students are predicted below a ${cut()} right now.</p></section>`}
       <p class="tiny muted">Skills and misconceptions use all marked work, homework included; the predicted grade uses Tests, Quizzes, Retests and Exit Tickets only.</p>`;
     $('#iv-print').onclick = () => window.print();
+    if (Hub.retake) Hub.retake.bind(main);
     $$('[data-ivsave]', main).forEach(b => (b.onclick = async () => { const id = b.dataset.ivsave, all = Object.assign({}, plansGet());
       S().progress[TKEY] = { plans: all, updatedAt: new Date().toISOString() };
       all[id] = { status: $(`[data-ivs="${id}"]`, main).value, note: $(`[data-ivn="${id}"]`, main).value.trim().slice(0, 2000), at: new Date().toISOString() };
@@ -5828,7 +5879,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <section class="card"><div class="row-between"><h2 class="bar-head amber">Your row for the data sheet</h2><button class="btn small" id="dc-copy" type="button" ${ok ? '' : 'disabled'}>Copy for the spreadsheet</button></div>${table}
         <p class="tiny muted">Each month counts every marked Test, Quiz, Retest and Exit Ticket (not homework) up to the end of that month (today for ${esc(ms[nowI] ? ms[nowI].name : 'this month')}). Tests count ${weight('Test')}×, quizzes ${weight('Quiz')}× and Exit Tickets ${weight('Exit Ticket')}×; a retest replaces the original when it is higher. Test students never count. Target: <b>${target()}%</b> at grade ${cut()}+.</p></section>
       <section class="card"><h2 class="bar-head blue">Month by month</h2>${ok ? chart(rowsBy, ms) : '<p class="tiny muted">Appears once boundaries are set.</p>'}</section>
-      ${lastI >= 0 ? paperCard(ms[lastI].upTo) : ''}
+      ${lastI >= 0 ? paperCard(ms[lastI].upTo) + commandCard(ms[lastI].upTo) : ''}
       <section class="card"><h2 class="bar-head pink">Who is below a ${cut()}${monthName ? ' · ' + monthName : ''}</h2>${ok ? detail('SL') + detail('HL') : '<p class="tiny muted">Appears once boundaries are set.</p>'}<p class="tiny muted">Names stay on this page — the department view shows counts only.</p></section>
       <section class="card"><h2 class="bar-head green">Goal, action step and grade boundaries</h2>
         <label>PLC goal<textarea id="dc-goal" rows="3">${esc(C.goal || DEF_GOAL)}</textarea></label>
@@ -5854,7 +5905,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       try { await navigator.clipboard.writeText(txt); toast('Copied — click the September cell in the sheet and paste.'); } catch (e) { toast('Could not copy here.', 'error'); }
     };
   }
-  Hub.datacycle = { view, count, predicted, months, toGrade, boundsOK, papers, weight };
+  Hub.datacycle = { view, count, predicted, months, toGrade, boundsOK, papers, weight, commandStats };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/announce.js ---- */
@@ -5997,14 +6048,72 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const b = $('#reg-save', root); if (b) b.onclick = async () => {
       const date = $('#reg-date', root).value; let n = 0;
       $$('.reg-abs', root).forEach(i => { setAbsent(i.value, date, i.checked); if (i.checked) n++; });
+      S().progress['_teacher|reg:' + groupId + '|' + date] = { at: new Date().toISOString(), absent: n };   // teacher-only: register taken
       chosen[groupId] = date; Hub.store.log(`Register for ${(C().GROUPS[groupId] || {}).label || groupId} · ${date}: ${n} absent`); Hub.store.save(true);
       try { await Hub.store.flush(); toast(n ? `Register saved — ${n} absent.` : 'Register saved — everyone present.'); } catch (e) { toast(e.message, 'error'); }
       Hub.app.render();
     };
   }
   /** Lessons a student was marked absent from since a date. */
+  const registerTaken = (groupId, date) => S().progress['_teacher|reg:' + groupId + '|' + date] || null;
   const absences = (sid, since) => Object.keys(S().progress).filter(k => k.startsWith(sid + '|att:') && k.slice(sid.length + 5) >= since).length;
-  Hub.attendance = { isAbsent, setAbsent, lockedFor, absentAccess, windowOver, closeTime, closeLabel, registerHTML, bindRegister, absences };
+  Hub.attendance = { isAbsent, setAbsent, lockedFor, absentAccess, windowOver, closeTime, closeLabel, registerHTML, bindRegister, absences, registerTaken, nyNow };
+})(window.Hub = window.Hub || {});
+
+/* ---- js/retake.js ---- */
+/* Suggested retests (unit tests, quizzes) and retakes (Exit Tickets) for students below 60% on their marked work.
+   One click drafts a new version with fresh numbers for just those students, as a Retest of the original
+   (so the better score counts, capped like every retest). The teacher checks the draft and publishes it. */
+(function (Hub) {
+  'use strict';
+  const { esc, $$, toast, fmtDate } = Hub.core;
+  const S = () => Hub.store.state, C = () => Hub.curriculum;
+  const BELOW = 60, KINDS = ['Unit test', 'Quiz', 'Exit Ticket'];
+  const word = a => a.type === 'Exit Ticket' ? 'retake' : 'retest';
+  /** Students below 60% on their latest released attempt, not already given a retest of it. */
+  function below(a, groupFilter) {
+    const covered = new Set(S().assessments.filter(r => r.retestOf === a.id && r.status !== 'archived').flatMap(r => r.targets || (r.groups || []).flatMap(g => Hub.roster.inGroup(g).map(s => s.id))));
+    return (a.groups || []).filter(g => !groupFilter || groupFilter.includes(g)).flatMap(g => Hub.roster.inGroup(g)).map(s => {
+      const t = Hub.assess.attemptsFor(a.id, s.id).filter(x => x.status === 'released').pop(); if (!t) return null;
+      const pct = Hub.assess.score(t).pct; return pct !== null && pct < BELOW && !covered.has(s.id) ? { s, pct } : null;
+    }).filter(Boolean).sort((p, q) => p.pct - q.pct);
+  }
+  /** Recent unit tests, quizzes and Exit Tickets (last 6 weeks) with students to offer a retest or retake. */
+  function suggestions(groupFilter) {
+    const since = Hub.core.addDays(Hub.mastery.asOf(), -42);
+    return S().assessments.filter(a => KINDS.includes(a.type) && ['published', 'closed'].includes(a.status) && (!groupFilter || (a.groups || []).some(g => groupFilter.includes(g))))
+      .filter(a => { const d = (a.groups || []).map(g => Hub.assess.dueFor(a, g)).filter(Boolean).sort().pop() || String(a.publishedAt || '').slice(0, 10); return !d || d >= since; })
+      .map(a => ({ a, who: below(a, groupFilter) })).filter(x => x.who.length);
+  }
+  /** Draft a retest/retake with fresh numbers for exactly these students, then open it for checking. */
+  function create(aid, sids) {
+    const src = Hub.assess.byId(aid), r = Hub.assess.duplicate(aid, true); if (!src || !r) return null;
+    const groups = [...new Set(sids.map(id => (Hub.roster.byId(id) || {}).group).filter(Boolean))];
+    Object.assign(r, { targets: sids.slice(), groups: groups.length ? groups : r.groups });
+    if (src.type === 'Exit Ticket') Object.assign(r, { title: src.title.replace(/ · Retest$/, '') + ' · Retake', uploadRequired: !!src.uploadRequired, release: src.release || 'auto', minutes: src.minutes });
+    Hub.store.log(`Drafted a ${word(src)} of “${src.title}” for ${sids.length} student${sids.length === 1 ? '' : 's'}`); Hub.store.save(true);
+    return r;
+  }
+  function cardHTML(groupFilter, title) {
+    const list = suggestions(groupFilter);
+    if (!list.length) return '';
+    return `<section class="card rt-card"><h2 class="bar-head amber">${esc(title || 'Suggested retests and retakes')}</h2>
+      <p class="tiny muted">Students below ${BELOW}% on marked work from the last 6 weeks. Each makes a new version with fresh numbers, for just these students; the better score counts (capped at 80%, like every retest).</p>
+      ${list.map(x => `<div class="rt-item"><div><b>${esc(x.a.title)}</b> <span class="pill">${x.a.type === 'Exit Ticket' ? 'Retake' : 'Retest'}</span><p class="miss-names small">${x.who.map(w => `<a href="#/student/${encodeURIComponent(w.s.id)}">${esc(w.s.name)}</a> <span class="tiny muted">${w.pct}%</span>`).join(', ')}</p></div>
+        <button class="btn small primary" type="button" data-rtmake="${esc(x.a.id)}" data-rtwho="${esc(x.who.map(w => w.s.id).join(','))}">Create ${word(x.a)} for ${x.who.length}</button></div>`).join('')}</section>`;
+  }
+  function bind(root) {
+    $$('[data-rtmake]', root).forEach(b => (b.onclick = async () => {
+      const sids = b.dataset.rtwho.split(',').filter(Boolean), r = create(b.dataset.rtmake, sids); if (!r) return;
+      try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); }
+      toast(`Drafted “${r.title}” for ${sids.length} student${sids.length === 1 ? '' : 's'} — check it, set the date, then publish.`);
+      Hub.app.nav('#/edit/' + r.id);
+    }));
+  }
+  // only the chosen students see a targeted retest or retake
+  const original = Hub.assess.forStudent;
+  Hub.assess.forStudent = sid => original(sid).filter(a => !a.targets || a.targets.includes(sid));
+  Hub.retake = { suggestions, below, create, cardHTML, bind };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/live.js ---- */
@@ -7319,6 +7428,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     main.innerHTML = `<div class="row-between"><a class="back" href="#/home">← Dashboard</a>${pvStudent ? `<button class="btn small" id="cd-preview" type="button">👁 See this class’s student view</button>` : ''}</div>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
       (Hub.attendance ? Hub.attendance.registerHTML(g) : '') +
       `<div class="grid g2">${rundown('Exit Ticket', 'Latest Exit Ticket', 'pink', 'No Exit Ticket has been set for this class yet.')}${rundown('Homework', 'Latest homework', 'amber', 'No homework has been set for this class yet.')}</div>
+      ${Hub.retake ? Hub.retake.cardHTML([g]) : ''}
       <div class="grid g2">
       <section class="card"><h2 class="bar-head green">Lesson notebook</h2>${recentNb ? (() => { const c = ragCounts(recentNb, studs), qs = studs.map(s => [s, ((S().progress[s.id + '|nb:' + recentNb.id] || {}).responses || {}).question]).filter(x => x[1] && x[1].trim()), notOpen = studs.filter(s => !S().progress[s.id + '|nb:' + recentNb.id]); return `<p class="rd-title">${esc(recentNb.title.slice(0, 70))}</p><p class="tiny muted">Latest released notebook</p><div class="rd-stats"><div><b>${c.opened}/${studs.length}</b><span>opened</span></div><div><b class="rag-chip green">${c.green}</b><span>got it</span></div><div><b class="rag-chip amber">${c.amber}</b><span>getting there</span></div><div><b class="rag-chip red">${c.red}</b><span>stuck</span></div></div>${notOpen.length ? `<details class="rd-list"><summary><b>Not opened (${notOpen.length})</b></summary><p class="miss-names">${notOpen.map(s => `<a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a>`).join(', ')}</p></details>` : ''}${qs.length ? `<div class="sticky"><b>Questions from students</b><ul>${qs.slice(0, 6).map(([s, q]) => `<li><b>${esc(firstName(s.name))}:</b> ${esc(q)}</li>`).join('')}</ul></div>` : ''}<div class="actions"><a class="btn small ghost" href="#/lesson/${encodeURIComponent(recentNb.id)}?view=responses">All responses</a></div>`; })() : '<p class="tiny muted">No notebook released to this class yet.</p>'}
         ${nl ? `<p class="tiny gc-next">Next lesson: ${nb ? `<b>${esc(nb.title)}</b> · ${Hub.lessons.visibleTo(nb, g) ? 'released' : 'not released yet'}` : 'no notebook yet'} ${lid ? `<a class="btn small" href="#/lesson/${encodeURIComponent(lid)}">${nb ? 'Open notebook' : '+ Create notebook'}</a>` : ''}</p>` : ''}</section>
@@ -7336,6 +7446,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <h3 class="sub-h">IA</h3>${Hub.ia ? Hub.ia.cardLine(g) : ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)}</p>` : ''}<a class="btn small ghost" href="#/ia?group=${g}">IA overview</a></div></div></details>`;
     const cdp = $('#cd-preview'); if (cdp) cdp.onclick = () => Hub.app.previewAs(pvStudent.id);
     if (Hub.attendance) Hub.attendance.bindRegister(main, g);
+    if (Hub.retake) Hub.retake.bind(main);
     const cp = $('#copy-missing'); if (cp) cp.onclick = async () => { const txt = miss.filter(x => x.missing.length).map(x => `${x.a.type} – ${x.a.title} (due ${fmtDate(x.due)}): ${x.missing.map(s => s.name).join(', ')}`).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Copied.'); } catch (e) { toast('Could not copy here.', 'error'); } };
   }
   Hub.classdash = { view, missing, upcoming, cardSnippet };
