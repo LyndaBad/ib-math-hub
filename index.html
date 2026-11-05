@@ -430,6 +430,10 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .sg-skill .inline-check { flex: 1 1 220px; margin: 0; }
 .sg-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .sg-plan li { margin: 0 0 8px; }
+
+.gp-q.keys-hidden .key { display: none; }
+.gp-sec { margin: 18px 0 8px; font-family: var(--f-head); }
+@media print { .gp-q [data-ppkey], #pp-new { display: none; } }
 .sg-tbl input[type=text] { min-width: 220px; }
 .tc-row { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
 .tc-row.done { opacity: .7; }
@@ -3931,6 +3935,329 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ab('9', R`y = |x^{2} - 2x - 3|`, x => Math.abs(x * x - 2 * x - 3), 1, 0, true, [-3, 5], [-1, 6], 'all((Abs(x**2-2*x-3)).subs(x,v) >= 0 for v in range(-6,8)) and (Abs(x**2-2*x-3)).subs(x,3) == 0', [R`$x^{2} - 2x - 3 = (x - 3)(x + 1)$ is negative between $-1$ and $3$; that part is reflected above the $x$-axis.`, R`The graph touches $y = 0$ at $x = -1$ and $x = 3$; range $y \ge 0$.`], [pt(-1, 0, 'l'), pt(3, 0, 'b'), pt(1, 4)]),
       ab('10', R`y = |5 - 4x - x^{2}| - 1`, x => Math.abs(5 - 4 * x - x * x) - 1, -5, -1, true, [-7, 3], [-2, 10], 'all((Abs(5-4*x-x**2)-1).subs(x,v) >= -1 for v in range(-9,6)) and (Abs(5-4*x-x**2)-1).subs(x,1) == -1', [R`$5 - 4x - x^{2} = (5 + x)(1 - x)$ is zero at $x = -5$ and $x = 1$.`, R`The absolute value is never negative, so the least value of $y$ is $0 - 1 = -1$ (at $x = -5$ and $x = 1$). Range $y \ge -1$.`], [pt(-5, -1, 'b'), pt(1, -1, 'b'), pt(-2, 8)])
   ]));
+})(window.Hub = window.Hub || {});
+
+/* ---- js/q_cr2.js ---- */
+/* Unit tests that mirror the Oxford 2019 end-of-chapter "Exam-style questions" — one generator per book question, in the
+   same order, with the same structure, command terms, papers and marks. Every number, function, graph and context is new
+   and randomised; the wording is the Hub's own (no textbook text is stored). The unit test and the study-guide practice
+   paper are built from the same list with different numbers. */
+(function (Hub) {
+  'use strict';
+  const { F, fr, num, round, sf, poly, plot, reg: reg0 } = Hub.qcore;
+  const X = { exam: true, cr: true };
+  const reg = (id, meta, gen) => reg0(id, Object.assign({}, X, meta), gen);
+  const T = v => (v instanceof F ? v.tex() : num(v));
+  const ans = a => {
+    if (a === 'open') return { kind: 'open', display: 'See markscheme' };
+    if (typeof a === 'number') return { kind: 'num', value: a, exact: true, display: num(a) };
+    if (a instanceof F) return { kind: 'num', value: a.val(), exact: true, display: a.tex() };
+    if (a.open) return { kind: 'open', display: a.open };
+    if (a.t) return { kind: 'tuple', labels: a.l, value: a.t.map(v => (v instanceof F ? v.val() : v)), exact: !a.sf, sf: a.sf, markEach: !!a.each, display: a.d || a.t.map(T).join(',\\ ') };
+    if (a.list) return { kind: 'list', value: a.list.map(v => (v instanceof F ? v.val() : v)), exact: !a.sf, sf: a.sf, display: a.d || a.list.map(T).join(',\\ ') };
+    const o = { kind: 'num', value: a.n, display: a.d || num(a.sf ? sf(a.n, a.sf) : a.dp !== undefined ? round(a.n, a.dp) : a.n) };
+    if (a.sf) o.sf = a.sf; else if (a.dp !== undefined) o.dp = a.dp; else o.exact = true; if (a.int) o.int = true; return o;
+  };
+  /** part(command, prompt, marks, answer, markscheme lines, working lines, hint, extra) */
+  const P = (c, p, m, a, ms, w, h, x) => Object.assign({ command: c, prompt: p, marks: m, answer: ans(a), ms: ms || [], working: w || [], hint: h || '' }, x || {});
+  const sg = (v, first) => v === 0 ? (first ? '0' : '') : v < 0 ? (first ? '-' : ' - ') + Math.abs(v) : (first ? '' : ' + ') + v;   // integer term
+  const sgF = v => { v = F.of(v); return v.n === 0 ? '' : v.n < 0 ? ' - ' + v.neg().tex() : ' + ' + v.tex(); };
+  const quad = (a, b, c, v = 'x') => poly([[a, v + '^{2}'], [b, v], [c, '']]);
+  const iv = (lo, hi, lc, rc, v = 'x') => `${T(lo)} ${lc ? '<' : '\\le'} ${v} ${rc ? '<' : '\\le'} ${T(hi)}`;
+
+  /* ======================= AA SL · Chapter 2 (Unit 2: Introducing functions) ======================= */
+
+  // Q10 (P1) — range of four functions on given domains
+  reg('cr.sl2.q10', { skill: 'SL-2.4', title: 'Range from a restricted domain (four functions)', paper: 1 }, R => {
+    const m = R.pick([2, 3, 4, 5]), c = R.nz(-6, 6), a = -R.int(2, 6), b = R.int(2, 6);
+    const c2 = R.int(3, 9), m2 = R.int(2, 4), D = [-1, 0, 1, 2, 3, 4].slice(0, R.int(5, 6)), rng2 = D.map(x => c2 - m2 * x).sort((u, v) => u - v);
+    const n = R.int(4, 9), C = R.pick([120, 160, 200, 240, 300]), r = R.pick([7.5, 12.5, 15, 17.5]), L = R.pick([8, 10, 12]);
+    return { stem: 'Find the range of each of the following functions.', paper: 1, parts: [
+      P('Find', `the range of $f(x) = ${m}x${sg(c)}$, domain $\\{x \\in \\mathbb{R},\\ ${a} \\le x \\le ${b}\\}$.`, 2, { t: [m * a + c, m * b + c], l: ['least', 'greatest'], d: `${m * a + c} \\le f(x) \\le ${m * b + c}` },
+        [['M1', 'substituting both end points of the domain'], ['A1', `$${m * a + c} \\le f(x) \\le ${m * b + c}$`]], [`$f(${a}) = ${m * a + c}$, $f(${b}) = ${m * b + c}$`, 'The function is increasing, so the range runs between these values.'], 'A straight line takes its least and greatest values at the ends of the domain.'),
+      P('Find', `the range of $f(x) = ${c2} - ${m2}x$, domain $\\{x = ${D.join(', ')}\\}$.`, 2, { list: rng2, d: `\\{${rng2.join(', ')}\\}` },
+        [['M1', 'substituting each value in the domain'], ['A1', `$\\{${rng2.join(', ')}\\}$`]], [D.map(x => `$f(${x}) = ${c2 - m2 * x}$`).join(', ')], 'The domain is a list of values, so the range is a list too.'),
+      P('Find', `the range of $f(x) = x^{2}$, domain $\\{x \\in \\mathbb{R},\\ 0 \\le x \\le ${n}\\}$.`, 2, { t: [0, n * n], l: ['least', 'greatest'], d: `0 \\le f(x) \\le ${n * n}` },
+        [['A1', 'lower bound $0$'], ['A1', `upper bound $${n * n}$`]], [`$f(0) = 0$, $f(${n}) = ${n * n}$; $x^{2}$ is increasing for $x \\ge 0$`], 'Sketch y = x² for x ≥ 0.'),
+      P('Find', `the range of $f(x) = ${C} - ${r}x$, domain $\\{x \\in \\mathbb{R},\\ 0 \\le x \\le ${L}\\}$.`, 2, { t: [C - r * L, C], l: ['least', 'greatest'], d: `${num(C - r * L)} \\le f(x) \\le ${C}` },
+        [['M1', 'substituting both end points'], ['A1', `$${num(C - r * L)} \\le f(x) \\le ${C}$`]], [`$f(0) = ${C}$, $f(${L}) = ${C} - ${r}(${L}) = ${num(C - r * L)}$`, 'Decreasing, so the greatest value is at x = 0.'], 'The gradient is negative: which end gives the larger value?')
+    ] };
+  });
+
+  // Q11 (P2) — evaluate f and g, inverse of f, solve g(x) = k
+  reg('cr.sl2.q11', { skill: 'SL-2.6', title: 'Evaluate, invert and solve with a linear and a quadratic', paper: 2 }, R => {
+    const a = R.int(2, 6), b = R.nz(-7, 7), r1 = R.int(1, 5), r2 = R.int(6, 12), k = R.int(5, 30);
+    const p = -(r1 + r2), q = r1 * r2 + k, x0 = -R.int(1, 4);   // g(x) = (x − r1)(x − r2) + k
+    return { stem: `$f(x) = ${a}x${sg(b)},\\ x \\in \\mathbb{R}$ and $g(x) = ${quad(1, p, q)},\\ x \\in \\mathbb{R}$.`, paper: 2, parts: [
+      P('Find', `$f(${x0})$.`, 2, a * x0 + b, [['M1', `$${a}(${x0})${sg(b)}$`], ['A1', `$${a * x0 + b}$`]], [`$f(${x0}) = ${a}(${x0})${sg(b)} = ${a * x0 + b}$`], 'Substitute into f.'),
+      P('Find', `$g(${x0})$.`, 2, x0 * x0 + p * x0 + q, [['M1', 'substitution'], ['A1', `$${x0 * x0 + p * x0 + q}$`]], [`$g(${x0}) = (${x0})^{2}${sg(p)}(${x0})${sg(q)} = ${x0 * x0 + p * x0 + q}$`], 'Brackets around the negative number.', { errors: [{ value: -(x0 * x0) + p * x0 + q, tag: 'neg-square', fb: `$(${x0})^{2} = ${x0 * x0}$, not $-${x0 * x0}$.` }] }),
+      P('Find', 'an expression for $f^{-1}(x)$.', 2, { open: `f^{-1}(x) = \\frac{x${sg(-b)}}{${a}}` }, [['M1', `$x = ${a}y${sg(b)}$ (swapping $x$ and $y$)`], ['A1', `$f^{-1}(x) = \\frac{x${sg(-b)}}{${a}}$`]], [`$y = ${a}x${sg(b)} \\Rightarrow x = \\frac{y${sg(-b)}}{${a}}$`, `$f^{-1}(x) = \\frac{x${sg(-b)}}{${a}}$`], 'Swap x and y, then make y the subject.'),
+      P('Solve', `the equation $g(x) = ${k}$.`, 4, { list: [r1, r2], d: `x = ${r1},\\ x = ${r2}` }, [['M1', `$${quad(1, p, q)} = ${k}$`], ['M1', `$${quad(1, p, q - k)} = 0$`], ['A1', `$x = ${r1}$`], ['A1', `$x = ${r2}$`]],
+        [`$${quad(1, p, q - k)} = 0$`, `$(x - ${r1})(x - ${r2}) = 0$`, `$x = ${r1}$ or $x = ${r2}$`], 'Rearrange to = 0, then factorise or use the NumWorks.', { numworks: { app: 'Equations', lines: [[`x^2${sg(p)}x${sg(q - k)}=0`, `x=${r1}, x=${r2}`]] } })
+    ] };
+  });
+
+  // Q12 (P1) — linear function on an open interval: value at a fraction, range, solve f(a) = value
+  reg('cr.sl2.q12', { skill: 'SL-2.4', title: 'Linear function on an interval: value, range, solve', paper: 1 }, R => {
+    const A = R.pick([16, 24, 32, 48, 64]), B = R.int(5, 25), lo = -R.int(2, 5), hi = R.int(6, 15), d = R.pick([2, 4, 8]), nn = R.int(1, 2 * d - 1) * (R.bool() ? 1 : -1);
+    const val = fr(A * nn, d).sub(B), aa = R.int(2, hi - 1) + R.pick([0.25, 0.5, 0.75]), out = A * aa - B;
+    return { stem: `A function is given by $f(x) = ${A}x - ${B}$, $\\ ${lo} < x < ${hi}$.`, paper: 1, parts: [
+      P('Determine', `the value of $f\\left(${fr(nn, d).tex()}\\right)$.`, 2, val, [['M1', 'substitution'], ['A1', `$${val.tex()}$`]], [`$${A} \\times ${fr(nn, d).tex()} - ${B} = ${fr(A * nn, d).tex()} - ${B} = ${val.tex()}$`], 'Cancel before you multiply.'),
+      P('Determine', 'the range of the function $f$.', 4, { t: [A * lo - B, A * hi - B], l: ['from', 'to'], d: `${A * lo - B} < f(x) < ${A * hi - B}` },
+        [['M1', `$f(${lo}) = ${A * lo - B}$`], ['M1', `$f(${hi}) = ${A * hi - B}$`], ['A1', 'correct values'], ['A1', 'strict inequalities $<$ (end points not included)']], [`$f(${lo}) = ${A * lo - B}$, $f(${hi}) = ${A * hi - B}$`, `Range: $${A * lo - B} < f(x) < ${A * hi - B}$`], 'The domain has strict inequalities, so does the range.'),
+      P('Determine', `the value of $a$ such that $f(a) = ${num(out)}$.`, 2, aa, [['M1', `$${A}a - ${B} = ${num(out)}$`], ['A1', `$a = ${num(aa)}$`]], [`$${A}a = ${num(out + B)} \\Rightarrow a = ${num(aa)}$`], 'Set up and solve a linear equation.')
+    ] };
+  });
+
+  /* graphs for Q13: domain and range from a graph */
+  const g13 = [
+    R => { const h = R.int(-1, 1), k = R.int(1, 3), x1 = h - R.int(2, 3), x2 = h + R.int(2, 3), f = x => k - 0.5 * (x - h) ** 2, lo = Math.min(f(x1), f(x2));
+      return { fig: plot({ x: [-5, 5], y: [-5, 5], f: [{ f, from: x1, to: x2 }], pts: [[x1, f(x1)], [x2, f(x2)]], alt: 'curve' }), dom: [x1, x2], ran: [lo, k] }; },
+    R => { const h = R.int(1, 3), k = -R.int(2, 4), x1 = h - R.int(2, 3), x2 = h + R.int(1, 2), f = x => (x - h) ** 2 + k, hi = Math.max(f(x1), f(x2));
+      return { fig: plot({ x: [-3, 7], y: [-5, 6], f: [{ f, from: x1, to: x2 }], pts: [[x1, f(x1)], [x2, f(x2)]], alt: 'curve' }), dom: [x1, x2], ran: [k, hi] }; },
+    R => { const x1 = 0, x2 = R.pick([20, 25, 30]), y1 = R.pick([10, 12, 14]), f = x => y1 - y1 * x / x2;
+      return { fig: plot({ x: [-5, 35], y: [-5, 15], step: [5, 5], f: [{ f, from: x1, to: x2 }], pts: [[x1, y1], [x2, 0]], alt: 'line segment' }), dom: [0, x2], ran: [0, y1] }; },
+    R => { const h = R.int(-1, 1), k = R.int(0, 2), x1 = h - R.int(2, 3), x2 = h + R.int(2, 4), f = x => Math.abs(x - h) + k, hi = Math.max(f(x1), f(x2));
+      return { fig: plot({ x: [-5, 6], y: [-2, 8], f: [{ f, from: x1, to: x2 }], pts: [[x1, f(x1)], [x2, f(x2)]], alt: 'V-shaped graph' }), dom: [x1, x2], ran: [k, hi] }; }
+  ];
+  reg('cr.sl2.q13', { skill: 'SL-2.4', title: 'Domain and range from four graphs', paper: 1 }, R => ({
+    stem: 'State (i) the domain and (ii) the range for each of the following functions. The end points shown are included.', paper: 1,
+    parts: R.shuffle(g13).map(g => { const G = g(R); return P('State', 'the domain and the range of the function shown.', 2, { t: [G.dom[0], G.dom[1], G.ran[0], G.ran[1]], l: ['domain from', 'domain to', 'range from', 'range to'], d: `${G.dom[0]} \\le x \\le ${G.dom[1]},\\ ${num(G.ran[0])} \\le y \\le ${num(G.ran[1])}` },
+      [['A1', `domain $${G.dom[0]} \\le x \\le ${G.dom[1]}$`], ['A1', `range $${num(G.ran[0])} \\le y \\le ${num(G.ran[1])}$`]], ['Domain: read the x-values from left end to right end.', 'Range: read the lowest and highest y-values the graph reaches (check turning points as well as end points).'], 'Domain = the x-values used; range = the y-values produced.', { fig: G.fig }); })
+  }));
+
+  // Q14 (P2) — domain from a given range, ff(x), inverse and its range
+  reg('cr.sl2.q14', { skill: 'SL-2.6', title: 'Domain from a range, ff(x), inverse and its range', paper: 2 }, R => {
+    const a = R.int(2, 5), b = R.int(3, 15), x1 = R.int(3, 6), x2 = x1 + R.int(8, 15), L = a * x1 - b, U = a * x2 - b, t = R.int(4, 12), ft = a * t - b, fft = a * ft - b;
+    return { stem: `A function is defined by $f(x) = ${a}x - ${b}$.`, paper: 2, parts: [
+      P('Find', `the domain of $f(x)$, given that the range of $f(x)$ is $${L} < f(x) < ${U}$.`, 4, { t: [x1, x2], l: ['from', 'to'], d: `${x1} < x < ${x2}` },
+        [['M1', `$${a}x - ${b} = ${L}$ or $${a}x - ${b} > ${L}$`], ['A1', `$x = ${x1}$`], ['A1', `$x = ${x2}$`], ['A1', `$${x1} < x < ${x2}$`]], [`$${L} < ${a}x - ${b} < ${U}$`, `$${L + b} < ${a}x < ${U + b}$`, `$${x1} < x < ${x2}$`], 'Solve the double inequality.'),
+      P('Find', `$ff(${t})$.`, 3, fft, [['M1', `$f(${t}) = ${ft}$`], ['M1', `$f(${ft})$`], ['A1', `$${fft}$`]], [`$f(${t}) = ${ft}$`, `$f(${ft}) = ${a}(${ft}) - ${b} = ${fft}$`], 'Work from the inside out.', { errors: [{ value: ft * ft, tag: 'ff-squared', fb: 'ff(x) means f(f(x)), not f(x) squared.' }] }),
+      P('Find', 'the inverse function, $f^{-1}(x)$.', 2, { open: `f^{-1}(x) = \\frac{x + ${b}}{${a}}` }, [['M1', 'interchanging $x$ and $y$'], ['A1', `$f^{-1}(x) = \\frac{x + ${b}}{${a}}$`]], [`$x = ${a}y - ${b} \\Rightarrow y = \\frac{x + ${b}}{${a}}$`], 'Swap x and y, then rearrange.'),
+      P('State', 'the range of the inverse function.', 2, { t: [x1, x2], l: ['from', 'to'], d: `${x1} < f^{-1}(x) < ${x2}` }, [['M1', 'range of $f^{-1}$ = domain of $f$'], ['A1', `$${x1} < f^{-1}(x) < ${x2}$`]], ['The range of the inverse is the domain of the original function.'], 'Domain and range swap for an inverse.')
+    ] };
+  });
+
+  /* graphs for Q15: function or not */
+  const g15 = [
+    () => ({ fig: plot({ x: [-1, 9], y: [-4, 4], f: [{ f: x => Math.sqrt(x), from: 0, to: 9 }, { f: x => -Math.sqrt(x), from: 0, to: 9 }], alt: 'sideways parabola' }), yes: false, why: 'A vertical line such as $x = 4$ meets the graph twice, so one $x$ has two $y$-values: not a function.' }),
+    () => ({ fig: plot({ x: [-2, 2], y: [-2, 2], step: [0.5, 0.5], f: [{ f: x => -(x ** 3) }], alt: 'decreasing cubic' }), yes: true, why: 'Every vertical line meets the graph exactly once: a function.' }),
+    R => { const m = R.pick([1, 2]), c = R.int(-3, 1); return { fig: plot({ x: [-4, 5], y: [-5, 5], f: [{ f: x => m * x + c }], alt: 'straight line' }), yes: true, why: 'A non-vertical straight line: each $x$ has exactly one $y$, so it is a function.' }; },
+    R => { const r = R.int(2, 3); return { fig: plot({ x: [-4, 4], y: [-1, 4], f: [{ f: x => Math.sqrt(Math.max(0, r * r - x * x)), from: -r, to: r }], alt: 'upper semicircle' }), yes: true, why: 'Only the top half of the circle: each $x$ gives one $y$, so it is a function.' }; },
+    R => { const r = R.int(2, 3); return { fig: plot({ x: [-4, 4], y: [-4, 4], f: [{ f: x => Math.sqrt(Math.max(0, r * r - x * x)), from: -r, to: r }, { f: x => -Math.sqrt(Math.max(0, r * r - x * x)), from: -r, to: r }], alt: 'circle' }), yes: false, why: 'A whole circle: the vertical line $x = 0$ meets it twice, so it is not a function.' }; }
+  ];
+  reg('cr.sl2.q15', { skill: 'SL-2.1', title: 'Which graphs represent functions? Give reasons', paper: 1 }, R => {
+    let pick; do pick = R.shuffle(g15).slice(0, 4).map(g => g(R)); while (pick.every(g => g.yes));
+    return { stem: 'State which of the following graphs represent functions, giving reasons for your answers.', paper: 1,
+      parts: pick.map(G => P('State', 'whether this graph represents a function. Give a reason.', 2, { open: G.yes ? '\\text{Function}' : '\\text{Not a function}' }, [['A1', G.yes ? 'function' : 'not a function'], ['R1', G.why]], [G.why], 'Use the vertical line test.', { fig: G.fig })) };
+  });
+
+  /* Q16 / HL Q12 — f(x) = k/(x − c) + c is self-inverse; range; sketch */
+  function selfInv(R) {
+    const c = R.int(1, 4), k = R.pick([2, 3, 4, 5, 6]);
+    return { stem: `Consider the function $f(x) = \\frac{k}{x - ${c}} + ${c}$, $\\ x > ${c},\\ x \\in \\mathbb{R},\\ k \\in \\mathbb{R}^{+}$.`, paper: 1, parts: [
+      P('Show that', '$f(x)$ is a self-inverse function.', 3, 'open', [['M1', `$x = \\frac{k}{y - ${c}} + ${c}$ (interchanging)`], ['A1', `$y - ${c} = \\frac{k}{x - ${c}}$`], ['A1', `$f^{-1}(x) = \\frac{k}{x - ${c}} + ${c} = f(x)$`], ['AG', '']], [`$x - ${c} = \\frac{k}{y - ${c}} \\Rightarrow y - ${c} = \\frac{k}{x - ${c}}$`, `$f^{-1}(x) = \\frac{k}{x - ${c}} + ${c} = f(x)$, so $f$ is self-inverse.`], 'Find f⁻¹ and show it is the same as f (or show f(f(x)) = x).'),
+      P('State', 'the range of $f$.', 2, { open: `f(x) > ${c}` }, [['A2', `$f(x) > ${c}$`]], [`For $x > ${c}$, $\\frac{k}{x - ${c}} > 0$, so $f(x) > ${c}$.`], 'What happens to k/(x − c) as x grows?'),
+      P('Sketch', `the graph of $y = f(x)$ for a value of $k > 0$, showing clearly any asymptotes.`, 2, 'open', [['A1', `asymptotes $x = ${c}$ and $y = ${c}$`], ['A1', 'correct shape in the region $x > ' + c + '$, $y > ' + c + '$']], [`Vertical asymptote $x = ${c}$, horizontal asymptote $y = ${c}$; one branch, above and to the right.`], 'Draw the asymptotes first.', { kfig: plot({ x: [-1, 9], y: [-1, 9], vl: [c], hl: [c], f: [{ f: x => k / (x - c) + c, from: c + 0.05, to: 9 }], alt: 'model sketch' }) })
+    ] };
+  }
+  reg('cr.sl2.q16', { skill: 'SL-2.6', title: 'Self-inverse rational function: show, range, sketch', paper: 1 }, selfInv);
+
+  // Q17 (P1) — rational function: range, inverse, domain and range of the inverse
+  reg('cr.sl2.q17', { skill: 'SL-2.6', title: 'Rational function: range, inverse, domain and range of the inverse', paper: 1 }, R => {
+    const a = R.int(1, 5), b = R.int(2, 4), c = R.int(2, 4), d = R.int(1, 3) * c;   // f(x) = (a − bx)/(cx + d)
+    const hz = fr(-b, c), vx = fr(-d, c);
+    return { stem: `Consider the function $f(x) = \\frac{${a} - ${b}x}{${c}x + ${d}}$, $\\ x \\ne ${vx.tex()},\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('State', 'the range of $f$.', 1, { open: `f(x) \\ne ${hz.tex()}` }, [['A1', `$f(x) \\ne ${hz.tex()}$`]], [`Horizontal asymptote $y = ${hz.tex()}$ (ratio of the $x$ coefficients).`], 'Large x: the constants hardly matter.'),
+      P('Find', 'the inverse function $f^{-1}(x)$.', 3, { open: `f^{-1}(x) = \\frac{${a} - ${d}x}{${c}x + ${b}}` }, [['M1', 'interchanging $x$ and $y$'], ['M1', 'collecting the $y$ terms'], ['A1', `$f^{-1}(x) = \\frac{${a} - ${d}x}{${c}x + ${b}}$`]],
+        [`$x(${c}y + ${d}) = ${a} - ${b}y$`, `$${c}xy + ${b}y = ${a} - ${d}x$`, `$y = \\frac{${a} - ${d}x}{${c}x + ${b}}$`], 'Multiply out, then get every y term on one side and factorise.'),
+      P('State', 'the domain and the range of $f^{-1}(x)$.', 2, { open: `x \\ne ${hz.tex()},\\ f^{-1}(x) \\ne ${vx.tex()}` }, [['A1', `domain $x \\ne ${hz.tex()}$`], ['A1', `range $f^{-1}(x) \\ne ${vx.tex()}$`]], ['Domain and range swap between a function and its inverse.'], 'Use your answers for f.')
+    ] };
+  });
+
+  // Q18 (P1) — solve f(x) = g(x) and fg(x) = gf(x) with f(x) = x²
+  const Q18 = (() => { const out = []; for (let a = 2; a <= 5; a++) for (let b = -12; b <= 12; b++) { if (!b) continue; const d1 = a * a - 4 * b, d2 = 4 * a * b * (b - a + 1), A = a * a - a; const s1 = Math.round(Math.sqrt(Math.max(d1, 0))), s2 = Math.round(Math.sqrt(Math.max(d2, 0)));
+    if (d1 > 0 && s1 * s1 === d1 && d2 > 0 && s2 * s2 === d2) out.push({ a, b, r: [(a - s1) / 2, (a + s1) / 2], s: [fr(2 * a * b - s2, 2 * A), fr(2 * a * b + s2, 2 * A)] }); } return out; })();
+  reg('cr.sl2.q18', { skill: 'SL-2.5', title: 'Solve f(x) = g(x) and fg(x) = gf(x)', paper: 1 }, R => {
+    const { a, b, r, s } = R.pick(Q18);
+    const g = `${a}x${sg(-b)}`, fg = `(${g})^{2}`, gf = `${a}x^{2}${sg(-b)}`, A = a * a - a;
+    return { stem: `Consider the functions $f(x) = x^{2},\\ x \\in \\mathbb{R}$ and $g(x) = ${g},\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Solve', 'the equation $f(x) = g(x)$.', 3, { list: r, d: `x = ${r[0]},\\ x = ${r[1]}` }, [['M1', `$x^{2}${sg(-a)}x${sg(b)} = 0$`], ['A1', `$x = ${r[0]}$`], ['A1', `$x = ${r[1]}$`]], [`$x^{2} = ${g} \\Rightarrow ${quad(1, -a, b)} = 0$`, `$(x${sg(-r[0])})(x${sg(-r[1])}) = 0$`], 'Rearrange to a quadratic = 0 and factorise.'),
+      P('Solve', 'the equation $fg(x) = gf(x)$.', 5, { list: s, d: s[0].eq(s[1]) ? `x = ${s[0].tex()}` : `x = ${s[0].tex()},\\ x = ${s[1].tex()}` },
+        [['M1', `$fg(x) = ${fg}$`], ['M1', `$gf(x) = ${gf}$`], ['M1', 'equating and expanding'], ['A1', `$${quad(A, -2 * a * b, b * b + b)} = 0$`], ['A1', `$x = ${s.map(v => v.tex()).join(',\\ ')}$`]],
+        [`$${fg} = ${gf}$`, `$${quad(a * a, -2 * a * b, b * b)} = ${gf}$`, `$${quad(A, -2 * a * b, b * b + b)} = 0$`, `$x = ${s.map(v => v.tex()).join('$ or $x = ')}$`], 'fg(x) means f(g(x)): square the whole of g(x).')
+    ] };
+  });
+
+  // Q19 (P2) — budget for an event: formula, function, rearrange, greatest number, charge per guest
+  reg('cr.sl2.q19', { skill: 'SL-2.2', title: 'Budget model: formula, inverse, greatest number, cost per person', paper: 2 }, R => {
+    const who = R.pick([['Amara', 'her', 'an end-of-season sports banquet'], ['Leo', 'his', 'a graduation dinner'], ['Priya', 'her', 'a club celebration']]);
+    const B = R.pick([800, 1200, 1500, 2000]), V = R.pick([250, 320, 380, 450]), c = R.pick([12.5, 16.75, 18.5, 22.25]), n = R.int(12, 20);
+    const pmax = Math.floor((B - V) / c), charge = Math.ceil(100 * (V + c * n) / n) / 100;
+    return { stem: `${who[0]} is organising ${who[2]} and has a budget of at most $\\$${B}$. Hiring the venue costs $\\$${V}$, and food costs $\\$${c.toFixed(2)}$ per person.`, paper: 2, parts: [
+      P('Write down', 'a formula for the total cost $\\$C$ in terms of the number of people attending, $p$.', 2, { open: `C = ${V} + ${c}p` }, [['A1', `$${c}p$`], ['A1', `$C = ${V} + ${c}p$`]], [`$C = ${V} + ${c}p$`], 'Fixed cost plus cost per person × number of people.'),
+      P('Explain', 'why $C = f(p)$ is a function.', 1, 'open', [['R1', 'each number of people gives exactly one total cost']], ['For each value of $p$ there is exactly one value of $C$.'], 'One input → how many outputs?'),
+      P('Find', 'an expression for $p$ in terms of $C$.', 2, { open: `p = \\frac{C - ${V}}{${c}}` }, [['M1', `$C - ${V} = ${c}p$`], ['A1', `$p = \\frac{C - ${V}}{${c}}$`]], [`$p = \\frac{C - ${V}}{${c}}$`], 'Rearrange your formula.'),
+      P('Hence', `find the greatest number of people ${who[0]} can invite.`, 2, { n: pmax, int: true }, [['M1', `$\\frac{${B} - ${V}}{${c}} = ${num(sf((B - V) / c, 4))}$`], ['A1', `$${pmax}$ (rounded down)`]], [`$p = \\frac{${B - V}}{${c}} = ${num(sf((B - V) / c, 4))}$`, `Round down: $${pmax}$ people.`], 'You cannot invite part of a person — and you must stay within budget.', { errors: [{ value: pmax + 1, tag: 'round-up', fb: 'Rounding up goes over budget: round down.' }] }),
+      P('Calculate', `how much each guest must be charged, given that only $${n}$ people attend and ${who[0]} wants to cover ${who[1]} costs exactly. Give your answer to the nearest cent.`, 3, { n: charge, dp: 2, d: `\\$${charge.toFixed(2)}` },
+        [['M1', `$C = ${V} + ${c}(${n}) = ${num(round(V + c * n, 2))}$`], ['M1', `$\\frac{${num(round(V + c * n, 2))}}{${n}}$`], ['A1', `$\\$${charge.toFixed(2)}$`]], [`$C = ${num(round(V + c * n, 2))}$`, `$\\frac{${num(round(V + c * n, 2))}}{${n}} = ${num(sf((V + c * n) / n, 6))}$`, `Charge $\\$${charge.toFixed(2)}$ each.`], 'Total cost for that many people, shared equally.')
+    ] };
+  });
+
+  // Q20 (P1) — h(x) = x/a + b: range, inverse, hh(x), h(x) = h⁻¹(x), explain
+  reg('cr.sl2.q20', { skill: 'SL-2.6', title: 'Linear function: range, inverse, hh(x) and h(x) = h⁻¹(x)', paper: 1 }, R => {
+    const a = R.int(2, 5), b = R.int(1, 6), sol = fr(a * b, a - 1);
+    return { stem: `The function $h(x)$ is defined as $h(x) = \\frac{x}{${a}} + ${b},\\ x \\ge 0,\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('State', 'the range of $h(x)$.', 1, { open: `h(x) \\ge ${b}` }, [['A1', `$h(x) \\ge ${b}$`]], [`$h(0) = ${b}$ and $h$ is increasing.`], 'What is the smallest value?'),
+      P('Find', 'an expression for the inverse function, $h^{-1}(x)$.', 3, { open: `h^{-1}(x) = ${a}(x - ${b}) = ${a}x - ${a * b}` }, [['M1', 'interchanging $x$ and $y$'], ['A1', `$y - ${b} = \\frac{x}{${a}}$ (or equivalent)`], ['A1', `$h^{-1}(x) = ${a}x - ${a * b}$`]], [`$x = \\frac{y}{${a}} + ${b} \\Rightarrow y = ${a}(x - ${b})$`], 'Swap x and y, then rearrange.'),
+      P('Find', 'an expression for $hh(x)$ in the form $hh(x) = ax + b$, where $a$ and $b$ are constants.', 3, { t: [fr(1, a * a), fr(b, a).add(b)], l: ['a', 'b'], d: `hh(x) = \\frac{x}{${a * a}} + ${fr(b, a).add(b).tex()}` },
+        [['M1', `$h\\left(\\frac{x}{${a}} + ${b}\\right)$`], ['A1', `$\\frac{x}{${a * a}} + \\frac{${b}}{${a}} + ${b}$`], ['A1', `$hh(x) = \\frac{1}{${a * a}}x + ${fr(b, a).add(b).tex()}$`]], [`$hh(x) = \\frac{1}{${a}}\\left(\\frac{x}{${a}} + ${b}\\right) + ${b} = \\frac{x}{${a * a}} + ${fr(b, a).add(b).tex()}$`], 'Put h(x) into h.'),
+      P('Solve', 'the equation $h(x) = h^{-1}(x)$.', 2, sol, [['M1', `$\\frac{x}{${a}} + ${b} = ${a}x - ${a * b}$ or $h(x) = x$`], ['A1', `$x = ${sol.tex()}$`]], [`$\\frac{x}{${a}} + ${b} = x \\Rightarrow ${b} = x\\left(1 - \\frac{1}{${a}}\\right) \\Rightarrow x = ${sol.tex()}$`], 'The graphs of h and h⁻¹ meet on the line y = x.'),
+      P('Explain', 'why the equation $h(x) = h^{-1}(x)$ has the same solutions as the equation $h(x) = x$.', 1, 'open', [['R1', '$h$ and $h^{-1}$ are reflections in $y = x$, so (as $h$ is increasing) they intersect on $y = x$']], ['The graph of $h^{-1}$ is the reflection of $h$ in $y = x$; an increasing function meets its reflection on the line of reflection.'], 'Think about the reflection in y = x.')
+    ] };
+  });
+
+  /* Q21 / HL Q16 / SL Q26 style — decompose a composite */
+  reg('cr.sl2.q21', { skill: 'SL-2.5', title: 'Write a quadratic as a composite fgh(x)', paper: 1 }, R => {
+    const m = R.nz(-5, 5), n = R.int(-15, 15), k = n - m * m;
+    return { stem: `The function $p(x)$ is defined by $p(x) = ${quad(1, 2 * m, n)},\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Find', 'possible functions $f(x)$, $g(x)$ and $h(x)$, none of which is the identity ($f(x) \\ne x$, $g(x) \\ne x$, $h(x) \\ne x$), such that $p(x) = fgh(x)$.', 5, { open: `h(x) = x${sg(m)},\\ g(x) = x^{2},\\ f(x) = x${sg(k)}` },
+        [['M1', 'attempt to complete the square'], ['A1', `$p(x) = (x${sg(m)})^{2}${sg(k)}$`], ['A1', `$h(x) = x${sg(m)}$`], ['A1', '$g(x) = x^{2}$'], ['A1', `$f(x) = x${sg(k)}$`]],
+        [`$p(x) = (x${sg(m)})^{2}${sg(k)}$`, `$h(x) = x${sg(m)}$, then $g(x) = x^{2}$, then $f(x) = x${sg(k)}$ (accept other valid answers)`], 'Complete the square: add, square, add.')
+    ] };
+  });
+
+  // Q22 (P1) — ranges, gf(x), solve gf(x) = 1/t, inequality with gh(x)
+  reg('cr.sl2.q22', { skill: 'SL-2.5', title: 'Three functions: ranges, composite, equation and inequality', paper: 1 }, R => {
+    const b = R.int(1, 3), base = R.pick([2, 3]), m = R.int(2, 4), sq = R.int(2, 4), a = R.int(2, Math.min(6, sq * sq + b - 1)), t = sq * sq + b - a, cut = base ** m + b;   // gf(x) = 1/(x² − a + b)
+    return { stem: `Consider the functions $f(x) = x^{2} - ${a}$, $\\ g(x) = \\frac{1}{x + ${b}}$, $\\ h(x) = ${base}^{x}$, $\\ x \\in \\mathbb{R}$ (with $x \\ne -${b}$ for $g$).`, paper: 1, parts: [
+      P('Find', 'the range of $f(x)$.', 1, { open: `f(x) \\ge -${a}` }, [['A1', `$f(x) \\ge -${a}$`]], ['$x^{2} \\ge 0$'], ''),
+      P('Find', 'the range of $g(x)$.', 1, { open: 'g(x) \\ne 0' }, [['A1', '$g(x) \\ne 0$']], ['A reciprocal is never zero.'], ''),
+      P('Find', 'the range of $h(x)$.', 1, { open: 'h(x) > 0' }, [['A1', '$h(x) > 0$']], ['A positive base to any power is positive.'], ''),
+      P('Find', 'an expression for $gf(x)$.', 2, { open: `gf(x) = \\frac{1}{x^{2}${sg(b - a)}}` }, [['M1', `$g(x^{2} - ${a})$`], ['A1', `$\\frac{1}{x^{2}${sg(b - a)}}$`]], [`$gf(x) = \\frac{1}{x^{2} - ${a} + ${b}} = \\frac{1}{x^{2}${sg(b - a)}}$`], 'Put f(x) into g.'),
+      P('Solve', `the equation $gf(x) = \\frac{1}{${t}}$.`, 2, { list: [-sq, sq], d: `x = \\pm ${sq}` }, [['M1', `$x^{2}${sg(b - a)} = ${t}$`], ['A1', `$x = \\pm ${sq}$`]], [`$x^{2} = ${sq * sq}$`, `$x = \\pm ${sq}$`], 'Take reciprocals of both sides.', { errors: [{ value: [sq], tag: 'missed-negative-root', fb: 'Square roots come in pairs: ±.' }] }),
+      P('Solve', `the inequality $gh(x) > \\frac{1}{${cut}}$.`, 5, { open: `x < ${m}` }, [['M1', `$gh(x) = \\frac{1}{${base}^{x} + ${b}}$`], ['M1', `$${base}^{x} + ${b} < ${cut}$ (reciprocals reverse the inequality, both sides positive)`], ['A1', `$${base}^{x} < ${base ** m}$`], ['M1', `$${base ** m} = ${base}^{${m}}$`], ['A1', `$x < ${m}$`]],
+        [`$gh(x) = \\frac{1}{${base}^{x} + ${b}}$`, `$\\frac{1}{${base}^{x} + ${b}} > \\frac{1}{${cut}} \\Leftrightarrow ${base}^{x} + ${b} < ${cut}$`, `$${base}^{x} < ${base ** m} \\Rightarrow x < ${m}$`], 'Both sides are positive, so taking reciprocals flips the inequality.')
+    ] };
+  });
+
+  // Q23 (P1) — p(x) = x³/k on a domain: range, inverse, p = p⁻¹, sketch
+  reg('cr.sl2.q23', { skill: 'SL-2.6', title: 'Cubic on a domain: range, inverse, p(x) = p⁻¹(x), sketch', paper: 1 }, R => {
+    const s = R.pick([1, 2, 3]), k = s * s, m = s + 1, top = fr(m ** 3, k), pt = k === 1 ? 'x^{3}' : `\\frac{x^{3}}{${k}}`;
+    return { stem: `Consider the function $p(x) = ${pt},\\ ${-m} \\le x \\le ${m},\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Find', 'the range of $p(x)$.', 2, { t: [top.neg(), top], l: ['least', 'greatest'], d: `${top.neg().tex()} \\le p(x) \\le ${top.tex()}` }, [['A1', `$${top.neg().tex()}$`], ['A1', `$${top.tex()}$`]], [`$p(${-m}) = ${top.neg().tex()}$, $p(${m}) = ${top.tex()}$; $p$ is increasing`], 'Increasing function: use the end points.'),
+      P('Find', 'an expression for the inverse function $p^{-1}(x)$.', 2, { open: k === 1 ? 'p^{-1}(x) = \\sqrt[3]{x}' : `p^{-1}(x) = \\sqrt[3]{${k}x}` }, [['M1', 'interchanging $x$ and $y$'], ['A1', k === 1 ? '$\\sqrt[3]{x}$' : `$\\sqrt[3]{${k}x}$`]], [k === 1 ? '$x = y^{3} \\Rightarrow y = \\sqrt[3]{x}$' : `$x = \\frac{y^{3}}{${k}} \\Rightarrow y = \\sqrt[3]{${k}x}$`], 'Swap x and y and take a cube root.'),
+      P('Find', 'all the solutions to the equation $p(x) = p^{-1}(x)$.', 2, { list: [-s, 0, s], d: `x = ${-s},\\ 0,\\ ${s}` }, [['M1', `$${pt} = x$`], ['A1', `$x = 0, \\pm ${s}$`]], [`$p(x) = x \\Rightarrow x^{3} = ${k}x \\Rightarrow x(x^{2} - ${k}) = 0$`, `$x = 0$ or $x = \\pm ${s}$`], 'They meet on y = x. Do not divide by x — factorise.', { errors: [{ value: [-s, s], tag: 'divided-by-x', fb: 'Dividing by x loses the solution x = 0.' }] }),
+      P('Sketch', 'the graphs of $y = p(x)$ and $y = p^{-1}(x)$ on the same axes.', 2, 'open', [['A1', 'both curves within the correct domains'], ['A1', `symmetry in $y = x$ and intersections at $x = 0, \\pm ${s}$`]], ['Reflect the cubic in y = x.'], 'Draw y = x first.')
+    ] };
+  });
+
+  // Q24 (P1) — (ax + b)/(cx − a) is self-inverse; hence solve r(x) = t
+  reg('cr.sl2.q24', { skill: 'SL-2.6', title: 'Show a rational function is self-inverse; hence solve', paper: 1 }, R => {
+    const a = R.int(2, 5), b = R.int(1, 7), c = R.int(2, 5); let t; do t = R.int(2, 6); while (c * t === a); const x = fr(a * t + b, c * t - a), vx = fr(a, c);
+    return { stem: '', paper: 1, parts: [
+      P('Show that', `$r(x) = \\frac{${a}x + ${b}}{${c}x - ${a}},\\ x \\in \\mathbb{R},\\ x \\ne ${vx.tex()}$ is a self-inverse function.`, 3, 'open', [['M1', 'attempt at $rr(x)$ or at $r^{-1}(x)$'], ['A1', `$\\frac{${a * a + b * c}x}{${a * a + b * c}}$ or $r^{-1}(x) = \\frac{${a}x + ${b}}{${c}x - ${a}}$`], ['A1', '$rr(x) = x$ (or $r^{-1} = r$)'], ['AG', '']],
+        [`$x(${c}y - ${a}) = ${a}y + ${b} \\Rightarrow ${c}xy - ${a}y = ${a}x + ${b}$`, `$y = \\frac{${a}x + ${b}}{${c}x - ${a}} = r(x)$`], 'Find r⁻¹(x) and compare.'),
+      P('Hence', `find the value of $x$ for which $r(x) = ${t}$.`, 2, x, [['M1', `$x = r(${t})$`], ['A1', `$x = ${x.tex()}$`]], [`Because $r$ is self-inverse, $x = r^{-1}(${t}) = r(${t}) = \\frac{${a * t + b}}{${c * t - a}} = ${x.tex()}$`], 'Self-inverse: r⁻¹ = r.')
+    ] };
+  });
+
+  /* Q25 / HL Q13 — one-to-one quadratic on x ≥ k: least k, inverse, domain and range */
+  function quadInv(R) {
+    const h = R.int(2, 6), c = h * h + R.int(1, 9), k2 = c - h * h;   // f(x) = x² − 2hx + c = (x − h)² + k2
+    return { stem: `The function $f(x)$ is one-to-one and is defined by $f(x) = ${quad(1, -2 * h, c)},\\ x \\ge k,\\ x \\in \\mathbb{R},\\ k \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Find', 'the least possible value of $k$.', 3, h, [['M1', 'attempt to find the vertex (completing the square or $x = -\\frac{b}{2a}$)'], ['A1', `$(x - ${h})^{2} + ${k2}$`], ['A1', `$k = ${h}$`]], [`$f(x) = (x - ${h})^{2} + ${k2}$`, `The vertex is at $x = ${h}$; $f$ is one-to-one for $x \\ge ${h}$.`], 'A quadratic is one-to-one on one side of its vertex.'),
+      P('Find', 'an expression for the inverse function $f^{-1}(x)$.', 3, { open: `f^{-1}(x) = ${h} + \\sqrt{x - ${k2}}` }, [['M1', `$x = (y - ${h})^{2} + ${k2}$`], ['M1', `$y - ${h} = \\pm\\sqrt{x - ${k2}}$`], ['A1', `$f^{-1}(x) = ${h} + \\sqrt{x - ${k2}}$ (positive root only)`]], [`$x - ${k2} = (y - ${h})^{2}$`, `$y = ${h} + \\sqrt{x - ${k2}}$ (positive root as $y \\ge ${h}$)`], 'Complete the square first, then swap x and y.'),
+      P('State', 'the domain and the range of $f^{-1}(x)$.', 2, { open: `x \\ge ${k2},\\ f^{-1}(x) \\ge ${h}` }, [['A1', `domain $x \\ge ${k2}$`], ['A1', `range $f^{-1}(x) \\ge ${h}$`]], ['Swap the domain and range of f.'], 'Range of f becomes the domain of f⁻¹.')
+    ] };
+  }
+  reg('cr.sl2.q25', { skill: 'SL-2.6', title: 'One-to-one quadratic: least k, inverse, domain and range', paper: 1 }, quadInv);
+
+  /* SL Q26 / HL Q16 — given f and gf, find g */
+  function findG(R) {
+    const a = R.nz(-5, 6), p = R.int(2, 4), q = R.int(-12, 20), B = 2 * p * a, C = p * a * a + q;
+    return { stem: '', paper: 1, parts: [
+      P('Find', `an expression for the function $g(x)$, given that $f(x) = x${sg(-a)}$ and $gf(x) = ${p}x^{2}${sg(q)}$.`, 4, { open: `g(x) = ${p}(x${sg(a)})^{2}${sg(q)} = ${quad(p, B, C)}` },
+        [['M1', `$g(x${sg(-a)}) = ${p}x^{2}${sg(q)}$`], ['M1', `substituting $x \\to x${sg(a)}$ (or letting $u = x${sg(-a)}$)`], ['A1', `$g(x) = ${p}(x${sg(a)})^{2}${sg(q)}$`], ['A1', `$${quad(p, B, C)}$`]],
+        [`Let $u = x${sg(-a)}$, so $x = u${sg(a)}$`, `$g(u) = ${p}(u${sg(a)})^{2}${sg(q)}$`, `$g(x) = ${quad(p, B, C)}$`], 'g takes f(x) as its input: write x in terms of f(x).')
+    ] };
+  }
+  reg('cr.sl2.q26', { skill: 'SL-2.5', title: 'Find g given f and gf', paper: 1 }, findG);
+
+  /* ======================= AA HL · Chapter 2 (Unit 2: Functions) ======================= */
+
+  // Q9 (P1) — no real roots, line of symmetry
+  reg('cr.hl2.q9', { skill: 'HL-2.2a', title: 'Quadratic with a parameter: no real roots; axis of symmetry', paper: 1 }, R => {
+    const m = R.pick([1, 4]), bh = R.int(2, 6), b = 2 * bh * (m === 4 ? 2 : 1), h = R.pick([1, 2, 3]) * (R.bool() ? 1 : -1);   // k from x = h: −b/(2mk) = h
+    const crit = fr(b, 2 * (m === 4 ? 2 : 1)), lead = m === 1 ? 'k' : `${m}k`;
+    const kv = fr(-b, 2 * m * h);
+    return { stem: `Consider $f(x) = ${lead}x^{2} + ${b}x + k,\\ x \\in \\mathbb{R}$, where $k \\ne 0$.`, paper: 1, parts: [
+      P('Find', 'the possible values of $k$ if $f(x)$ has no real roots.', 4, { open: `k < -${crit.tex()} \\text{ or } k > ${crit.tex()}` }, [['M1', 'discriminant $< 0$'], ['A1', `$${b * b} - 4(${lead})(k) < 0$, i.e. $${b * b} - ${4 * m}k^{2} < 0$`], ['M1', `$k^{2} > ${fr(b * b, 4 * m).tex()}$`], ['A1', `$k < -${crit.tex()}$ or $k > ${crit.tex()}$`]],
+        [`$\\Delta = ${b}^{2} - 4(${lead})(k) = ${b * b} - ${4 * m}k^{2}$`, `$\\Delta < 0 \\Rightarrow k^{2} > ${fr(b * b, 4 * m).tex()}$`, `$k < -${crit.tex()}$ or $k > ${crit.tex()}$`], 'No real roots ⇔ b² − 4ac < 0. Watch out: k² > number gives two regions.'),
+      P('Find', `the value of $k$ if the line of symmetry of $y = f(x)$ is $x ${h < 0 ? '+ ' + (-h) : '- ' + h} = 0$.`, 3, kv, [['M1', `$x = -\\frac{${b}}{2(${lead})}$`], ['M1', `$-\\frac{${b}}{${2 * m}k} = ${h}$`], ['A1', `$k = ${kv.tex()}$`]], [`Axis: $x = -\\frac{${b}}{${2 * m}k}$`, `$-\\frac{${b}}{${2 * m}k} = ${h} \\Rightarrow k = ${kv.tex()}$`], 'The axis of symmetry is x = −b/(2a).')
+    ] };
+  });
+
+  // Q10 (P1) — translation by a vector
+  reg('cr.hl2.q10', { skill: 'HL-2.5a', title: 'Translating a quadratic by a vector', paper: 1 }, R => {
+    const a = R.int(2, 4), b = R.nz(-6, 6), c = R.int(1, 9), p = R.nz(-4, 4), q = R.nz(-5, 5);
+    const B = -2 * a * p + b, C = a * p * p - b * p + c + q;
+    return { stem: `The graph of $f(x) = ${quad(a, b, c)}$ is translated by the vector $\\begin{pmatrix} ${p} \\\\ ${q} \\end{pmatrix}$.`, paper: 1, parts: [
+      P('Describe', 'the effect of the translation on the graph of $f$.', 2, 'open', [['A1', `${Math.abs(p)} unit${Math.abs(p) > 1 ? 's' : ''} ${p > 0 ? 'right' : 'left'}`], ['A1', `${Math.abs(q)} unit${Math.abs(q) > 1 ? 's' : ''} ${q > 0 ? 'up' : 'down'}`]], [`Horizontal shift of ${p} (${p > 0 ? 'right' : 'left'}), vertical shift of ${q} (${q > 0 ? 'up' : 'down'}).`], 'Top number: horizontal. Bottom number: vertical.'),
+      P('Find', 'the equation of the translated graph, giving your answer in the form $y = ax^{2} + bx + c$.', 3, { t: [a, B, C], l: ['a', 'b', 'c'], d: `y = ${quad(a, B, C)}` },
+        [['M1', `$y = ${a}(x${sg(-p)})^{2}${sg(b)}(x${sg(-p)})${sg(c)}${sg(q)}$`], ['A1', 'correct expansion'], ['A1', `$y = ${quad(a, B, C)}$`]], [`$y = f(x${sg(-p)})${sg(q)}$`, `$= ${a}(x${sg(-p)})^{2}${sg(b)}(x${sg(-p)})${sg(c + q)}$`, `$= ${quad(a, B, C)}$`], 'Replace x by (x − p) and add q.', { errors: [{ value: [a, 2 * a * p + b, a * p * p + b * p + c + q], tag: 'translation-direction', fb: 'A shift of p to the right replaces x by (x − p), not (x + p).' }] })
+    ] };
+  });
+
+  // Q11 (P1) — inverse of (px + q)/(x + r) and its domain
+  reg('cr.hl2.q11', { skill: 'HL-2.4b', title: 'Inverse of a rational function and its domain', paper: 1 }, R => {
+    const p = R.int(2, 5), q = R.nz(-7, 7), r = R.int(1, 5);
+    return { stem: `The function $f$ is defined as $f(x) = \\frac{${p}x${sg(q)}}{x + ${r}},\\ x \\ne -${r}$.`, paper: 1, parts: [
+      P('Find', 'an expression for $f^{-1}(x)$.', 4, { open: `f^{-1}(x) = \\frac{${q} - ${r}x}{x - ${p}}` }, [['M1', 'interchanging $x$ and $y$'], ['M1', `$xy + ${r}x = ${p}y${sg(q)}$`], ['M1', `$y(x - ${p}) = ${q === 0 ? '' : q} - ${r}x$`], ['A1', `$f^{-1}(x) = \\frac{${q} - ${r}x}{x - ${p}}$`]],
+        [`$x(y + ${r}) = ${p}y${sg(q)}$`, `$xy - ${p}y = ${q} - ${r}x$`, `$f^{-1}(x) = \\frac{${q} - ${r}x}{x - ${p}}$`], 'Collect the y terms and factorise y out.'),
+      P('Write down', 'the domain of $f^{-1}$.', 1, { open: `x \\ne ${p}` }, [['A1', `$x \\in \\mathbb{R},\\ x \\ne ${p}$`]], [`The denominator $x - ${p}$ cannot be 0 (and $y = ${p}$ is the horizontal asymptote of $f$).`], 'Which value makes the denominator zero?')
+    ] };
+  });
+
+  reg('cr.hl2.q12', { skill: 'HL-2.4b', title: 'Self-inverse rational function: show, range, sketch', paper: 1 }, selfInv);
+  reg('cr.hl2.q13', { skill: 'HL-2.4b', title: 'One-to-one quadratic: least k, inverse, domain and range', paper: 1 }, quadInv);
+
+  // Q14 (P1) — write in the form n/(cx − d) − m, asymptotes, sketch
+  reg('cr.hl2.q14', { skill: 'HL-2.2a', title: 'Rational function in the form n/(cx − d) − m: asymptotes and sketch', paper: 1 }, R => {
+    const n = R.int(5, 15), c = R.pick([2, 3]), d = R.pick([1, 2].filter(v => v % c)), m = R.int(2, 7);   // f = n/(cx − d) − m = (n + md − mcx)/(cx − d)
+    const top = `${n + m * d} - ${m * c}x`, vx = fr(d, c);
+    return { stem: `The function $f$ is defined by $f(x) = \\frac{${top}}{${c}x - ${d}},\\ x \\in \\mathbb{R},\\ x \\ne ${vx.tex()}$.`, paper: 1, parts: [
+      P('Show that', `$f$ can be written in the form $f(x) = \\frac{${n}}{${c}x - ${d}} - ${m}$.`, 4, 'open', [['M1', `attempt to write the numerator in terms of $${c}x - ${d}$`], ['A1', `$${top} = -${m}(${c}x - ${d}) + ${n}$`], ['M1', 'splitting the fraction'], ['A1', `$\\frac{${n}}{${c}x - ${d}} - ${m}$`], ['AG', '']],
+        [`$-${m}(${c}x - ${d}) = -${m * c}x + ${m * d}$`, `$${top} = -${m}(${c}x - ${d}) + ${n}$`, `$f(x) = \\frac{-${m}(${c}x - ${d}) + ${n}}{${c}x - ${d}} = \\frac{${n}}{${c}x - ${d}} - ${m}$`], 'Write the numerator as (a multiple of the denominator) + remainder.'),
+      P('Hence', 'state (i) the equation of any vertical asymptote and (ii) the equation of any horizontal asymptote.', 2, { t: [vx, -m], l: ['vertical x =', 'horizontal y ='], d: `x = ${vx.tex()},\\ y = ${-m}` }, [['A1', `$x = ${vx.tex()}$`], ['A1', `$y = ${-m}$`]], [`Vertical: $${c}x - ${d} = 0$. Horizontal: the fraction tends to $0$, so $y \\to ${-m}$.`], 'Use the form from part (a).'),
+      P('Sketch', 'the graph of $y = f(x)$, clearly showing any asymptotes on your sketch.', 3, 'open', [['A1', 'both asymptotes drawn and labelled'], ['A1', 'two branches of the correct shape'], ['A1', `intercepts: $y = ${fr(-(n + m * d), d).tex()}$, $x = ${fr(n + m * d, m * c).tex()}$`]], ['Use the asymptotes, then plot the intercepts.'], 'Find the axis intercepts too.',
+        { kfig: plot({ x: [-4, 5], y: [-10, 6], step: [1, 2], vl: [vx.val()], hl: [-m], f: [{ f: x => n / (c * x - d) - m, from: -4, to: vx.val() - 0.02 }, { f: x => n / (c * x - d) - m, from: vx.val() + 0.02, to: 5 }], alt: 'model sketch' }) })
+    ] };
+  });
+
+  // Q15 (P2) — population model P = a(1 + pt)/(b + qt)
+  reg('cr.hl2.q15', { skill: 'HL-2.2a', title: 'Rational population model: initial value, estimate, solve, limit', paper: 2 }, R => {
+    const ctx = R.pick([['fish', 'a lake', 'fish'], ['bees', 'a hive colony study', 'bees'], ['rabbits', 'a nature reserve', 'rabbits']]);
+    const a = R.pick([12, 15, 20, 24]), b = R.pick([2, 3, 4]), p = R.pick([0.6, 0.7, 0.75, 0.8, 0.9]), q = R.pick([0.02, 0.025, 0.03, 0.04]);
+    const P0 = a / b, P12 = a * (1 + 12 * p) / (b + 12 * q), lim = a * p / q, target = Math.round(lim * R.pick([0.25, 0.3, 0.35]) / 10) * 10, tt = (target * b - a) / (a * p - target * q);
+    return { stem: `The number of ${ctx[0]} in ${ctx[1]} can be modelled by $P = \\frac{${a}(1 + ${p}t)}{${b} + ${q}t}$, where $P$ is the number of ${ctx[2]} after $t$ months.`, paper: 2, parts: [
+      P('Write down', 'the initial population.', 1, { n: P0, sf: 3 }, [['A1', `$${num(sf(P0, 3))}$`]], [`$t = 0$: $P = \\frac{${a}}{${b}} = ${num(sf(P0, 4))}$`], 'Initial means t = 0.'),
+      P('Use', 'the formula to estimate the population after one year.', 2, { n: P12, sf: 3 }, [['M1', '$t = 12$'], ['A1', `$${num(sf(P12, 3))}$`]], [`$P = \\frac{${a}(1 + ${p}\\times 12)}{${b} + ${q}\\times 12} = ${num(sf(P12, 4))}$`], 't is in months.', { errors: [{ value: a * (1 + p) / (b + q), tag: 'units-months', fb: 'One year is t = 12 months.' }] }),
+      P('Calculate', `the number of months that will have passed when the population reaches ${target}.`, 2, { n: tt, sf: 3 }, [['M1', `$\\frac{${a}(1 + ${p}t)}{${b} + ${q}t} = ${target}$`], ['A1', `$t = ${num(sf(tt, 3))}$ months`]], [`Solve on the NumWorks (or rearrange): $t = ${num(sf(tt, 4))}$`], 'Set P equal to the target and solve.', { numworks: { app: 'Equations', lines: [[`${a}(1+${p}x)/(${b}+${q}x)=${target}`, `x=${num(sf(tt, 4))}`]] } }),
+      P('Show that', `according to this model the population can never exceed ${Math.floor(lim)}.`, 3, 'open', [['M1', 'considering large $t$ (dividing through by $t$)'], ['A1', `$\\frac{${a}\\left(\\frac{1}{t} + ${p}\\right)}{\\frac{${b}}{t} + ${q}} \\to \\frac{${num(a * p)}}{${q}}$`], ['A1', `$= ${num(sf(lim, 6))}$, so $P < ${num(sf(lim, 6))}$: never more than $${Math.floor(lim)}$`], ['AG', '']],
+        [`As $t \\to \\infty$, $P \\to \\frac{${a} \\times ${p}}{${q}} = ${num(sf(lim, 6))}$`, `$P$ increases towards this value but never reaches it, so it cannot exceed ${Math.floor(lim)}.`], 'What happens for very large t?')
+    ] };
+  });
+
+  reg('cr.hl2.q16', { skill: 'HL-2.4a', title: 'Find g given f and gf', paper: 1 }, findG);
+
+  /* ---------- the blueprints: book order, with the default selection for a one-hour unit test ---------- */
+  const BP = {
+    'SL-2': { course: 'SL', unit: 2, chapter: 'Oxford AA SL Chapter 2 · Exam-style questions', ids: ['q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16', 'q17', 'q18', 'q19', 'q20', 'q21', 'q22', 'q23', 'q24', 'q25', 'q26'].map(q => 'cr.sl2.' + q), def: ['q10', 'q12', 'q18', 'q25', 'q11', 'q14'].map(q => 'cr.sl2.' + q), book: n => 'Q' + n.split('.q')[1] },
+    'HL-2': { course: 'HL', unit: 2, chapter: 'Oxford AA HL Chapter 2 · Exam-style questions', ids: ['q9', 'q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16'].map(q => 'cr.hl2.' + q), book: n => 'Q' + n.split('.q')[1] }
+  };
+  BP['HL-2'].def = BP['HL-2'].ids.slice();
+  Hub.unitBP = BP;
 })(window.Hub = window.Hub || {});
 
 /* ---- js/curriculum.js ---- */
@@ -9358,7 +9685,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <div><section class="card"><h2 class="bar-head amber">Your ${days}-day plan</h2><ol class="sg-plan">${plan.map(p => `<li><b>${p.d === 0 ? 'Today' : 'Day ' + (p.d + 1)}:</b> ${p.sk.map(id => esc(C().SKILL[id].name)).join(' · ')} — watch the video if you are unsure, then do two practice questions on each.</li>`).join('')}<li><b>${days === 1 ? 'Tonight' : 'Day before the test'}:</b> mixed practice under timed conditions, then check your answers against the formula booklet and the command terms below.</li></ol></section>
         <section class="card"><h2 class="bar-head green">Formula booklet</h2><p class="small">You get the IB formula booklet in the test. Find each formula you need for this unit in it now, so you are not searching on the day.</p><button class="btn" type="button" data-booklet>📘 Open the formula booklet</button></section>
         <section class="card"><h2 class="bar-head blue">Command terms</h2>${terms.map(([k, v]) => `<p class="small"><b>${esc(k)}</b> — ${esc(v)}</p>`).join('')}${s ? '<a class="btn small" href="#/terms">Command term drill →</a>' : ''}</section>
-        <section class="card"><h2 class="bar-head pink">On the day</h2><ul class="small"><li>Show your method: method marks (M) are given even when the final answer is wrong.</li><li>Give answers exact or to 3 significant figures unless the question says otherwise.</li><li>“Hence” means use the part before. “Show that” means the working is the point — every step.</li><li>Charge your NumWorks and bring a pencil and ruler.</li></ul></section></div></div>`;
+        <section class="card"><h2 class="bar-head pink">On the day</h2><ul class="small"><li>Show your method: method marks (M) are given even when the final answer is wrong.</li><li>Give answers exact or to 3 significant figures unless the question says otherwise.</li><li>“Hence” means use the part before. “Show that” means the working is the point — every step.</li><li>Charge your NumWorks and bring a pencil and ruler.</li></ul></section></div></div>
+      <div id="pp-wrap">${practicePaperHTML(t, s, 0)}</div>`;
+    let ppn = 0; const ppBind = () => { const nb = $('#pp-new', main); if (nb) nb.onclick = () => { ppn++; $('#pp-wrap', main).innerHTML = practicePaperHTML(t, s, ppn); ppBind(); };
+      $$('[data-ppkey]', main).forEach(b => (b.onclick = () => { const q = b.closest('.q-card'); q.classList.toggle('keys-hidden'); b.textContent = q.classList.contains('keys-hidden') ? 'Show markscheme' : 'Hide markscheme'; })); };
+    ppBind();
     $('#sg-print').onclick = () => window.print();
     $$('[data-sgtick]', main).forEach(i => (i.onchange = () => { ticks[i.dataset.sgtick] = i.checked; try { localStorage.setItem(ck, JSON.stringify(ticks)); } catch (e) {} }));
     decorate(main);
@@ -9436,6 +9767,53 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     Hub.store.save(true); return { ok: true, assessment: a, marks };
   }
 
+  /* ---------- unit tests that mirror the Oxford chapter review (q_cr*.js) ---------- */
+  const bpFor = (course, unit) => (Hub.unitBP || {})[course + '-' + unit] || null;
+  /** The questions chosen for a unit test (saved when the test is made, otherwise the default one-hour selection). */
+  const bpChosen = bp => { const k = bp.course + '-' + bp.unit, saved = ((S().settings || {}).unitTests || {})[k]; return (saved && saved.length ? saved : bp.def).filter(id => bp.ids.includes(id)); };
+  const bpQ = id => Hub.qcore.registry[id] || {};
+  const bpMarks = ids => ids.reduce((n, id) => { try { return n + Hub.qcore.build(id, 1).marks; } catch (e) { return n; } }, 0);
+  /** Build the questions: Section A (Paper 1, no calculator) first, then Section B (Paper 2), book order inside each. */
+  function bpBuild(bp, ids, seed) {
+    const ord = ids.slice().sort((a, b) => (bpQ(a).paper - bpQ(b).paper) || (bp.ids.indexOf(a) - bp.ids.indexOf(b)));
+    return ord.map((id, i) => { const q = seed ? Hub.qcore.build(id, seed + i * 7919) : Hub.assess.buildQ(id, false, false, false); q.bookRef = `Ch ${bp.unit} ${bp.book(id)} style`; return q; });
+  }
+  function makeUnitTest(course, unit, ids) {
+    const bp = bpFor(course, unit); if (!bp || !ids.length) return { ok: false, error: 'Tick at least one question.' };
+    const skills = [...new Set(ids.map(id => bpQ(id).skill))];
+    const r = Hub.assess.createDraft({ course, type: 'Unit test', skills, style: 'mixed', count: 1 }); if (!r.ok) return r;
+    const name = (C().UNITS[course].find(u => u[0] === unit) || [0, ''])[1], qs = bpBuild(bp, ids);
+    Object.assign(r.assessment, { questions: qs, reviewed: {}, title: `${course} · Unit ${unit} Test (${name})`, minutes: 60, unitTest: course + '-' + unit, uploadRequired: true, release: 'hold', groups: Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id) });
+    const st = S(); st.settings.unitTests = Object.assign({}, st.settings.unitTests || {}, { [course + '-' + unit]: ids.slice() });
+    Hub.store.log(`Made the Unit ${unit} test (${course}) from the chapter review`); Hub.store.save(true); return { ok: true, assessment: r.assessment, marks: qs.reduce((n, q) => n + q.marks, 0) };
+  }
+  function unitCardHTML(course) {
+    const bps = Object.values(Hub.unitBP || {}).filter(b => b.course === course); if (!bps.length) return '';
+    return bps.map(bp => { const chosen = bpChosen(bp), made = S().assessments.filter(a => a.unitTest === bp.course + '-' + bp.unit && a.status !== 'archived');
+      return `<section class="card ut-card" data-bp="${bp.course}-${bp.unit}"><h2 class="bar-head blue">📝 Unit ${bp.unit} test · mirrors the textbook</h2><p class="tiny muted">${esc(bp.chapter)}: the same questions in the same order, with new numbers, functions and contexts every time. Tick the ones for the test (about 50–55 marks is one hour). The study guide gets the same questions as a practice paper with different numbers again.</p>
+        <div class="ut-list">${bp.ids.map(id => { const r = bpQ(id); let mk = 0; try { mk = Hub.qcore.build(id, 1).marks; } catch (e) {} return `<label class="tc-row"><input type="checkbox" class="ut-pick" value="${id}" data-mk="${mk}"${chosen.includes(id) ? ' checked' : ''}><span><b>${bp.book(id)}</b> ${esc(r.title || '')} <span class="tiny muted">· Paper ${r.paper} · ${mk} marks</span></span></label>`; }).join('')}</div>
+        <div class="actions"><button class="btn primary" type="button" data-utmake="${bp.course}|${bp.unit}">Make Unit ${bp.unit} test</button><span class="small">Total: <b class="ut-total">${bpMarks(chosen)}</b> marks</span></div>
+        ${made.length ? `<p class="small"><b>Made:</b> ${made.slice(0, 4).map(a => `<a href="#/edit/${encodeURIComponent(a.id)}">${esc(a.title)}</a> <span class="tiny muted">${a.status}</span>`).join(' · ')}</p>` : ''}</section>`; }).join('');
+  }
+  function bindUnitCards(main) {
+    $$('.ut-card', main).forEach(card => { const sum = () => { $('.ut-total', card).textContent = $$('.ut-pick', card).filter(i => i.checked).reduce((n, i) => n + +i.dataset.mk, 0); }; $$('.ut-pick', card).forEach(i => (i.onchange = sum)); });
+    $$('[data-utmake]', main).forEach(b => (b.onclick = async () => {
+      const [course, unit] = b.dataset.utmake.split('|'), ids = $$('.ut-pick', b.closest('.ut-card')).filter(i => i.checked).map(i => i.value);
+      const r = makeUnitTest(course, +unit, ids); if (!r.ok) return toast(r.error, 'error');
+      try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); }
+      toast(`Unit test drafted — ${r.marks} marks. Check it, set the date, then publish.`); Hub.app.nav('#/edit/' + r.assessment.id);
+    }));
+  }
+  /** Study guide practice paper: the same questions as the test, different numbers (stable per student until they ask for new ones). */
+  function practicePaperHTML(t, s, n) {
+    const g = C().GROUPS[t.group], bp = t.unit ? bpFor(g.course, t.unit) : null; if (!bp) return '';
+    const ids = bpChosen(bp), seed = (Hub.core.hashStr((s ? s.id : 'teacher') + '|' + t.date + '|' + (n || 0)) % 900000) + 1000, qs = bpBuild(bp, ids, seed), total = qs.reduce((m, q) => m + q.marks, 0);
+    let sec = 0;
+    return `<section class="card gp-paper" id="pp-paper"><div class="row-between"><h2 class="bar-head green">Practice test — same questions as your test, different numbers</h2><button class="btn small" type="button" id="pp-new">🔁 New numbers</button></div>
+      <p class="small">${qs.length} questions · ${total} marks · about ${Math.round(total * 60 / 55 / 5) * 5} minutes. Do it on paper under test conditions, then press <b>Show markscheme</b> on each question to mark yourself.</p>
+      ${qs.map((q, i) => { const head = q.paper !== sec ? `<h3 class="gp-sec">${q.paper === 1 ? 'Section A · Paper 1 style · no calculator' : 'Section B · Paper 2 style · NumWorks allowed'}</h3>` : ''; sec = q.paper; return head + U.question(q, i, { mode: 'teacher', cls: 'gp-q keys-hidden', footer: `<button class="btn small ghost" type="button" data-ppkey>Show markscheme</button>` }); }).join('')}</section>`;
+  }
+
   /* ---------- teacher page #/exam ---------- */
   function teacherView(main, params) {
     const asOf = Hub.mastery.asOf(), course = params.course === 'HL' ? 'HL' : 'SL', groups = Object.values(C().GROUPS);
@@ -9449,6 +9827,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
           <td><input type="text" class="sg-note" maxlength="300" value="${esc(t.note)}" placeholder="e.g. Bring your NumWorks — retest slots on Friday"></td><td><a class="btn small ghost" href="#/guide?group=${t.group}&d=${t.date}">View</a></td></tr>`).join('')}</tbody></table></div>
           <div class="actions"><button class="btn primary small" id="sg-save" type="button">Save study guide dates and notes</button></div>` : '<p class="tiny muted">No unit tests in the calendar ahead.</p>'}</section>
       <div class="tabs no-print"><a class="tab ${course === 'SL' ? 'on' : ''}" href="#/exam">AA SL</a><a class="tab ${course === 'HL' ? 'on' : ''}" href="#/exam?course=HL">AA HL</a></div>
+      ${unitCardHTML(course)}
       <div class="grid g2"><section class="card"><h2 class="bar-head pink">✔ Topic checks</h2><p class="tiny muted">A short IB exam-style quiz (3–6 questions, about 20 minutes) after each topic. It counts as a Quiz in the data cycle. Tick the topics to include, then check the draft and publish it.</p>
           ${tps.length ? `<div class="tc-list">${tps.slice(0, 12).map(x => `<label class="tc-row ${x.covered ? 'done' : ''}"><input type="checkbox" class="tc-pick" value="${esc(x.ox)}"${!x.covered && Hub.core.daysBetween(x.finished, asOf) <= 21 ? ' checked' : ''}><span><b>${esc(x.ox)}</b> ${esc(x.name)}<span class="tiny muted"> · finished ${fmtDate(x.finished)}${x.all ? '' : ' (one class so far)'}</span></span>${x.covered ? '<span class="pill green">checked ✓</span>' : ''}</label>`).join('')}</div>
             <div class="actions"><button class="btn primary" id="tc-make" type="button">Make topic check</button></div>` : '<p class="tiny muted">No topics finished yet.</p>'}</section>
@@ -9459,6 +9838,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
           <div class="actions"><button class="btn primary" id="mk-make" type="button">Make mock paper</button></div>
           ${mocks.length ? `<p class="small"><b>Your mocks</b></p>${mocks.slice(0, 6).map(a => `<div class="row-between small"><a href="#/edit/${encodeURIComponent(a.id)}">${esc(a.title)}</a><span class="tiny muted">${a.status} · ${a.questions.reduce((n, q) => n + q.marks, 0)} marks</span></div>`).join('')}` : ''}</section></div>
       <section class="card"><h2 class="bar-head green">Command term drill</h2><p class="small">Students find it on their Practice page and in every study guide: 10 quick questions using real IB-style question parts with the command term blanked out. Nothing is saved.</p><a class="btn" href="#/terms">Try the drill</a></section>`;
+    bindUnitCards(main);
     const save = $('#sg-save'); if (save) save.onclick = async () => {
       const st = S(), cfg = st.settings.studyGuides = Object.assign({}, st.settings.studyGuides || {});
       $$('[data-sg]', main).forEach(tr => { const k = tr.dataset.sg, date = k.split('|')[1], rel = $('.sg-rel', tr).value, note = $('.sg-note', tr).value.trim().slice(0, 300), off = $('.sg-off', tr).checked;
@@ -9489,7 +9869,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return `<section class="card exam-strip"><h2 class="bar-head blue">Exam prep</h2>${soon.map(t => `<p class="small">📘 <b>${esc(t.label)}</b> · ${esc(t.title)} study guide ${t.release <= asOf ? '<b>is open</b> for students' : 'opens ' + fmtDate(t.release, true)} <span class="tiny muted">(test ${fmtDate(t.date, true)})</span></p>`).join('')}
       ${tcs.map(([c, n]) => `<p class="small">✔ AA ${c}: ${n} topic${n === 1 ? '' : 's'} finished without a topic check.</p>`).join('')}<a class="btn small" href="#/exam${tcs.length && tcs[0][0] === 'HL' ? '?course=HL' : ''}">Open exam prep →</a></section>`;
   }
-  Hub.exam = { bookletToggle, videos, watchHTML, decorate, tests, guideFor, guideCardHTML, guide, terms, topics, makeTopicCheck, makeMock, teacherView, dashHTML, BOOKLET_PDF };
+  Hub.exam = { makeUnitTest, practicePaperHTML, bpFor, bookletToggle, videos, watchHTML, decorate, tests, guideFor, guideCardHTML, guide, terms, topics, makeTopicCheck, makeMock, teacherView, dashHTML, BOOKLET_PDF };
 })(window.Hub = window.Hub || {});
 
 
