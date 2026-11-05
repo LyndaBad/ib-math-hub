@@ -175,6 +175,11 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 .lib { display: flex; flex-direction: column; }
 .lib-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 2px dotted var(--line); }
 .lib-row:last-child { border-bottom: none; }
+.xp-clock { position: sticky; top: 8px; z-index: 5; display: inline-block; margin: 6px 0 10px; padding: 6px 14px; border-radius: 999px; background: var(--card, #fff); border: 2px solid var(--blue, #2b6cb0); font-weight: 700; }
+.xp-clock.over { border-color: var(--red, #c53030); color: var(--red, #c53030); }
+.xp-card fieldset { border: 1px solid var(--line, #ddd); border-radius: 10px; padding: 10px 14px; } .xp-card .inline-check { display: block; margin: 6px 0; }
+.mp-row { display: flex; gap: 16px; align-items: flex-start; } .mp-grade { min-width: 96px; padding: 12px; border-radius: 14px; text-align: center; border: 1px solid var(--line, #ddd); }
+.mp-grade b { display: block; font-size: 2.6rem; line-height: 1; } .mp-grade span { font-size: .75rem; }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -5678,10 +5683,12 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     for (const x of ranked) { if (items.length >= 4) break; if (x.st.status === 'secure' && x.m === 0 && items.length) continue; used.add(x.s.id);
       add('repair', x.s.id, x.m ? `Repair — ${x.m} misconception${x.m === 1 ? '' : 's'} recorded recently on ${x.s.name} (${x.st.pct}%).` : `Repair — ${x.s.name} is at ${x.st.pct}%.`); }
     const stale = rows.filter(x => !used.has(x.s.id)).sort((a, b) => (a.st.last || '').localeCompare(b.st.last || ''))[0];
-    if (stale) { used.add(stale.s.id); add('retrieve', stale.s.id, `Spaced retrieval — ${stale.s.name}${stale.st.last ? `, last seen ${Hub.core.fmtDate(stale.st.last)}` : ', not practised yet'}.`); }
+    const old = pastPick(sid, groupId, asOf, taught, used);
+    if (old) { used.add(old.skill.id); add('retrieve', old.skill.id, old.reason); }
+    else if (stale) { used.add(stale.s.id); add('retrieve', stale.s.id, `Spaced retrieval — ${stale.s.name}${stale.st.last ? `, last seen ${Hub.core.fmtDate(stale.st.last)}` : ', not practised yet'}.`); }
     // not enough evidence yet: check in on the most recently taught skills that have none
     const fresh = rows.filter(x => !used.has(x.s.id) && x.st.pct === null).sort((a, b) => (C().taughtDate(b.s.id, groupId) || '').localeCompare(C().taughtDate(a.s.id, groupId) || ''));
-    for (const x of fresh) { if (items.length >= 5) break; used.add(x.s.id); items.splice(Math.max(0, items.length - (stale ? 1 : 0)), 0, { slot: 'repair', skill: x.s.id, reason: `Check-in — no marked work on ${x.s.name} yet, so this shows where you are.`, preview: false, challenge: false, seed: (seedBase + items.length * 7919 + 13) % 900000 + 1 }); }
+    for (const x of fresh) { if (items.length >= 5) break; used.add(x.s.id); items.splice(Math.max(0, items.length - (old || stale ? 1 : 0)), 0, { slot: 'repair', skill: x.s.id, reason: `Check-in — no marked work on ${x.s.name} yet, so this shows where you are.`, preview: false, challenge: false, seed: (seedBase + items.length * 7919 + 13) % 900000 + 1 }); }
     const pool = ranked.length ? ranked : rows; let i = 0;
     while (items.length < 5 && pool.length) add('repair', pool[i++ % pool.length].s.id, 'Another go at a skill to strengthen.');
     const best = known.slice().sort((a, b) => b.st.pct - a.st.pct)[0] || rows[0];
@@ -5707,6 +5714,16 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const part = challenge ? cands.slice().sort((a, b) => b.marks - a.marks)[0] : pool[seed % pool.length] || cands[0]; if (!part) return null;
     return Object.assign({}, q, { parts: [Object.assign({}, part, { label: 'a', id: 'a' })], marks: part.marks });
   }
+  /** Spaced retrieval from an EARLIER unit: the weakest older skill not practised in the last two weeks (the weakest older skill if all were recent). */
+  function pastPick(sid, groupId, asOf, taught, used, avoid) {
+    const L = C().nextLesson(groupId, asOf), nowUnit = Math.max(0, ...((L && L.skills) || []).map(id => (C().SKILL[id] || {}).unit || 0), ...taught.slice(-1).map(s => s.unit));
+    const past = taught.filter(s => s.unit < nowUnit && !used.has(s.id) && s.id !== avoid); if (!past.length) return null;
+    const st = Object.fromEntries(past.map(s => [s.id, M().stat(sid, s.id)])), cutoff = Hub.core.addDays(asOf, -14), mis = misSkills(sid, asOf);
+    const score = s => (st[s.id].pct ?? 55) - 8 * (mis[s.id] || 0);
+    const rest = past.filter(s => !st[s.id].last || st[s.id].last < cutoff), pool = rest.length ? rest : past;
+    const pick = pool.slice().sort((a, b) => score(a) - score(b) || (st[a.id].last || '').localeCompare(st[b.id].last || ''))[0], x = st[pick.id];
+    return { skill: pick, reason: `Spaced retrieval from Unit ${pick.unit} — ${pick.name}${x.pct !== null ? ` (${x.pct}%)` : ''}${x.last ? `, last practised ${Hub.core.fmtDate(x.last)}` : ''}. Keeping older topics fresh for the exam.` };
+  }
   function fmtReason(st, name) {
     if (!st) return '';
     const ev = st.marks ? `${st.pct}% from ${st.marks} marks of evidence` : 'no evidence yet';
@@ -5727,7 +5744,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     if (repair) add('repair', repair.id, `Lowest secure-evidence skill — ${fmtReason(stats[repair.id], repair.name)}.`);
     // 2 Retrieve: a skill with too little evidence first, else the longest-unseen skill not yet secure (then any)
     const thin = taught.filter(s => !used.has(s.id) && s.id !== bridgeSkill && ['no-evidence', 'low-evidence'].includes(stats[s.id].status));
-    if (thin.length) add('retrieve', thin[0].id, `Not enough evidence yet on ${thin[0].name} (${stats[thin[0].id].marks} marks) — this check-in tells us where you are.`);
+    const old = pastPick(sid, groupId, asOf, taught, used, bridgeSkill);
+    if (old) add('retrieve', old.skill.id, old.reason);
+    else if (thin.length) add('retrieve', thin[0].id, `Not enough evidence yet on ${thin[0].name} (${stats[thin[0].id].marks} marks) — this check-in tells us where you are.`);
     else {
       const stale = taught.filter(s => !used.has(s.id) && s.id !== bridgeSkill).sort((a, b) => (stats[a.id].last || '').localeCompare(stats[b.id].last || '') || (stats[a.id].pct ?? 0) - (stats[b.id].pct ?? 0));
       const pick = stale.find(s => stats[s.id].status !== 'secure') || stale[0];
@@ -6448,6 +6467,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       busy = true; $('#submit').disabled = true; $('#submit').textContent = 'Submitting…';
       let r; try { r = await opts.submit({ responses, uploads: ups, reflection: $('#reflection') ? $('#reflection').value : '', proof: $('#proof') ? $('#proof').checked : false, token, hints }); } catch(e) { r={ok:false,error:e.message}; }
       if (!r.ok) { busy = false; $('#submit').disabled = false; $('#submit').textContent = 'Submit'; return toast(r.error, 'error'); }
+      if (opts.done) return opts.done(r);
       if (r.preview) { showResult(main, r.attempt, a, { preview: true, back: opts.back }); return; }
       toast(r.attempt.status === 'released' ? 'Submitted and marked.' : 'Submitted — Miss Badmus will release your marks.'); go('#/result/' + r.attempt.id);
     };
@@ -6489,7 +6509,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     if (params.skill) return practiseOne(main, s, params.skill);
     const stats = Hub.mastery.studentSkills(s.id), taught = stats.filter(x => x.taught), rec = taught.filter(x => x.pct !== null).sort((a, b) => a.pct - b.pct).slice(0, 3);
     main.innerHTML = U.heading('INDEPENDENT LEARNING', 'Practice', 'Original IB-style questions with hints, NumWorks screens and worked solutions. Practice counts a little towards mastery (less if you use hints).') +
-      `<section class="card ex-skills"><h2 class="bar-head green">IB exam skills</h2><div class="actions"><a class="btn" href="#/terms">Command term drill</a><button class="btn ghost" type="button" data-booklet>📘 Formula booklet</button>${Hub.exam && Hub.exam.guideFor(s) ? `<a class="btn primary" href="#/guide?d=${Hub.exam.guideFor(s).date}">📘 My study guide</a>` : ''}</div></section>` +
+      `<section class="card ex-skills"><h2 class="bar-head green">IB exam skills</h2><div class="actions"><a class="btn primary" href="#/exampractice">📝 Practise like the exam</a><a class="btn" href="#/terms">Command term drill</a><button class="btn ghost" type="button" data-booklet>📘 Formula booklet</button>${Hub.exam && Hub.exam.guideFor(s) ? `<a class="btn primary" href="#/guide?d=${Hub.exam.guideFor(s).date}">📘 My study guide</a>` : ''}</div></section>` +
       (rec.length ? `<section class="card"><h2 class="bar-head pink">Recommended for you</h2><div class="grid g3">${rec.map(x => `<a class="rec" href="#/practice?skill=${x.skill}">${U.skillChip(x.skill)}<span>${U.statusChip(x)}</span></a>`).join('')}</div></section>` : '') +
       C().UNITS[s.course].filter(([u]) => stats.some(x => C().SKILL[x.skill].unit === u)).map(([u, name]) => `<section class="card"><h3 class="unit-h ${U.unitColour(u)}">Unit ${u} · ${esc(name)}</h3>${stats.filter(x => C().SKILL[x.skill].unit === u).map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small ${x.taught ? '' : 'ghost'}" href="#/practice?skill=${x.skill}">${x.taught ? 'Practise' : 'Preview'}</a>${Hub.exam ? Hub.exam.watchHTML(x.skill, 'btn small ghost') : ''}</div>`).join('')}</section>`).join('');
   }
@@ -6508,16 +6528,101 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     renderTake(main, a, { submit: d => Hub.assess.submit(a.id, s.id, d, { assessment: a }), preview: Hub.auth.isPreview(), hints: true, reflect: false, noProgress: true, back: `<a class="back" href="#/practice">← Practice</a>` });
   }
 
+  /* ---------- exam practice (#/exampractice): a timed, mixed IB-style paper the student starts themselves ----------
+     Built from the server's practice questions (one per skill, so every answer is marked and counts a little towards
+     mastery, like other practice). Paper 1 questions switch the NumWorks off; Paper 2 questions allow it. */
+  const XP_SIZES = [[20, 'Short · 20 marks'], [30, 'Half paper · 30 marks'], [45, 'Long · 45 marks']];
+  function examPractice(main, params) {
+    const s = me(); if (!s) return;
+    const stats = Hub.mastery.studentSkills(s.id).filter(x => x.taught), units = [...new Set(stats.map(x => C().SKILL[x.skill].unit))];
+    const lastUnit = units.length ? Math.max(...units) : null, unitName = u => (C().UNITS[s.course].find(([k]) => k === u) || [0, ''])[1];
+    if (!params.go) {
+      main.innerHTML = `<a class="back" href="#/practice">← Practice</a>` + U.heading('INDEPENDENT LEARNING', 'Practise like the exam', 'A timed set of IB-style questions on what you have been taught — marked straight away, with worked solutions. Practice counts a little towards your mastery.') +
+        (stats.length ? `<section class="card xp-card"><form id="xp-form" class="grid g2">
+          <fieldset><legend>How long?</legend>${XP_SIZES.map(([m, l], i) => `<label class="inline-check"><input type="radio" name="xp-m" value="${m}" ${i === 1 ? 'checked' : ''}> ${l} <span class="tiny muted">(about ${Math.round(m * 1.1)} min)</span></label>`).join('')}</fieldset>
+          <fieldset><legend>Which topics?</legend><label class="inline-check"><input type="radio" name="xp-s" value="all" checked> Everything I have been taught</label>${lastUnit ? `<label class="inline-check"><input type="radio" name="xp-s" value="unit"> This unit only (Unit ${lastUnit} · ${esc(unitName(lastUnit))})</label>` : ''}<label class="inline-check"><input type="radio" name="xp-s" value="weak"> My weakest skills</label></fieldset>
+          <div class="span2 actions"><button class="btn primary" type="submit">Start the timer</button><span class="tiny muted">Work like it is the real exam: no notes. The NumWorks switches off on Paper 1 (no calculator) questions; the formula booklet is always there.</span></div></form></section>` : U.empty('Once you have been taught a few lessons, you can practise like the exam here.'));
+      const f = $('#xp-form'); if (f) f.onsubmit = e => { e.preventDefault(); go(`#/exampractice?go=1&m=${f.querySelector('[name=xp-m]:checked').value}&s=${f.querySelector('[name=xp-s]:checked').value}`); };
+      return;
+    }
+    const target = [20, 30, 45].includes(+params.m) ? +params.m : 30, scope = ['all', 'unit', 'weak'].includes(params.s) ? params.s : 'all';
+    let pool = scope === 'unit' ? stats.filter(x => C().SKILL[x.skill].unit === lastUnit) : stats.slice();
+    if (scope === 'weak') pool = pool.filter(x => x.pct !== null).sort((a, b) => a.pct - b.pct).slice(0, 5).concat(pool.filter(x => x.pct === null)).slice(0, 6);
+    if (!pool.length) pool = stats.slice();
+    // weaker skills first, then the rest shuffled, so a short paper still covers the gaps
+    const order = pool.slice().sort((a, b) => (a.pct ?? 50) - (b.pct ?? 50) + (Math.random() - 0.5) * 30).map(x => x.skill);
+    main.innerHTML = U.empty('Building your paper…');
+    (async () => {
+      const qs = [], src = []; let marks = 0, i = 0, fails = 0;
+      while (marks < target && i < 14 && fails < 3) {
+        const skill = order[i % order.length]; i++;
+        try {
+          let a;
+          if (Hub.auth.isPreview()) { const sk = C().SKILL[skill], q = Hub.qcore.build(sk.gens[Math.floor(Math.random() * sk.gens.length)], Math.floor(Math.random() * 1e6) + 1, {}); q.parts = q.parts.filter(p => p.answer.kind !== 'open'); q.marks = q.parts.reduce((x, p) => x + p.marks, 0); a = { id: 'practice-' + skill, questions: [q] }; }
+          else a = (await Hub.cloud.call('practice', { skill })).assessment;
+          const q = a.questions[0]; if (!q || !q.parts.length) continue;
+          const m = q.parts.reduce((x, p) => x + p.marks, 0); if (marks && marks + m > target + 6) continue;
+          src.push({ aid: a.id, qid: q.id, q: Object.assign({}, q) }); qs.push(Object.assign({}, q, { id: 'xq' + qs.length, marks: m })); marks += m;
+        } catch (e) { fails++; }
+      }
+      if (!qs.length) { main.innerHTML = U.empty('Could not build a paper right now — try again in a minute.', '<a class="btn" href="#/exampractice">Back</a>'); return; }
+      const minutes = Math.round(marks * 1.1), a = { id: 'exampractice', title: `Exam practice · ${marks} marks`, type: 'Practice', course: s.course, minutes, questions: qs };
+      const started = Date.now();
+      renderTake(main, a, { preview: false, noProgress: true, hints: false, reflect: false, back: '<a class="back" href="#/exampractice">← Exam practice</a>',
+        submit: async d => {
+          const atts = [];
+          for (let k = 0; k < src.length; k++) {
+            const resp = { [src[k].qid]: d.responses['xq' + k] };
+            const r = Hub.auth.isPreview() ? await Hub.assess.submit(src[k].aid, 'preview', { responses: resp, token: d.token + '-' + k }, { preview: true, assessment: { id: src[k].aid, type: 'Practice', questions: [src[k].q] } })
+              : await Hub.live.submit(src[k].aid, { responses: resp, uploads: [], reflection: '', token: d.token + '-' + k, hints: {} }, 'practice');
+            if (!r.ok) return k ? { ok: true, partial: k, atts } : r; atts.push(r.attempt);
+          }
+          return { ok: true, atts };
+        },
+        done: r => xpResult(main, s, src, r.atts || [], { marks, minutes, used: Math.round((Date.now() - started) / 60000) }) });
+      // countdown
+      const head = main.querySelector('.page-head'), clock = document.createElement('div'); clock.className = 'xp-clock'; head.after(clock);
+      const tick = () => { if (!document.body.contains(clock)) return clearInterval(tm); const left = minutes * 60 - Math.round((Date.now() - started) / 1000), m = Math.floor(Math.abs(left) / 60), sec = String(Math.abs(left) % 60).padStart(2, '0');
+        clock.textContent = left >= 0 ? `⏱ ${m}:${sec} left` : `⏱ Time is up (${m}:${sec} over) — finish your answer and submit`; clock.classList.toggle('over', left < 0); };
+      const tm = setInterval(tick, 1000); tick();
+    })();
+  }
+  function xpResult(main, s, src, atts, info) {
+    const earned = atts.reduce((x, t) => x + (+Hub.assess.score(t).earned || 0), 0), max = src.reduce((x, k) => x + k.q.parts.reduce((y, p) => y + p.marks, 0), 0), pct = max ? Math.round(100 * earned / max) : 0;
+    const course = s.course, ok = Hub.datacycle && Hub.datacycle.boundsOK(course), grade = ok ? Hub.datacycle.toGrade(pct, course) : null;
+    main.innerHTML = `<a class="back" href="#/exampractice">← Exam practice</a>` + U.heading('EXAM PRACTICE', `You scored ${earned}/${max} (${pct}%)`, `${info.used} minute${info.used === 1 ? '' : 's'} used of about ${info.minutes}.${grade !== null ? ` On this paper that is roughly an IB <b>${grade}</b> (using your teacher’s grade boundaries — one practice paper is only a rough guide).` : ''}`) +
+      src.map((k, i) => { const t = atts[i]; return t ? U.question(k.q, i, { mode: 'feedback', responses: t.responses, results: t.auto.parts, final: null, released: true }) : ''; }).join('') +
+      `<section class="card"><h2 class="bar-head green">Next</h2><div class="actions"><a class="btn primary" href="#/exampractice">Another paper</a><a class="btn ghost" href="#/progress">My progress</a></div><p class="tiny muted">Each question was marked as practice, so it counts a little towards your mastery of that skill.</p></section>`;
+    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([main]).catch(() => {});
+  }
+
+  /* ---------- progress: summary (working IB grade, strongest and weakest skills, missing work) ---------- */
+  function summaryHTML(s, stats) {
+    const asOf = Hub.mastery.asOf(), DC = Hub.datacycle, pr = DC ? DC.predicted(s, asOf) : null, cut = +(((S().settings || {}).dataCycle || {}).grade || 4);
+    const trend = DC && pr ? DC.months().filter(m => m.upTo).map(m => [m.short, DC.predicted(s, m.upTo)]).filter(([, x]) => x && x.grade !== null) : [];
+    const known = stats.filter(x => x.taught && x.pct !== null), weak = known.filter(x => x.pct < 80).sort((a, b) => a.pct - b.pct).slice(0, 3), strong = known.slice().sort((a, b) => b.pct - a.pct).filter(x => !weak.includes(x)).slice(0, 3);
+    const miss = Hub.classdash ? Hub.classdash.missing(s.group, 42).filter(x => !x.a.optional && x.missing.some(m => m.id === s.id)) : [];
+    const gradeCard = pr && pr.grade !== null ? `<div class="mp-grade ${pr.grade >= cut + 1 ? 'hm-g' : pr.grade >= cut ? 'hm-a' : 'hm-r'}"><b>${pr.grade}</b><span>working IB grade</span></div>
+        <div><p class="small">Based on <b>${pr.n}</b> marked piece${pr.n === 1 ? '' : 's'} of work — tests, quizzes, retests and Exit Tickets — weighted average <b>${pr.pct}%</b>,, using Miss Badmus’ grade boundaries. Homework and practice don’t count here.</p>
+        ${trend.length > 1 ? `<p class="tiny">By month: ${trend.map(([m, x]) => `${m} <b>${x.grade}</b>`).join(' → ')}</p>` : ''}
+        ${pr.grade < 7 && DC.boundsOK(s.course) ? `<p class="tiny muted">Next grade up: about <b>${(((S().settings.dataCycle || {}).bounds || {})[s.course] || {})[pr.grade + 1]}%</b> overall.</p>` : ''}
+        <p class="tiny muted">A working grade, not a prediction — it changes as you do more work.</p></div>`
+      : `<p class="small muted">Your working IB grade appears once you have a marked test, quiz or Exit Ticket.</p>`;
+    return `<div class="grid g2 mp-top"><section class="card"><h2 class="bar-head green">Where I am</h2><div class="mp-row">${gradeCard}</div></section>
+      <section class="card"><h2 class="bar-head pink">Missing work</h2>${miss.length ? miss.map(x => `<div class="row-between small"><span><span class="pill ${x.a.type === 'Homework' ? 'amber' : 'pink'}">${x.a.type === 'Homework' ? 'HW' : 'ET'}</span> ${esc(x.a.title)}</span><span class="tiny muted">due ${fmtDate(x.due)}</span></div>`).join('') + '<p class="tiny muted">Talk to Miss Badmus about catching up on these.</p>' : '<p class="tiny gc-ok">✓ Nothing missing in the last six weeks.</p>'}</section></div>
+      ${known.length ? `<div class="grid g2"><section class="card"><h2 class="bar-head blue">My strongest skills</h2>${strong.map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}</div>`).join('') || '<p class="tiny muted">Keep going — not enough evidence yet.</p>'}</section>
+      <section class="card"><h2 class="bar-head amber">Focus on next</h2>${weak.length ? '' : '<p class="tiny gc-ok">✓ No weak skills so far — keep them fresh with exam practice.</p>'}${weak.map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small" href="#/practice?skill=${x.skill}">Practise</a>${Hub.exam ? Hub.exam.watchHTML(x.skill, 'btn small ghost') : ''}</div>`).join('')}<div class="actions"><a class="btn small primary" href="#/exampractice">📝 Practise like the exam</a></div></section></div>` : ''}`;
+  }
   /* ---------- progress ---------- */
   function progress(main) {
     Hub.donow.relabel();
     const s = me(); if (!s) return; const stats = Hub.mastery.studentSkills(s.id), atts = S().attempts.filter(t => t.sid === s.id).slice().reverse();
-    main.innerHTML = U.heading('UNDERSTANDING OVER TIME', 'My progress', `Overall ${Hub.mastery.overall(s.id) ?? '—'}% across the skills you have been taught. Recent work counts more than old work.`) +
+    main.innerHTML = U.heading('UNDERSTANDING OVER TIME', 'My progress', `Overall ${Hub.mastery.overall(s.id) ?? '—'}% across the skills you have been taught. Recent work counts more than old work.`) + summaryHTML(s, stats) +
       `<div class="legend">${['revisit', 'developing', 'secure', 'low-evidence', 'not-taught'].map(k => `<span class="st ${Hub.mastery.STATUS[k].cls}">${Hub.mastery.STATUS[k].short}</span> ${Hub.mastery.STATUS[k].label}`).join(' ')}</div>
       <div class="grid g2"><section class="card">${C().UNITS[s.course].filter(([u]) => stats.some(x => C().SKILL[x.skill].unit === u && x.status !== 'not-taught')).map(([u, name]) => `<h3 class="unit-h ${U.unitColour(u)}">Unit ${u} · ${esc(name)}</h3>${stats.filter(x => C().SKILL[x.skill].unit === u).map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}${x.pct !== null ? U.bar(x.pct, x.pct < 60 ? 'low' : '') : '<span class="tiny muted">' + (x.status === 'not-taught' ? 'coming up' : 'no evidence yet') + '</span>'}</div>`).join('')}`).join('')}</section>
       <section class="card"><h2 class="bar-head blue">My work</h2>${atts.length ? atts.map(t => `<div class="todo"><div><b>${esc(t.inline ? t.inline.title : (Hub.assess.byId(t.aid) || {}).title || t.type)}</b><div class="tiny muted">${fmtDate(t.date)} · ${t.status === 'released' ? Hub.assess.score(t).earned + '/' + t.max : 'waiting for marking'}</div></div><a class="btn small ghost" href="#/result/${t.id}">Open</a></div>`).join('') : '<p>Nothing yet.</p>'}</section></div>`;
   }
-  Hub.student = { home, task, donow, result, practice, progress, previewAssessment, renderTake };
+  Hub.student = { home, task, donow, result, practice, progress, previewAssessment, renderTake, examPractice };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/views_shared.js ---- */
@@ -11408,7 +11513,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   const ROUTES = {
     teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), gradebook: (m, p) => Hub.gradebook.view(m, p), feedback: (m, p) => Hub.feedback.teacher(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
-    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), feedback: m => Hub.feedback.student(m) }
+    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), exampractice: (m, p) => Hub.student.examPractice(m, p), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), feedback: m => Hub.feedback.student(m) }
   };
   function shell() {
     const sess = Hub.auth.current(), role = Hub.auth.role(), st = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null;
