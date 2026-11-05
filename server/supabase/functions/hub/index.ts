@@ -61,7 +61,7 @@ const H=createEngine(state,sess);let a=H.assess.byId(body.aid),opts:any={};
  if(body.kind==='donow'){const d=H.donow.forStudent(sess.sid);if(!d)err('No Do Now is open.');if(d.done)return {state,attempt:d.done};a=d.assessment;opts.assessment=a;}
  else if(body.kind==='practice'){a=state.progress[sess.sid+'|'+body.aid]?._serverAssessment;if(!a)err('Practice session expired. Start a new one.');opts.assessment=a;}
  if(!a)err('Assessment not available.');
- {const me=H.roster.byId(sess.sid),why=submitGuard(state,sess.sid,a,{kind:body.kind,block:(H.curriculum.GROUPS[me.group]||{}).block,due:(body.kind==='donow'||body.kind==='practice')?null:((a.dueBy&&a.dueBy[me.group])||a.due||null)});if(why)err(why);}
+ {const me=H.roster.byId(sess.sid),why=submitGuard(state,sess.sid,a,{kind:body.kind,group:me.group,block:(H.curriculum.GROUPS[me.group]||{}).block,due:(body.kind==='donow'||body.kind==='practice')?null:((a.dueBy&&a.dueBy[me.group])||a.due||null)});if(why)err(why);}
  if(a.type==='Retest'&&!H.assess.forStudent(sess.sid).some((x:any)=>x.id===a.id))err('Retest not available.');
  // Client supplies only responses and work, never marks, a role, or an answer key.
  const input={token:sess.sid+'|'+d.token,responses:d.responses||{},uploads:[],reflection:String(d.reflection||'').slice(0,20000),proof:d.proof===true,hints:d.hints||{}};

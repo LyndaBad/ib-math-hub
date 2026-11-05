@@ -4492,11 +4492,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     });
   }
   /** Teacher confirms marks (per part) and releases results + feedback to the student. */
-  function release(attemptId, partMarks, comment) {
+  function release(attemptId, partMarks, comment, ticks) {
     const t = S().attempts.find(x => x.id === attemptId); if (!t) return { ok: false };
     const a = A(t.aid) || { type: t.type, questions: questionsOf(t) }; const parts = {}; let earned = 0;
     questionsOf(t).forEach(q => q.parts.forEach(p => { const k = q.id + '|' + p.id; const v = partMarks && partMarks[k] !== undefined ? Math.max(0, Math.min(p.marks, Number(partMarks[k]) || 0)) : t.auto.parts[k].earned; parts[k] = v; earned += v; }));
-    t.final = { earned, parts }; t.comment = comment || ''; t.status = 'released'; t.releasedAt = new Date().toISOString(); t.markedBy = Hub.auth.who();
+    t.final = { earned, parts }; if (ticks && Object.keys(ticks).length) t.final.ticks = ticks; t.comment = comment || ''; t.status = 'released'; t.releasedAt = new Date().toISOString(); t.markedBy = Hub.auth.who();
     writeEvidence(t, a); Hub.store.log(`Released marks for ${Hub.roster.byId(t.sid)?.name || t.sid}`); Hub.store.save(true); return { ok: true };
   }
   /** Release every waiting attempt that has no teacher-only parts (and has its upload if required). */
@@ -4812,7 +4812,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ${r.error && r.verdict === 'invalid' ? `<div class="tiny muted">${esc(r.error)}</div>` : ''}
       ${showKey ? `<details class="working" ${r.verdict !== 'correct' ? 'open' : ''}><summary>Worked solution</summary><div class="hand">${p.working.map(w => `<div>${M(w)}</div>`).join('')}</div>${p.kfig ? `<div class="q-fig">${p.kfig}</div>` : ''}${numworks(p.numworks)}</details>` : ''}
       ${opts.teacher ? `<div class="ms small">${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>` : ''}
-      ${!opts.teacher && showKey && p.ms && p.ms.length ? `<details class="ms-stu"><summary>How the marks are given · IB markscheme</summary><div class="ms small">${p.ms.map(([m, t]) => `<div class="ms-line"><b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>
+      ${!opts.teacher && showKey && p.ms && p.ms.length ? (() => { const k = q.id + '|' + p.id, tk = opts.ticks && opts.ticks[k], full = earned >= p.marks, none = earned <= 0;
+        const known = !!tk || full || none, got = j => tk ? tk.includes(j) : full;
+        return `<details class="ms-stu"${known && !full ? ' open' : ''}><summary>${known ? 'Your marks' : 'How the marks are given'} · IB markscheme</summary><div class="ms small">${p.ms.map(([m, t], j) => `<div class="ms-line${known ? (got(j) ? ' got' : ' lost') : ''}">${known ? `<span class="ms-tickmark" aria-label="${got(j) ? 'earned' : 'not earned'}">${got(j) ? '✓' : '✗'}</span>` : ''}<b class="ms-mark">${esc(m)}</b> ${M(t)}</div>`).join('')}</div>${!known ? `<p class="tiny muted">You earned ${earned} of ${p.marks} marks on this part.</p>` : ''}`; })() : ''}${!opts.teacher && showKey && p.ms && p.ms.length ? `
         <p class="tiny muted">${[...new Set(p.ms.map(([m]) => String(m).replace(/[^A-Z]/g, '').split('').filter(Boolean)).flat())].map(k => MS_KEY[k]).filter(Boolean).join(' · ')}</p></details>` : ''}</div>`;
   }
   const MS_KEY = { M: '<b>M</b> method mark — for a correct method, even if the final answer is wrong', A: '<b>A</b> accuracy mark — for a correct answer or step, usually only after the M mark before it', R: '<b>R</b> reasoning mark — for a clear justification', G: '<b>AG</b> answer given — show the working that reaches it' };
@@ -4887,7 +4889,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const toMark = Hub.assess.queue().filter(t => ids.has(t.sid)).length;
       return `<div class="today-row"><a class="today-class" href="#/class/${g.id}"><b>${esc(g.label)}</b><span class="tiny muted">${esc(g.block)} · ${esc((L.activity || '').slice(0, 48))}</span></a>
         <a class="today-step ${reg ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>1</span>${reg ? `Register ✓${reg.absent ? ` · ${reg.absent} absent` : ''}` : 'Take the register'}</a>
-        <a class="today-step ${!ets.length ? 'none' : etDone >= etTotal ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>2</span>${ets.length ? `Exit Ticket ${etDone}/${etTotal} done${ets.some(a => a.keepOpen) ? ' · kept open' : ''}` : 'No Exit Ticket due'}</a>
+        <a class="today-step ${!ets.length ? 'none' : etDone >= etTotal ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>2</span>${ets.length ? `Exit Ticket ${etDone}/${etTotal} done${Hub.attendance && ets.some(a => Hub.attendance.keptOpen(a, g.id)) ? ' · kept open' : ''}` : 'No Exit Ticket due'}</a>
         <a class="today-step ${toMark ? 'todo' : 'ok'}" href="#/marking"><span>3</span>${toMark ? `${toMark} to mark` : 'Marking ✓'}</a></div>`; }).filter(Boolean);
     const todayHTML = `<section class="card today"><h2 class="bar-head green">Today · ${fmtDate(asOf, true)}</h2>${todayRows.length ? todayRows.join('') : '<p class="tiny muted">No lessons today.</p>'}</section>`;
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
@@ -5121,18 +5123,21 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <section class="card mark-pane"><h2 class="bar-head green">Marks</h2>${qs.map((q, i) => `<div class="mq"><div class="mq-head"><b>Q${i + 1}</b> ${U.skillChip(q.skill)}</div>${q.stem ? `<div class="q-stem small">${M(q.stem)}</div>` : ''}${q.parts.map(p => { const k = q.id + '|' + p.id, r = t.auto.parts[k];
         return `<div class="mp"><div class="mp-q"><b>(${p.label})</b> ${U.cmd(p.command)} ${M(p.prompt)}</div><div class="fb-row"><span class="key-lab">Answer given</span><span>${U.respText(p, (t.responses[q.id] || {})[p.id])}</span></div><div class="fb-row"><span class="key-lab">Key</span><span>${U.answerDisplay(p)}</span></div>
           <div class="auto">Auto: <span class="verdict ${r.verdict === 'correct' ? 'ok' : r.verdict === 'teacher' ? 'wait' : r.verdict === 'partial' || r.verdict === 'inexact' ? 'part' : 'no'}">${r.verdict}</span> ${r.earned}/${p.marks}${r.tag ? ` · <span class="pill pink tiny">${esc(Hub.mastery.tagText(r.tag))}</span>` : ''}</div>
-          <div class="ms-ticks">${p.ms.map(([m, txt], j) => `<label class="ms-tick"><input type="checkbox" data-k="${k}" data-v="${U.msValue(m)}" data-j="${j}"><b>${esc(m)}</b> ${M(txt)}</label>`).join('')}</div>
+          <div class="ms-ticks">${p.ms.map(([m, txt], j) => `<label class="ms-tick"><input type="checkbox" data-k="${k}" data-v="${U.msValue(m)}" data-j="${j}"${t.final && t.final.ticks && (t.final.ticks[k] || []).includes(j) ? ' checked' : ''}><b>${esc(m)}</b> ${M(txt)}</label>`).join('')}</div>
           <div class="stepper"><button class="btn small ghost" data-dec="${k}" aria-label="One mark fewer">−</button><output data-out="${k}">${marks[k]}</output><span>/ ${p.marks}</span><button class="btn small ghost" data-inc="${k}" data-max="${p.marks}" aria-label="One mark more">+</button></div></div>`; }).join('')}</div>`).join('')}
         <label>Comment for the student<textarea id="m-comment" rows="3" placeholder="What went well · one next step">${esc(t.comment || '')}</textarea></label>
         <div class="total">Total <b id="m-total"></b> / ${t.max}</div>
         <div class="actions"><button class="btn primary" id="m-release">${t.status === 'released' ? 'Update released marks' : 'Release to student'}</button></div></section></div>`;
     const total = () => { $('#m-total').textContent = Object.values(marks).reduce((s, v) => s + v, 0); };
+    // which markscheme lines were ticked, per part — shown to the student as ✓ / ✗
+    const ticks = JSON.parse(JSON.stringify((t.final && t.final.ticks) || {}));
     const setK = (k, v) => { const p = qs.flatMap(q => q.parts.map(pp => [q.id + '|' + pp.id, pp])).find(x => x[0] === k)[1]; marks[k] = Math.max(0, Math.min(p.marks, v)); $(`[data-out="${k}"]`).textContent = marks[k]; total(); };
-    $$('[data-inc]').forEach(b => (b.onclick = () => setK(b.dataset.inc, marks[b.dataset.inc] + 1)));
-    $$('[data-dec]').forEach(b => (b.onclick = () => setK(b.dataset.dec, marks[b.dataset.dec] - 1)));
-    $$('.ms-tick input').forEach(c => (c.onchange = () => { const k = c.dataset.k; const sum = $$(`.ms-tick input[data-k="${k}"]:checked`).reduce((s, x) => s + Number(x.dataset.v), 0); setK(k, sum); }));
+    const untick = k => { delete ticks[k]; $$(`.ms-tick input[data-k="${k}"]`).forEach(x => (x.checked = false)); };
+    $$('[data-inc]').forEach(b => (b.onclick = () => { untick(b.dataset.inc); setK(b.dataset.inc, marks[b.dataset.inc] + 1); }));
+    $$('[data-dec]').forEach(b => (b.onclick = () => { untick(b.dataset.dec); setK(b.dataset.dec, marks[b.dataset.dec] - 1); }));
+    $$('.ms-tick input').forEach(c => (c.onchange = () => { const k = c.dataset.k, on = $$(`.ms-tick input[data-k="${k}"]:checked`); ticks[k] = on.map(x => Number(x.dataset.j)); const sum = on.reduce((s, x) => s + Number(x.dataset.v), 0); setK(k, sum); }));
     total();
-    $('#m-release').onclick = () => { const r = Hub.assess.release(t.id, marks, $('#m-comment').value); if (!r.ok) return toast('Could not release.', 'error'); toast('Released — the student can see their marks and feedback.'); const nxt = Hub.assess.queue()[0]; go(nxt ? '#/mark/' + nxt.id : '#/marking'); };
+    $('#m-release').onclick = () => { const r = Hub.assess.release(t.id, marks, $('#m-comment').value, ticks); if (!r.ok) return toast('Could not release.', 'error'); toast('Released — the student can see their marks and feedback.'); const nxt = Hub.assess.queue()[0]; go(nxt ? '#/mark/' + nxt.id : '#/marking'); };
     // Load private signed attachment URLs
     const box = $('#uploads'); if (t.uploads.length) {
       const html = [];
@@ -5347,7 +5352,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const released = t.status === 'released', sc = Hub.assess.score(t), aa = Hub.assess.byId(t.aid);
     main.innerHTML = (opts.back || `<a class="back" href="#/home">← My day</a>`) + U.heading('REFLECT & GROW', esc(a.title), released ? `You scored <b>${sc.earned}/${sc.max}</b> (${sc.pct}%)${aa && aa.cap ? ` · recorded as ${sc.capped}% (retest cap ${aa.cap}%)` : ''}` : 'Submitted. Typed answers are checked; Miss Badmus is reviewing your working and will release your marks.') +
       (opts.preview ? '<div class="notice preview">Preview result — not saved.</div>' : '') + (t.comment ? `<div class="sticky big"><b>Miss Badmus:</b> ${esc(t.comment)}</div>` : '') +
-      a.questions.map((q, i) => U.question(q, i, { mode: 'feedback', responses: t.responses, results: t.auto.parts, final: t.final ? t.final.parts : null, released: released || !!opts.preview })).join('') +
+      a.questions.map((q, i) => U.question(q, i, { mode: 'feedback', responses: t.responses, results: t.auto.parts, final: t.final ? t.final.parts : null, ticks: t.final && t.final.ticks ? t.final.ticks : null, released: released || !!opts.preview })).join('') +
       (released || opts.preview ? `<div class="card"><h2 class="bar-head green">Keep going</h2><p>Practise the skills from this task:</p><div class="chips">${[...new Set(a.questions.map(q => q.skill))].map(k => `<a class="chip-link" href="#/practice?skill=${k}">${U.skillChip(k)}</a>`).join('')}</div></div>` : '');
   }
   function previewAssessment(a, main) { main = main || $('#main'); renderTake(main, a, { submit: d => Hub.assess.submit(a.id, 'preview', d, { preview: true }), preview: true, back: `<div class="row-between no-print"><a class="back" href="#/edit/${a.id}">← Back to the editor</a><a class="btn small ghost" href="#/print/${a.id}">🖨 Print worksheet</a></div>`, allowUpload: false }); window.scrollTo(0, 0); }
@@ -5554,7 +5559,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const J = (S().settings || {}).join || { codes: {} };
     const row = g => { const c = (J.codes || {})[g.id], studs = Hub.roster.inGroup(g.id), n = studs.filter(isIn).length;
       return `<tr><td><b>${esc(g.label)}</b></td><td>${c && c.code ? `<span class="join-code">${esc(c.code)}</span>` : '<span class="tiny muted">no code yet</span>'}</td><td>${c && c.code ? (c.open === false ? '<span class="pill grey">Closed</span>' : '<span class="pill green">Open</span>') : ''}</td><td>${n}/${studs.length}</td>
-        <td><div class="join-act">${c && c.code ? `<button class="btn small ghost" data-jcopy="${g.id}" type="button">Copy for students</button><button class="btn small ghost" data-jtoggle="${g.id}" type="button">${c.open === false ? 'Open joining' : 'Close joining'}</button><button class="btn small ghost" data-jnew="${g.id}" type="button">New code</button>` : `<button class="btn small" data-jnew="${g.id}" type="button">Make a code</button>`}</div></td></tr>`; };
+        <td><div class="join-act">${c && c.code ? `<button class="btn small" data-jsheet="${g.id}" type="button">🖨 Join sheet</button><button class="btn small ghost" data-jcopy="${g.id}" type="button">Copy for students</button><button class="btn small ghost" data-jtoggle="${g.id}" type="button">${c.open === false ? 'Open joining' : 'Close joining'}</button><button class="btn small ghost" data-jnew="${g.id}" type="button">New code</button>` : `<button class="btn small" data-jnew="${g.id}" type="button">Make a code</button>`}</div></td></tr>`; };
     const who = Object.values(GROUPS()).map(g => { const studs = Hub.roster.inGroup(g.id); const yes = studs.filter(isIn);
       return `<details class="join-who"${openG === g.id ? ' open' : ''}><summary><b>${esc(g.label)}</b> · ${studs.length ? `${yes.length}/${studs.length} joined` : 'no students yet'}</summary>${studs.length ? `<table class="tbl join-stu"><tbody>${studs.map(s => `<tr><td>${esc(s.name)}</td><td>${isIn(s) ? `<code>${esc(s.username || s.email || '')}</code>` : '<span class="tiny muted">not joined yet</span>'}</td><td><div class="join-act">${manageButtons(s)}</div></td></tr>`).join('')}</tbody></table>` : ''}
         <form class="join-add" data-jadd="${g.id}" novalidate><p class="key-lab">Add a student to ${esc(g.label)}</p><div class="join-add-row"><label>First name<input name="first" autocomplete="off" spellcheck="false" required></label><label>Last name<input name="last" autocomplete="off" spellcheck="false" required></label><button class="btn small primary">Add student</button></div><p class="tiny muted">Type the name exactly as the student will type it when they join.</p></form></details>`; }).join('');
@@ -5565,6 +5570,28 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <p class="tiny muted">If a student’s name is not found, check how it is spelled on your roster. A new code stops the old one working; close joining once everyone is in.</p>
       <h3 class="sub-h">Your students</h3><p class="tiny muted"><b>Reset password</b> gives a student a new password to sign in with straight away. <b>Join again</b> lets them redo the class-code join (e.g. someone else used their name). <b>Delete</b> removes the student and all their work. To add one student, open their class and use <b>Add a student</b>.</p>
       ${who || '<p class="tiny muted">Upload a roster first.</p>'}</section>`;
+  }
+  /** A printable join sheet: one big page for the board, then cut-out slips. Link printed as text (no QR — students use Chromebooks). */
+  function joinSheet(g) {
+    const c = ((cfg() || {}).codes || {})[g], label = classLabel(g), link = joinURL().replace(/^https?:\/\//, '');
+    if (!c || !c.code) return;
+    const steps = ['Open a browser on your Chromebook and type <b class="mono">' + esc(link) + '</b>', 'Type the class code <b class="mono">' + esc(c.code) + '</b>', 'Type your <b>first name</b> and <b>last name</b> exactly as they are on the class register', 'Choose a password — 8 characters or more — and keep it to yourself', 'Write down the <b>username</b> you are given. You sign in with it from now on'];
+    const slip = `<div class="slip"><p class="s-k">${esc(label)}</p><p>1. Go to <b class="mono">${esc(link)}</b></p><p>2. Class code: <b class="mono big">${esc(c.code)}</b></p><p>3. Your first and last name, as on the register</p><p>4. Choose a password (8+ characters)</p><p>My username: ____________________</p></div>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Join ${esc(label)}</title><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Lora:wght@400;600&display=swap" rel="stylesheet"><style>
+      @page { size: letter; margin: 14mm; } body { font-family: Lora, Georgia, serif; color: #1F2430; margin: 0; background: #fff; }
+      .board { border: 5px solid #FF9756; border-radius: 28px; padding: 28px 34px; page-break-after: always; min-height: 225mm; box-sizing: border-box; background: #FEF5F0; }
+      h1 { font-family: 'Baloo 2', sans-serif; font-size: 40px; margin: 0 0 4px; } .k { font-family: 'Baloo 2', sans-serif; color: #FF9756; letter-spacing: .08em; font-weight: 800; margin: 0; }
+      .code { font-family: 'Baloo 2', monospace; font-size: 96px; font-weight: 800; letter-spacing: .12em; background: #fff; border: 4px solid #1F2430; border-radius: 22px; text-align: center; margin: 18px 0; padding: 6px 0; }
+      .link { font-size: 26px; text-align: center; margin: 0 0 18px; } .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+      ol { font-size: 22px; line-height: 1.5; padding-left: 1.3em; } li { margin: 8px 0; } .note { font-size: 17px; background: #FFECF9; border: 2px solid #FF96D4; border-radius: 14px; padding: 10px 14px; margin-top: 16px; }
+      .slips { display: grid; grid-template-columns: 1fr 1fr; gap: 0; } .slip { border: 1.5px dashed #999; padding: 12px 14px; font-size: 13.5px; } .slip p { margin: 4px 0; } .s-k { font-family: 'Baloo 2', sans-serif; font-weight: 800; color: #FF9756; } .big { font-size: 20px; letter-spacing: .1em; }
+      .bar { position: sticky; top: 0; background: #fff; padding: 8px; text-align: right; } @media print { .bar { display: none; } }
+    </style></head><body><div class="bar"><button onclick="print()">Print</button></div>
+      <section class="board"><p class="k">JOIN YOUR CLASS ON THE IB MATH HUB</p><h1>${esc(label)}</h1><div class="code">${esc(c.code)}</div><p class="link">Go to <b class="mono">${esc(link)}</b></p>
+        <ol>${steps.map(x => `<li>${x}</li>`).join('')}</ol><div class="note">If your name is not found, check the spelling, then tell Miss Badmus. You only join once — after that, sign in with your username and password.</div></section>
+      <section class="slips">${Array(10).fill(slip).join('')}</section></body></html>`;
+    const w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups for this site to open the join sheet.', 'error'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
   }
   function manageButtons(s) {
     return `${s.uid ? `<button class="btn small" data-pw="${esc(s.id)}" type="button">Reset password</button>` : ''}${s.joinedAt ? `<button class="btn small ghost" data-reset="${esc(s.id)}" type="button">Join again</button>` : ''}<button class="btn small ghost danger" data-del="${esc(s.id)}" type="button">Delete</button>`;
@@ -5677,6 +5704,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const cl = $('#join-copy-link', main); if (cl) cl.onclick = () => copy(joinURL(), 'Join link copied.');
     $$('[data-jnew]', main).forEach(b => (b.onclick = async () => { const g = b.dataset.jnew, had = J().codes[g] && J().codes[g].code; if (had && !(await Hub.ui.confirmBox(`Make a new code for ${esc(classLabel(g))}? The old code stops working. Students who have already joined are not affected.`, 'New code'))) return; J().codes[g] = { code: newCode(), open: true, at: new Date().toISOString() }; Hub.store.log(`New class join code for ${classLabel(g)}`); await saveNow('New code ready.'); }));
     $$('[data-jtoggle]', main).forEach(b => (b.onclick = async () => { const c = J().codes[b.dataset.jtoggle]; c.open = c.open === false; await saveNow(c.open ? 'Joining is open.' : 'Joining is closed for that class.'); }));
+    $$('[data-jsheet]', main).forEach(b => (b.onclick = () => joinSheet(b.dataset.jsheet)));
     $$('[data-jcopy]', main).forEach(b => (b.onclick = () => { const g = b.dataset.jcopy, c = J().codes[g]; copy(`Join Miss Badmus’ ${classLabel(g)} on the IB Math Hub: open ${joinURL()} , type the class code ${c.code}, your first and last name, and choose a password.`, 'Copied — paste it to your students.'); }));
     $$('[data-jadd]', main).forEach(f => (f.onsubmit = async e => {
       e.preventDefault(); const g = f.dataset.jadd, first = f.first.value.replace(/\s+/g, ' ').trim(), last = f.last.value.replace(/\s+/g, ' ').trim();
@@ -6016,9 +6044,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function nyNow() { const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map(x => [x.type, x.value])); return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` }; }
   /** "HH:MM" when Exit Tickets close for a class: one hour after its block ends. */
   function closeTime(groupId) { const g = C().GROUPS[groupId] || {}, [h, m] = (BLOCK_END[g.block] || '15:00').split(':').map(Number), t = h * 60 + m + AFTER_MIN; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); }
+  /** Kept open for this class? keepOpen is true (every class) or { 'SL-A': true, … }. */
+  const keptOpen = (a, groupId) => !!a && (a.keepOpen === true || !!(a.keepOpen && typeof a.keepOpen === 'object' && a.keepOpen[groupId]));
   /** Has this Exit Ticket's in-class window passed for the student's class? */
   function windowOver(a, st) {
-    if (!a || a.type !== 'Exit Ticket' || !st || a.keepOpen) return false; const due = Hub.assess.dueFor(a, st.group); if (!due) return false;
+    if (!a || a.type !== 'Exit Ticket' || !st || keptOpen(a, st.group)) return false; const due = Hub.assess.dueFor(a, st.group); if (!due) return false;
     try { const n = nyNow(); return n.date > due || (n.date === due && n.hm >= closeTime(st.group)); } catch (e) { return false; }
   }
   const submitted = (a, sid) => Hub.assess.attemptsFor(a.id, sid).length > 0;
@@ -6059,7 +6089,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /** Lessons a student was marked absent from since a date. */
   const registerTaken = (groupId, date) => S().progress['_teacher|reg:' + groupId + '|' + date] || null;
   const absences = (sid, since) => Object.keys(S().progress).filter(k => k.startsWith(sid + '|att:') && k.slice(sid.length + 5) >= since).length;
-  Hub.attendance = { isAbsent, setAbsent, lockedFor, absentAccess, windowOver, closeTime, closeLabel, registerHTML, bindRegister, absences, registerTaken, nyNow };
+  Hub.attendance = { isAbsent, setAbsent, lockedFor, absentAccess, windowOver, closeTime, closeLabel, registerHTML, bindRegister, absences, registerTaken, nyNow, keptOpen };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/retake.js ---- */
@@ -7424,7 +7454,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <p class="tiny muted">${x.due ? (x.past ? 'Was due ' : 'Due ') + fmtDate(x.due, true) : 'No due date'}${type === 'Exit Ticket' && Hub.attendance && Hub.attendance.windowOver(x.a, { group: g }) && x.a.status === 'published' ? ` · closed for the class at ${Hub.attendance.closeLabel(g)} — absent students can still do it until you close it` : x.past ? '' : ' · still open'}</p>
         <div class="rd-stats"><div><b>${did.length}/${studs.length}</b><span>done</span></div><div><b>${avg === null ? '—' : avg + '%'}</b><span>class average</span></div><div><b>${not.length}</b><span>not done</span></div></div>
         ${toMark ? `<p class="tiny"><span class="pill amber">${toMark} to mark</span> <a href="#/marking">Marking</a></p>` : ''}
-        ${type === 'Exit Ticket' && x.a.status === 'published' ? `<div class="keep-open ${x.a.keepOpen ? 'on' : ''}"><label class="inline-check"><input type="checkbox" data-keepopen="${x.a.id}"${x.a.keepOpen ? ' checked' : ''}> <b>Keep open</b> — don’t close it after the lesson</label><span class="tiny muted">${x.a.keepOpen ? 'Open for everyone until you close it in the Assessment studio.' : `Closes for the class at ${Hub.attendance ? Hub.attendance.closeLabel(g) : 'the end of the lesson'} on its due day (absent students keep it).`}</span></div>` : ''}
+        ${type === 'Exit Ticket' && x.a.status === 'published' && Hub.attendance ? (ko => `<div class="keep-open ${ko ? 'on' : ''}"><label class="inline-check"><input type="checkbox" data-keepopen="${x.a.id}"${ko ? ' checked' : ''}> <b>Keep open for ${esc(G.label)}</b> — don’t close it after the lesson</label><span class="tiny muted">${ko ? `Open for everyone in ${esc(G.label)} until you close it in the Assessment studio. Other classes close as normal unless you tick it on their dashboard.` : `Closes for ${esc(G.label)} at ${Hub.attendance.closeLabel(g)} on its due day (absent students keep it).`}</span></div>`)(Hub.attendance.keptOpen(x.a, g)) : ''}
         <details class="rd-list" open><summary><b>Not done (${not.length})</b></summary>${not.length ? `<p class="miss-names">${not.map(r => `<a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent</span>' : ''}`).join(', ')}</p>` : '<p class="tiny gc-ok">✓ Everyone has done it</p>'}</details>
         <details class="rd-list"><summary><b>Done (${did.length})</b></summary>${did.length ? `<table class="tbl rd-tbl"><tbody>${did.sort((p, q) => (q.sc.pct ?? -1) - (p.sc.pct ?? -1)).map(r => `<tr><td><a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent · done later</span>' : ''}</td><td>${r.sc.pct === null || r.sc.pct === undefined ? '—' : r.sc.pct + '%'}</td><td>${r.t.status === 'submitted' ? '<span class="pill amber">to mark</span>' : r.t.status === 'released' ? '<span class="tiny muted">released</span>' : ''}</td><td><a class="tiny" href="#/mark/${r.t.id}">open</a></td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">Nobody yet.</p>'}</details></section>`; };
     const pvStudent = Hub.roster.inGroup(g, true).find(x => x.test) || studs[0];
@@ -7450,8 +7480,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const cdp = $('#cd-preview'); if (cdp) cdp.onclick = () => Hub.app.previewAs(pvStudent.id);
     if (Hub.attendance) Hub.attendance.bindRegister(main, g);
     if (Hub.retake) Hub.retake.bind(main);
-    $$('[data-keepopen]', main).forEach(i => (i.onchange = async () => { const a = Hub.assess.byId(i.dataset.keepopen); if (!a) return; a.keepOpen = i.checked;
-      Hub.store.log(`${i.checked ? 'Kept open' : 'Normal closing for'} “${a.title}”`); Hub.store.save(true);
+    $$('[data-keepopen]', main).forEach(i => (i.onchange = async () => { const a = Hub.assess.byId(i.dataset.keepopen); if (!a) return;
+      const ko = a.keepOpen === true ? Object.fromEntries((a.groups || []).map(x => [x, true])) : Object.assign({}, a.keepOpen || {});
+      if (i.checked) ko[g] = true; else delete ko[g]; a.keepOpen = Object.keys(ko).length ? ko : false;
+      Hub.store.log(`${i.checked ? 'Kept open' : 'Normal closing'} for ${G.label}: “${a.title}”`); Hub.store.save(true);
       try { await Hub.store.flush(); toast(i.checked ? 'Kept open — it won’t close after the lesson.' : 'It will close an hour after the lesson as usual.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); }));
     const cp = $('#copy-missing'); if (cp) cp.onclick = async () => { const txt = miss.filter(x => x.missing.length).map(x => `${x.a.type} – ${x.a.title} (due ${fmtDate(x.due)}): ${x.missing.map(s => s.name).join(', ')}`).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Copied.'); } catch (e) { toast('Could not copy here.', 'error'); } };
   }

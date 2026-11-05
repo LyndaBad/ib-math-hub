@@ -282,9 +282,10 @@ function nyNow(now){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{
 /** "HH:MM" New York time when Exit Tickets close for a block (one hour after it ends). */
 export function etCloseTime(block){const [h,m]=(BLOCK_END[block]||'15:00').split(':').map(Number),t=h*60+m+ET_GRACE_MIN;return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
 /** Why this student may not submit this assessment now, or null. a = the assessment, due = its due date for their class. */
-export function submitGuard(state,sid,a,{kind,block,due,now}={}){
+export function submitGuard(state,sid,a,{kind,block,due,now,group}={}){
  if(Array.isArray(a.targets)&&!a.targets.includes(sid))return 'This retake is not set for you.';
- if(kind!=='donow'&&kind!=='practice'&&a.type==='Exit Ticket'&&due&&!a.keepOpen){
+ const kept=a.keepOpen===true||!!(a.keepOpen&&typeof a.keepOpen==='object'&&group&&a.keepOpen[group]);
+ if(kind!=='donow'&&kind!=='practice'&&a.type==='Exit Ticket'&&due&&!kept){
   const n=nyNow(now),closed=n.date>due||(n.date===due&&n.hm>=etCloseTime(block));
   if(closed&&!state.progress[sid+'|att:'+due])return 'This Exit Ticket closed after the lesson. If you were absent, speak to Miss Badmus.';
  }

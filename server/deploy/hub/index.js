@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         }
         if (!a) err("Assessment not available.");
         {
-          const me = H.roster.byId(sess.sid), why = submitGuard(state, sess.sid, a, { kind: body.kind, block: (H.curriculum.GROUPS[me.group] || {}).block, due: body.kind === "donow" || body.kind === "practice" ? null : a.dueBy && a.dueBy[me.group] || a.due || null });
+          const me = H.roster.byId(sess.sid), why = submitGuard(state, sess.sid, a, { kind: body.kind, group: me.group, block: (H.curriculum.GROUPS[me.group] || {}).block, due: body.kind === "donow" || body.kind === "practice" ? null : a.dueBy && a.dueBy[me.group] || a.due || null });
           if (why) err(why);
         }
         if (a.type === "Retest" && !H.assess.forStudent(sess.sid).some((x) => x.id === a.id)) err("Retest not available.");
