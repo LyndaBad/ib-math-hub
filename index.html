@@ -175,6 +175,14 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 .lib { display: flex; flex-direction: column; }
 .lib-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 2px dotted var(--line); }
 .lib-row:last-child { border-bottom: none; }
+.gb-wrap { max-height: 70vh; overflow: auto; } .gb-tbl { border-collapse: collapse; font-family: var(--f-ui); font-size: .85rem; }
+.gb-tbl th, .gb-tbl td { border: 1px solid var(--line); padding: 5px 7px; text-align: center; white-space: nowrap; }
+.gb-tbl thead th { position: sticky; top: 0; background: var(--white); z-index: 1; vertical-align: bottom; min-width: 74px; white-space: normal; }
+.gb-tbl .gb-name { position: sticky; left: 0; background: var(--white); text-align: left; z-index: 2; min-width: 170px; }
+.gb-t { display: block; font-weight: 600; font-size: .75rem; max-width: 120px; } .gb-k { display: inline-block; font-size: .65rem; font-weight: 800; border-radius: 6px; padding: 1px 6px; margin-bottom: 2px; background: #EEF4FB; }
+.gb-k.et { background: #FFE0F0; } .gb-k.hw { background: #FFF1D6; } .gb-k.quiz { background: #E6F4EA; } .gb-k.test { background: #E0E8FF; } .gb-k.retake { background: #F3E0FF; }
+.gb-miss { color: #B03A2E; font-weight: 700; } .gb-mark { color: #8A6100; } .gb-na { color: #bbb; } .gb-avg th, .gb-avg td { border-top: 2px solid var(--ink); }
+.lib-filters { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; } .lib-grp { border-top: 2px solid var(--line); padding-top: 6px; margin-top: 8px; } .lib-grp > summary { cursor: pointer; font-family: var(--f-ui); padding: 4px 0; } .lib-for { font-family: var(--f-ui); font-size: .85rem; font-weight: 600; color: #8E2D6E; margin: 2px 0; }
 .lib-title { font-family: var(--f-head); font-weight: 700; font-size: 1.05rem; }
 .lib-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .flow { display: flex; gap: 8px; flex-wrap: wrap; font-family: var(--f-ui); font-weight: 600; }
@@ -5672,7 +5680,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const lessonOpts = C().lessons(group).filter(l => l.skills.length).map(l => `<option value="${l.date}" ${nl && l.date === nl.date ? 'selected' : ''}>${fmtDate(l.date)} · ${esc(l.activity.slice(0, 70))}</option>`).join('');
     // newest first: by when each task was made (older tasks without a date fall back to their first history entry)
     const made = a => String(a.createdAt || (a.history && a.history.length ? (a.history[0].at || a.history[0].date || '') : '') || a.publishedAt || '');
-    const list = S().assessments.filter(a => status === 'all' ? a.status !== 'archived' : a.status === status).sort((x, y) => made(y).localeCompare(made(x)));
+    // organise by class and by kind (Exit Tickets, homework, quizzes, tests, retests/retakes, mocks, optional practice)
+    const lclass = C().GROUPS[params.lclass] ? params.lclass : (params.lclass === 'all' ? 'all' : (pref('studio-lclass') || 'all')), ltype = LIB_KINDS.some(k => k[0] === params.ltype) ? params.ltype : 'all';
+    const inClass = a => lclass === 'all' || (a.groups || []).includes(lclass) || (!(a.groups || []).length && a.course === C().GROUPS[lclass].course);
+    const base = S().assessments.filter(a => (status === 'all' ? a.status !== 'archived' : a.status === status) && inClass(a)).sort((x, y) => made(y).localeCompare(made(x)));
+    const list = ltype === 'all' ? base : base.filter(a => kindOf(a) === ltype);
+    const libQ = o => '#/studio?' + new URLSearchParams(Object.assign({ status, group, lclass, ltype }, o)).toString();
+    const libBody = !list.length ? U.empty('Nothing here yet.') : ltype !== 'all' ? `<div class="lib">${list.map(libRow).join('')}</div>`
+      : LIB_KINDS.slice(1).map(([k, label]) => { const xs = list.filter(a => kindOf(a) === k); return xs.length ? `<details class="lib-grp" open><summary><b>${label}</b> <span class="tiny muted">(${xs.length})</span></summary><div class="lib">${xs.map(libRow).join('')}</div></details>` : ''; }).join('');
     main.innerHTML = U.heading('TEACHER WORKSPACE', 'Assessment Studio', 'Original IB-style questions with markschemes. Every question must be reviewed before you can approve, and you choose when and to whom it is published.') +
       `${Hub.bookex ? Hub.bookex.studioCard(group) : ''}<section class="card builder"><h2 class="bar-head green">Build a new draft</h2><form id="build" class="form-grid">
         <label>Group<select id="b-group">${U.groupOptions(group)}</select></label>
@@ -5688,7 +5703,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <fieldset class="span2 bb-book"><legend>Book-exercise questions <span class="tiny muted">(optional · new questions labelled with the ${esc(Hub.bookex ? Hub.bookex.BOOK[course] : '')} exercise — add as many exercises as you like)</span></legend>${Hub.bookex ? `<div class="form-grid">${Hub.bookex.pickerHTML(course, 'bb', [], 'Add a book exercise to this draft')}</div><p class="tiny" id="bb-sum"></p>` : ''}</fieldset>
         <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework answers are typed by students and marked automatically; “show that” parts become self-check with the model answer.</span></div></form></section>
       <section class="card"><div class="row-between"><h2 class="bar-head blue">Library</h2><div class="tabs" role="tablist">${['all', 'draft', 'approved', 'published', 'closed', 'archived'].map(s => `<button role="tab" class="tab ${s === status ? 'on' : ''}" data-status="${s}" aria-selected="${s === status}">${s[0].toUpperCase() + s.slice(1)}</button>`).join('')}</div></div>
-      ${list.length ? `<div class="lib">${list.map(libRow).join('')}</div>` : U.empty('Nothing here yet.')}</section>`;
+      <div class="lib-filters"><div class="tabs lib-cls">${[['all', 'All classes'], ...Object.values(C().GROUPS).map(g => [g.id, g.label.replace('AA ', '')])].map(([id, l]) => `<a class="tab small ${lclass === id ? 'on' : ''}" href="${libQ({ lclass: id })}">${esc(l)}</a>`).join('')}</div>
+        <div class="tabs lib-kinds">${LIB_KINDS.map(([k, l]) => { const n = k === 'all' ? base.length : base.filter(a => kindOf(a) === k).length; return n || k === 'all' ? `<a class="tab small ${ltype === k ? 'on' : ''}" href="${libQ({ ltype: k })}">${l} <span class="tiny">${n}</span></a>` : ''; }).join('')}</div></div>
+      ${libBody}</section>`;
     $('#b-group').onchange = e => { pref('group', e.target.value); go('#/studio?group=' + e.target.value); };
     $('#b-lesson').onchange = e => { const l = C().lessons(group).find(x => x.date === e.target.value); $$('#b-skills input').forEach(c => (c.checked = !!(l && l.skills.includes(c.value)))); };
     $('#b-type').onchange = e => { $('#b-count').value = Hub.assess.TYPES[e.target.value].count; };
@@ -5697,7 +5714,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const all = boxes.filter(c => ids.has(c.value)).every(c => c.checked); boxes.forEach(c => { if (ids.has(c.value)) c.checked = !all; });
       toast(all ? `Unit ${u} unticked.` : `All of Unit ${u} ticked (${ids.size} skills).`); }));
     $('#b-sizeby').onchange = e => { const m = e.target.value === 'marks'; $('.b-by-count', main).hidden = m; $('.b-by-marks', main).hidden = !m; };
-    $$('.tab[data-status]').forEach(b => (b.onclick = () => { pref('studio-status', b.dataset.status); go('#/studio?status=' + b.dataset.status + '&group=' + group); }));
+    $$('.tab[data-status]').forEach(b => (b.onclick = () => { pref('studio-status', b.dataset.status); go(libQ({ status: b.dataset.status })); }));
+    if (params.lclass) pref('studio-lclass', lclass);
     const bb = Hub.bookex ? Hub.bookex.bindPicker($('#build'), course, 'bb', api => { const n = api.chosen().length, q = api.only().length; $('#bb-sum').textContent = n ? `${n} exercise${n > 1 ? 's' : ''} · ${q} question${q === 1 ? '' : 's'} · ${api.marks()} marks added to this draft` : ''; }) : null;
     $('#build').onsubmit = e => {
       e.preventDefault(); const skills = $$('#b-skills input:checked').map(c => c.value), book = bb && bb.chosen().length ? { exs: bb.chosen(), only: bb.only() } : null;
@@ -5714,9 +5732,13 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     bindLibActions(main);
   }
   const STATUS_TXT = { draft: ['Draft', 'grey'], approved: ['Approved', 'green'], published: ['Published', 'blue'], closed: ['Closed', 'amber'], archived: ['Archived', 'grey'] };
+  const LIB_KINDS = [['all', 'Everything'], ['et', 'Exit Tickets'], ['hw', 'Homework'], ['quiz', 'Quizzes'], ['test', 'Tests'], ['retake', 'Retests & retakes'], ['mock', 'Mock exams'], ['extra', 'Optional practice']];
+  const kindOf = a => a.mock ? 'mock' : a.optional ? 'extra' : (a.retestOf || a.type === 'Retest' || / · Retake$/.test(a.title || '')) ? 'retake' : a.type === 'Exit Ticket' ? 'et' : a.type === 'Homework' ? 'hw' : a.type === 'Quiz' ? 'quiz' : ['Unit test', 'Test'].includes(a.type) ? 'test' : 'hw';
+  /** Who a targeted retest/retake is for. */
+  const forWhom = a => a.targets && a.targets.length ? `<div class="lib-for">🎯 Only for: ${a.targets.map(id => { const st = Hub.roster.byId(id); return st ? `<a href="#/student/${encodeURIComponent(id)}">${esc(st.name)}</a>` : esc(id); }).join(', ')}</div>` : '';
   function libRow(a) {
     const subs = S().attempts.filter(t => t.aid === a.id), waiting = subs.filter(t => t.status === 'submitted').length, rev = a.questions.filter(q => a.reviewed[q.id]).length;
-    return `<div class="lib-row"><div class="lib-main"><a href="#/edit/${a.id}" class="lib-title">${esc(a.title)}</a><div class="tiny muted">${a.course} · ${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · ${a.questions.reduce((s, q) => s + q.marks, 0)} marks · ${a.paper}${a.groups.length && a.status !== 'draft' ? ' · ' + a.groups.map(g => C().GROUPS[g].label.replace('AA ', '')).join(', ') : ''}${a.status === 'draft' ? ` · reviewed ${rev}/${a.questions.length}` : ''}${['published', 'closed'].includes(a.status) && dueText(a) ? ' · ' + dueText(a) : ''}${a.status === 'published' ? a.groups.filter(g => !Hub.assess.released(a, g)).map(g => ` · <b>hidden from ${C().GROUPS[g].day} day until ${Hub.assess.openText(Hub.assess.openFor(a, g))}</b>`).join('') : ''}${a.autoClosed && a.status === 'closed' ? ' · closed automatically' : ''}${subs.length ? ` · ${subs.length} submitted${waiting ? `, <b>${waiting} to mark</b>` : ''}` : ''}</div></div>
+    return `<div class="lib-row"><div class="lib-main"><a href="#/edit/${a.id}" class="lib-title">${esc(a.title)}</a>${forWhom(a)}<div class="tiny muted">${a.course} · ${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · ${a.questions.reduce((s, q) => s + q.marks, 0)} marks · ${a.paper}${a.groups.length && a.status !== 'draft' ? ' · ' + a.groups.map(g => C().GROUPS[g].label.replace('AA ', '')).join(', ') : ''}${a.status === 'draft' ? ` · reviewed ${rev}/${a.questions.length}` : ''}${['published', 'closed'].includes(a.status) && dueText(a) ? ' · ' + dueText(a) : ''}${a.status === 'published' ? a.groups.filter(g => !Hub.assess.released(a, g)).map(g => ` · <b>hidden from ${C().GROUPS[g].day} day until ${Hub.assess.openText(Hub.assess.openFor(a, g))}</b>`).join('') : ''}${a.autoClosed && a.status === 'closed' ? ' · closed automatically' : ''}${subs.length ? ` · ${subs.length} submitted${waiting ? `, <b>${waiting} to mark</b>` : ''}` : ''}</div></div>
       <span class="pill ${STATUS_TXT[a.status][1]}">${STATUS_TXT[a.status][0]}</span>
       <div class="lib-act"><a class="btn small" href="#/edit/${a.id}">${a.status === 'draft' ? 'Review' : 'Open'}</a><a class="btn small ghost" href="#/print/${a.id}" title="Printable worksheet and answer key">🖨 Print</a>${subs.length ? `<a class="btn small ghost" href="#/analysis/${a.id}">Analysis</a>` : ''}<button class="btn small ghost" data-dup="${a.id}">Duplicate</button>${['published', 'closed'].includes(a.status) && a.type !== 'Retest' ? `<button class="btn small ghost" data-retest="${a.id}">Retest</button>` : ''}${!['draft', 'archived'].includes(a.status) ? `<button class="btn small ghost" data-arch="${a.id}">Archive</button>` : ''}<button class="btn small ghost danger" data-destroy="${a.id}">Delete</button></div></div>`;
   }
@@ -5743,6 +5765,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const locked = !['draft', 'approved'].includes(a.status), probs = Hub.assess.problems(a), rev = a.questions.filter(q => a.reviewed[q.id]).length;
     const subs = S().attempts.filter(t => t.aid === a.id);
     main.innerHTML = `<a class="back" href="#/studio">← Assessment Studio</a>` + U.heading(`${a.course} · ${a.type.toUpperCase()} · VERSION ${a.version}`, esc(a.title), '', `<span class="pill big ${STATUS_TXT[a.status][1]}">${STATUS_TXT[a.status][0]}</span><div class="actions print-acts"><a class="btn small" href="#/print/${a.id}">🖨 Print worksheet</a><a class="btn small ghost" href="#/print/${a.id}?key=1">Answer key</a></div>`) +
+      (a.targets && a.targets.length ? `<div class="notice lib-for-big">🎯 <b>Only these students see this ${esc(a.type === 'Exit Ticket' ? 'retake' : 'retest')}:</b> ${a.targets.map(id => { const st = Hub.roster.byId(id); return st ? `<a href="#/student/${encodeURIComponent(id)}">${esc(st.name)}</a>` : esc(id); }).join(', ')}. Everyone else in the class never sees it.</div>` : '') +
       `<div class="flow" aria-label="Workflow"><span class="${a.status === 'draft' ? 'now' : 'done'}">1 Review every question</span><span class="${a.status === 'approved' ? 'now' : ['published', 'closed', 'archived'].includes(a.status) ? 'done' : ''}">2 Approve</span><span class="${a.status === 'published' ? 'now' : ['closed', 'archived'].includes(a.status) ? 'done' : ''}">3 Publish to groups</span></div>
       ${locked ? `<div class="notice">This assessment is ${a.status}. It is locked so every student sees the same version${subs.length ? ` (${subs.length} submission${subs.length > 1 ? 's' : ''})` : ''}. Duplicate it to make changes.</div>` : ''}
       <section class="card meta-card"><div class="form-grid">
@@ -8537,7 +8560,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <details class="rd-list" open><summary><b>Not done (${not.length})</b></summary>${not.length ? `<p class="miss-names">${not.map(r => `<a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent</span>' : ''}`).join(', ')}</p>${Hub.nudge ? Hub.nudge.buttonHTML(x.a.id, g, not.length) : ''}` : '<p class="tiny gc-ok">✓ Everyone has done it</p>'}</details>
         <details class="rd-list"><summary><b>Done (${did.length})</b></summary>${did.length ? `<table class="tbl rd-tbl"><tbody>${did.sort((p, q) => (q.sc.pct ?? -1) - (p.sc.pct ?? -1)).map(r => `<tr><td><a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent · done later</span>' : ''}</td><td>${r.sc.pct === null || r.sc.pct === undefined ? '—' : r.sc.pct + '%'}</td><td>${r.t.status === 'submitted' ? '<span class="pill amber">to mark</span>' : r.t.status === 'released' ? '<span class="tiny muted">released</span>' : ''}</td><td><a class="tiny" href="#/mark/${r.t.id}">open</a></td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">Nobody yet.</p>'}</details></section>`; };
     const pvStudent = Hub.roster.inGroup(g, true).find(x => x.test) || studs[0];
-    main.innerHTML = `<div class="row-between"><a class="back" href="#/home">← Dashboard</a>${pvStudent ? `<button class="btn small" id="cd-preview" type="button">👁 See this class’s student view</button>` : ''}</div>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
+    main.innerHTML = `<div class="row-between"><a class="back" href="#/home">← Dashboard</a><span class="actions"><a class="btn small" href="#/gradebook?g=${g}">▥ Gradebook</a>${pvStudent ? `<button class="btn small" id="cd-preview" type="button">👁 See this class’s student view</button>` : ''}</span></div>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
       (Hub.testMode ? Hub.testMode.cardHTML(g) : '') + (Hub.attendance ? Hub.attendance.registerHTML(g) : '') +
       `<div class="grid g2">${rundown('Exit Ticket', 'Latest Exit Ticket', 'pink', 'No Exit Ticket has been set for this class yet.')}${rundown('Homework', 'Latest homework', 'amber', 'No homework has been set for this class yet.')}</div>
       ${Hub.retake ? Hub.retake.cardHTML([g]) : ''}
@@ -10953,12 +10976,75 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.feedback = { list, newCount, unseenReplies, student, teacher, replyCardHTML, CATS };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/gradebook.js ---- */
+/* Gradebook per class (#/gradebook?g=SL-A&kind=all): one row per student, one column per Exit Ticket, homework, quiz,
+   test and retest/retake (including personalised Exit Tickets and quizzes), with averages, and a CSV export. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, toast, fmtDate } = Hub.core;
+  const U = Hub.ui, S = () => Hub.store.state, C = () => Hub.curriculum;
+  const KINDS = [['all', 'Everything'], ['et', 'Exit Tickets'], ['hw', 'Homework'], ['quiz', 'Quizzes'], ['test', 'Tests'], ['retake', 'Retests & retakes']];
+  const KIND_SHORT = { et: 'ET', hw: 'HW', quiz: 'Quiz', test: 'Test', retake: 'Retest' };
+  const kindOf = a => a.mock ? 'test' : (a.retestOf || a.type === 'Retest' || / · Retake$/.test(a.title || '')) ? 'retake' : a.type === 'Exit Ticket' ? 'et' : a.type === 'Homework' ? 'hw' : a.type === 'Quiz' ? 'quiz' : ['Unit test', 'Test'].includes(a.type) ? 'test' : 'hw';
+  const short = t => String(t || '').replace(/^(SL|HL) · /, '');
+  const pctOf = t => { try { const v = Hub.assess.score(t).pct; return v === null || v === undefined || isNaN(v) ? null : Math.round(v); } catch (e) { return null; } };
+  const mean = xs => xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null;
+  const tone = p => p === null ? '' : p >= 80 ? 'hm-g' : p >= 60 ? 'hm-a' : 'hm-r';
+
+  /** Columns for a class: [{id, kind, title, due, cell(sid) -> {pct, txt}}] oldest first. */
+  function columns(g) {
+    const today = Hub.mastery.asOf(), studs = Hub.roster.inGroup(g);
+    const cols = S().assessments.filter(a => ['published', 'closed'].includes(a.status) && !a.optional && (a.groups || []).includes(g))
+      .map(a => ({ id: a.id, a, kind: kindOf(a), title: short(a.title), due: Hub.assess.dueFor(a, g) || String(a.publishedAt || '').slice(0, 10), targets: a.targets || null,
+        cell: sid => { if (a.targets && !a.targets.includes(sid)) return { pct: null, txt: '', na: true };
+          const ts = Hub.assess.attemptsFor(a.id, sid), rel = ts.filter(t => t.status === 'released').pop(), sub = ts.filter(t => t.status === 'submitted').pop();
+          if (rel) { const p = pctOf(rel); return { pct: p, txt: p === null ? '✓' : p + '%' }; }
+          if (sub) return { pct: null, txt: 'to mark' };
+          const due = Hub.assess.dueFor(a, g); return { pct: null, txt: due && due < today ? 'missing' : '' }; } }));
+    // personalised Exit Tickets and quizzes (Do Now records), one column per lesson
+    const dn = {}; S().attempts.filter(t => t.donowKey && String(t.donowKey).startsWith(g + '|') && studs.some(s => s.id === t.sid)).forEach(t => { (dn[t.donowKey] = dn[t.donowKey] || []).push(t); });
+    Object.entries(dn).forEach(([key, ts]) => { const date = key.split('|')[1].slice(0, 10), kind = /~quiz/.test(key) ? 'quiz' : 'et';
+      cols.push({ id: key, kind, title: `Personalised ${kind === 'quiz' ? 'quiz' : 'Exit Ticket'} · ${fmtDate(date)}`, due: date, cell: sid => { const t = ts.filter(x => x.sid === sid).pop(); if (!t) return { pct: null, txt: '' }; const p = t.status === 'released' ? pctOf(t) : null; return { pct: p, txt: t.status === 'released' ? (p === null ? '✓' : p + '%') : 'to mark' }; } }); });
+    return cols.sort((x, y) => String(x.due).localeCompare(String(y.due)));
+  }
+  function build(g, kind) {
+    const studs = Hub.roster.inGroup(g).slice().sort((a, b) => a.name.localeCompare(b.name)), all = columns(g), cols = kind === 'all' ? all : all.filter(c => c.kind === kind);
+    const rows = studs.map(s => { const cells = cols.map(c => c.cell(s.id)), by = {};
+      all.forEach(c => { const v = c.cell(s.id); if (v.pct !== null) (by[c.kind] = by[c.kind] || []).push(v.pct); });
+      const shown = cells.filter(v => v.pct !== null).map(v => v.pct);
+      return { s, cells, avg: mean(shown), byKind: Object.fromEntries(KINDS.slice(1).map(([k]) => [k, mean(by[k] || [])])), missing: cells.filter(v => v.txt === 'missing').length }; });
+    const colAvg = cols.map((c, i) => mean(rows.map(r => r.cells[i].pct).filter(p => p !== null)));
+    return { studs, cols, rows, colAvg };
+  }
+  function csv(g, kind) {
+    const { cols, rows, colAvg } = build(g, kind), q = v => { const t = String(v === null || v === undefined ? '' : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const head = ['Student', 'Email', ...cols.map(c => `${KIND_SHORT[c.kind]}: ${c.title} (${c.due || ''})`), 'Average %', ...KINDS.slice(1).map(([k, l]) => `${l} average %`), 'Missing'];
+    const lines = [head, ...rows.map(r => [r.s.name, r.s.email || '', ...r.cells.map(v => v.na ? 'n/a' : v.pct !== null ? v.pct : v.txt), r.avg ?? '', ...KINDS.slice(1).map(([k]) => r.byKind[k] ?? ''), r.missing]),
+      ['Class average', '', ...colAvg.map(v => v ?? ''), mean(rows.map(r => r.avg).filter(v => v !== null)) ?? '']];
+    return lines.map(l => l.map(q).join(',')).join('\n');
+  }
+  function view(main, params) {
+    const g = C().GROUPS[params.g] ? params.g : (localStorage.getItem('hub-pref-gb') || 'SL-A'), kind = KINDS.some(k => k[0] === params.kind) ? params.kind : 'all';
+    try { localStorage.setItem('hub-pref-gb', g); } catch (e) {}
+    const { cols, rows, colAvg } = build(g, kind), link = o => '#/gradebook?' + new URLSearchParams(Object.assign({ g, kind }, o)).toString();
+    main.innerHTML = U.heading('MARKS', 'Gradebook', 'Every Exit Ticket, homework, quiz, test and retest for one class, with averages. Percentages are the latest released mark; “to mark” is waiting for you; “missing” is past its due date.', `<button class="btn primary" id="gb-csv" type="button">⬇ Export CSV</button>`) +
+      `<div class="tabs">${Object.values(C().GROUPS).map(x => `<a class="tab ${x.id === g ? 'on' : ''}" href="${link({ g: x.id })}">${esc(x.label)}</a>`).join('')}</div>
+      <div class="tabs">${KINDS.map(([k, l]) => `<a class="tab small ${k === kind ? 'on' : ''}" href="${link({ kind: k })}">${l}</a>`).join('')}</div>
+      <section class="card">${!rows.length ? U.empty('No students in this class yet.') : !cols.length ? U.empty('Nothing has been set for this class yet.') : `<div class="scroll gb-wrap"><table class="gb-tbl"><thead><tr><th class="gb-name">Student</th><th>Avg</th>${cols.map(c => `<th title="${esc(c.title)}"><span class="gb-k ${c.kind}">${KIND_SHORT[c.kind]}</span><span class="gb-t">${esc(c.title.slice(0, 38))}</span><span class="tiny muted">${c.due ? fmtDate(c.due) : ''}</span></th>`).join('')}</tr></thead>
+        <tbody>${rows.map(r => `<tr><th class="gb-name"><a href="#/student/${encodeURIComponent(r.s.id)}">${esc(r.s.name)}</a>${r.missing ? ` <span class="pill red">${r.missing} missing</span>` : ''}</th><td class="${tone(r.avg)}"><b>${r.avg ?? ''}</b></td>${r.cells.map((v, i) => `<td class="${v.na ? 'gb-na' : v.pct !== null ? tone(v.pct) : v.txt === 'missing' ? 'gb-miss' : v.txt === 'to mark' ? 'gb-mark' : ''}">${v.na ? '—' : v.pct !== null ? v.pct : v.txt === 'to mark' ? `<a href="#/marking">${v.txt}</a>` : esc(v.txt)}</td>`).join('')}</tr>`).join('')}
+        <tr class="gb-avg"><th class="gb-name">Class average</th><td><b>${mean(rows.map(r => r.avg).filter(v => v !== null)) ?? ''}</b></td>${colAvg.map(v => `<td class="${tone(v)}"><b>${v ?? ''}</b></td>`).join('')}</tr></tbody></table></div>
+        <p class="tiny muted">Scores are percentages. “—” means a retest or retake that wasn’t set for that student. The CSV also has each student’s average for Exit Tickets, homework, quizzes, tests and retests.</p>`}</section>`;
+    $('#gb-csv').onclick = () => { const blob = new Blob([csv(g, kind)], { type: 'text/csv' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${C().GROUPS[g].label.replace(/[^\w]+/g, '_')}_gradebook${kind === 'all' ? '' : '_' + kind}_${Hub.core.todayISO()}.csv`; document.body.appendChild(a); a.click(); a.remove(); toast('Gradebook downloaded.'); };
+  }
+  Hub.gradebook = { view, build, csv, columns };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/app.js ---- */
 /* App shell: sign-in, navigation, routing (#/page/param?query), preview banner, re-rendering. */
 (function (Hub) {
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
-  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['weekly', '📋', 'Monday summary'], 'Teaching', ['lessons', '▣', 'Lessons & notebooks'], ['donow', '☀', 'Personalised quizzes'], ['announce', '✉', 'Announcements'], ['feedback', '💬', 'Feedback inbox'], 'Assessment', ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['exam', '📝', 'Exam prep'], 'Data', ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], 'Course', ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
+  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['weekly', '📋', 'Monday summary'], 'Teaching', ['lessons', '▣', 'Lessons & notebooks'], ['donow', '☀', 'Personalised quizzes'], ['announce', '✉', 'Announcements'], ['feedback', '💬', 'Feedback inbox'], 'Assessment', ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['gradebook', '▥', 'Gradebook'], ['exam', '📝', 'Exam prep'], 'Data', ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], 'Course', ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
   const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar'], ['feedback', '💬', 'Feedback']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
@@ -10969,7 +11055,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), feedback: (m, p) => Hub.feedback.teacher(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), gradebook: (m, p) => Hub.gradebook.view(m, p), feedback: (m, p) => Hub.feedback.teacher(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
     student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), feedback: m => Hub.feedback.student(m) }
   };
   function shell() {
