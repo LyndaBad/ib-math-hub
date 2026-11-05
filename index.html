@@ -5373,7 +5373,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const status = params.status || pref('studio-status') || 'all', group = params.group || curGroup(), course = C().GROUPS[group].course;
     const asOf = Hub.mastery.asOf(), nl = C().nextLesson(group, asOf);
     const lessonOpts = C().lessons(group).filter(l => l.skills.length).map(l => `<option value="${l.date}" ${nl && l.date === nl.date ? 'selected' : ''}>${fmtDate(l.date)} · ${esc(l.activity.slice(0, 70))}</option>`).join('');
-    const list = S().assessments.filter(a => status === 'all' ? a.status !== 'archived' : a.status === status);
+    // newest first: by when each task was made (older tasks without a date fall back to their first history entry)
+    const made = a => String(a.createdAt || (a.history && a.history.length ? (a.history[0].at || a.history[0].date || '') : '') || a.publishedAt || '');
+    const list = S().assessments.filter(a => status === 'all' ? a.status !== 'archived' : a.status === status).sort((x, y) => made(y).localeCompare(made(x)));
     main.innerHTML = U.heading('TEACHER WORKSPACE', 'Assessment Studio', 'Original IB-style questions with markschemes. Every question must be reviewed before you can approve, and you choose when and to whom it is published.') +
       `${Hub.bookex ? Hub.bookex.studioCard(group) : ''}<section class="card builder"><h2 class="bar-head green">Build a new draft</h2><form id="build" class="form-grid">
         <label>Group<select id="b-group">${U.groupOptions(group)}</select></label>
