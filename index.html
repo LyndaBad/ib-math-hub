@@ -431,6 +431,7 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .sg-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .sg-plan li { margin: 0 0 8px; }
 .ex-tabs { margin: 0 0 14px; }
+.unit-picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .tc-drop { border: 2px solid #EFD3C2; border-radius: 12px; background: var(--white); }
 .tc-drop > summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; list-style: none; font-family: var(--f-ui); }
 .tc-drop > summary::-webkit-details-marker { display: none; }
@@ -5367,7 +5368,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <label>Size by <select id="b-sizeby"><option value="count">Number of questions</option><option value="marks">Total marks</option></select></label>
         <label class="b-by-count">Generated questions <span class="tiny muted">(from the skills; 0 = book exercises only)</span><input id="b-count" type="number" min="0" max="12" value="2"></label>
         <label class="b-by-marks" hidden>Total marks <span class="tiny muted">(the paper adds up to exactly this — whole questions only)</span><input id="b-marks" type="number" min="5" max="150" step="1" value="60"></label>
-        <fieldset class="skills-pick span2"><legend>Skills <span class="tiny muted">(${course} · ticked from the lesson; change freely)</span></legend><div id="b-skills" class="skill-grid">${C().skillsFor(course).map(s => `<label class="sk ${U.unitColour(s.unit)}"><input type="checkbox" value="${s.id}" ${nl && nl.skills.includes(s.id) ? 'checked' : ''}> ${U.skillLabel(s.id)}${C().isTaught(s.id, group, asOf) ? '' : ' <span class="tiny muted">(not yet taught)</span>'}</label>`).join('')}</div></fieldset>
+        <fieldset class="skills-pick span2"><legend>Skills <span class="tiny muted">(${course} · ticked from the lesson; change freely)</span></legend><div class="unit-picks">${C().UNITS[course].filter(([u]) => C().skillsFor(course).some(k => k.unit === u)).map(([u, nm]) => `<button type="button" class="btn small ghost" data-allunit="${u}" title="${esc(nm)}">All of Unit ${u}</button>`).join('')}<button type="button" class="btn small ghost" data-allunit="none">Clear</button></div><div id="b-skills" class="skill-grid">${C().skillsFor(course).map(s => `<label class="sk ${U.unitColour(s.unit)}"><input type="checkbox" value="${s.id}" ${nl && nl.skills.includes(s.id) ? 'checked' : ''}> ${U.skillLabel(s.id)}${C().isTaught(s.id, group, asOf) ? '' : ' <span class="tiny muted">(not yet taught)</span>'}</label>`).join('')}</div></fieldset>
         <fieldset class="span2 bb-book"><legend>Book-exercise questions <span class="tiny muted">(optional · new questions labelled with the ${esc(Hub.bookex ? Hub.bookex.BOOK[course] : '')} exercise — add as many exercises as you like)</span></legend>${Hub.bookex ? `<div class="form-grid">${Hub.bookex.pickerHTML(course, 'bb', [], 'Add a book exercise to this draft')}</div><p class="tiny" id="bb-sum"></p>` : ''}</fieldset>
         <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework answers are typed by students and marked automatically; “show that” parts become self-check with the model answer.</span></div></form></section>
       <section class="card"><div class="row-between"><h2 class="bar-head blue">Library</h2><div class="tabs" role="tablist">${['all', 'draft', 'approved', 'published', 'closed', 'archived'].map(s => `<button role="tab" class="tab ${s === status ? 'on' : ''}" data-status="${s}" aria-selected="${s === status}">${s[0].toUpperCase() + s.slice(1)}</button>`).join('')}</div></div>
@@ -5375,6 +5376,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#b-group').onchange = e => { pref('group', e.target.value); go('#/studio?group=' + e.target.value); };
     $('#b-lesson').onchange = e => { const l = C().lessons(group).find(x => x.date === e.target.value); $$('#b-skills input').forEach(c => (c.checked = !!(l && l.skills.includes(c.value)))); };
     $('#b-type').onchange = e => { $('#b-count').value = Hub.assess.TYPES[e.target.value].count; };
+    $$('[data-allunit]', main).forEach(b => (b.onclick = () => { const u = b.dataset.allunit, ids = new Set(C().skillsFor(course).filter(k => String(k.unit) === u).map(k => k.id)), boxes = $$('#b-skills input');
+      if (u === 'none') { boxes.forEach(c => (c.checked = false)); return; }
+      const all = boxes.filter(c => ids.has(c.value)).every(c => c.checked); boxes.forEach(c => { if (ids.has(c.value)) c.checked = !all; });
+      toast(all ? `Unit ${u} unticked.` : `All of Unit ${u} ticked (${ids.size} skills).`); }));
     $('#b-sizeby').onchange = e => { const m = e.target.value === 'marks'; $('.b-by-count', main).hidden = m; $('.b-by-marks', main).hidden = !m; };
     $$('.tab[data-status]').forEach(b => (b.onclick = () => { pref('studio-status', b.dataset.status); go('#/studio?status=' + b.dataset.status + '&group=' + group); }));
     const bb = Hub.bookex ? Hub.bookex.bindPicker($('#build'), course, 'bb', api => { const n = api.chosen().length, q = api.only().length; $('#bb-sum').textContent = n ? `${n} exercise${n > 1 ? 's' : ''} · ${q} question${q === 1 ? '' : 's'} · ${api.marks()} marks added to this draft` : ''; }) : null;
