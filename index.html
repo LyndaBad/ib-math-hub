@@ -431,6 +431,10 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .sg-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .sg-plan li { margin: 0 0 8px; }
 .ex-tabs { margin: 0 0 14px; }
+.tm-strip { background: #FDECEA; border: 2px solid #D93025; border-radius: 12px; padding: 8px 14px; margin: 0 0 12px; font-family: var(--f-ui); }
+.tm-card.tm-on { border-color: #D93025; }
+.tm-home { border-color: #D93025; } .tm-h { font-family: var(--f-head); font-size: clamp(1.5rem, 4vw, 2.1rem); margin: 0 0 6px; }
+body.test-mode .watch, body.test-mode .pv-pick, body.test-mode .side .slogan { display: none !important; }
 .unit-picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .tc-drop { border: 2px solid #EFD3C2; border-radius: 12px; background: var(--white); }
 .tc-drop > summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; list-style: none; font-family: var(--f-ui); }
@@ -5343,7 +5347,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
     main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.') +
-      todayHTML + (Hub.insights ? Hub.insights.dashCard() : '') + (Hub.exam ? Hub.exam.dashHTML() : '') + (() => { const nA = S().assessments.filter(a => a.status === 'approved').length, nIA = Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length;
+      (Hub.testMode ? Hub.testMode.stripHTML() : '') + todayHTML + (Hub.insights ? Hub.insights.dashCard() : '') + (Hub.exam ? Hub.exam.dashHTML() : '') + (() => { const nA = S().assessments.filter(a => a.status === 'approved').length, nIA = Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length;
         const tiles = [q.length ? `<a class="att hot" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark${(r => r ? `<br><small class="att-ready">${r} ready to release</small>` : '')(Hub.assess.readyToRelease().length)}</span></a>` : '',
           drafts.length ? `<a class="att warm" href="#/studio?status=draft"><b>${drafts.length}</b><span>draft${drafts.length === 1 ? '' : 's'} to review</span></a>` : '',
           nA ? `<a class="att" href="#/studio?status=approved"><b>${nA}</b><span>approved, not published</span></a>` : '',
@@ -5764,7 +5768,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <div class="actions sticky-actions"><button class="btn primary" id="submit" type="submit">Submit</button><span id="autosave" class="tiny muted">${prog && prog.updatedAt ? 'Answers saved ' + fmtDateTime(prog.updatedAt) : 'Your answers save as you type.'}</span></div></form>`;
     // Paper 1 work (no calculator): hide the NumWorks panel. Practice keeps it.
     if (Hub.calc && a.type !== 'Practice' && a.questions.length && a.questions.every(q => q.paper === 1)) Hub.calc.setAllowed(false);
-    const form = $('#take'); let ups = uploads.slice(); const hints = {};
+    const form = $('#take');
+    if (Hub.testMode) Hub.testMode.followQuestions(form, a.questions); let ups = uploads.slice(); const hints = {};
     const listUps = () => { const ul = $('#up-list'); if (ul) ul.innerHTML = ups.map((u, i) => `<li>📄 ${esc(u.name)} <span class="tiny muted">${Math.round(u.size / 1024)} KB</span> <button type="button" class="btn small ghost" data-rmup="${i}">Remove</button></li>`).join(''); $$('[data-rmup]').forEach(b => (b.onclick = () => { ups.splice(Number(b.dataset.rmup), 1); listUps(); persist(); })); };
     const persist = () => { if (opts.preview || !s || opts.noProgress) return; Hub.assess.saveProgress(s.id, key, { responses: U.readResponses(form, a.questions), uploads: ups, reflection: $('#reflection') ? $('#reflection').value : '' }); const el = $('#autosave'); if (el) el.textContent = 'Saving answers to cloud…'; };
     U.bindPreviews(form, persist); listUps();
@@ -8167,7 +8172,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <details class="rd-list"><summary><b>Done (${did.length})</b></summary>${did.length ? `<table class="tbl rd-tbl"><tbody>${did.sort((p, q) => (q.sc.pct ?? -1) - (p.sc.pct ?? -1)).map(r => `<tr><td><a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent · done later</span>' : ''}</td><td>${r.sc.pct === null || r.sc.pct === undefined ? '—' : r.sc.pct + '%'}</td><td>${r.t.status === 'submitted' ? '<span class="pill amber">to mark</span>' : r.t.status === 'released' ? '<span class="tiny muted">released</span>' : ''}</td><td><a class="tiny" href="#/mark/${r.t.id}">open</a></td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">Nobody yet.</p>'}</details></section>`; };
     const pvStudent = Hub.roster.inGroup(g, true).find(x => x.test) || studs[0];
     main.innerHTML = `<div class="row-between"><a class="back" href="#/home">← Dashboard</a>${pvStudent ? `<button class="btn small" id="cd-preview" type="button">👁 See this class’s student view</button>` : ''}</div>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
-      (Hub.attendance ? Hub.attendance.registerHTML(g) : '') +
+      (Hub.testMode ? Hub.testMode.cardHTML(g) : '') + (Hub.attendance ? Hub.attendance.registerHTML(g) : '') +
       `<div class="grid g2">${rundown('Exit Ticket', 'Latest Exit Ticket', 'pink', 'No Exit Ticket has been set for this class yet.')}${rundown('Homework', 'Latest homework', 'amber', 'No homework has been set for this class yet.')}</div>
       ${Hub.retake ? Hub.retake.cardHTML([g]) : ''}
       <div class="grid g2">
@@ -8187,6 +8192,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <h3 class="sub-h">IA</h3>${Hub.ia ? Hub.ia.cardLine(g) : ia ? `<p class="tiny gc-ia">IA · <b>${esc(ia.short)}</b> due ${fmtDate(ia.date)}</p>` : ''}<a class="btn small ghost" href="#/ia?group=${g}">IA overview</a></div></div></details>`;
     const cdp = $('#cd-preview'); if (cdp) cdp.onclick = () => Hub.app.previewAs(pvStudent.id);
     if (Hub.attendance) Hub.attendance.bindRegister(main, g);
+    if (Hub.testMode) Hub.testMode.bind(main);
     if (Hub.retake) Hub.retake.bind(main);
     $$('[data-keepopen]', main).forEach(i => (i.onchange = async () => { const a = Hub.assess.byId(i.dataset.keepopen); if (!a) return;
       const ko = a.keepOpen === true ? Object.fromEntries((a.groups || []).map(x => [x, true])) : Object.assign({}, a.keepOpen || {});
@@ -10371,6 +10377,85 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 })(window.Hub = window.Hub || {});
 
 
+/* ---- js/testmode.js ---- */
+/* Test mode, per class. While it is on, students in that class can only open My day (which lists just their quizzes and
+   tests), the quiz or test itself, the formula booklet and the NumWorks. Notebooks, videos, practice, study guides, results
+   and everything else are closed. The NumWorks is switched off whenever a no-calculator (Paper 1) question is on screen.
+   It switches itself off after the time you choose. Note: it locks the hub, not the Chromebook — other tabs are still a
+   classroom-supervision matter. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast } = Hub.core;
+  const S = () => Hub.store.state, C = () => Hub.curriculum;
+  const TYPES = ['Quiz', 'Unit test', 'Retest', 'Exit Ticket', 'Do Now'];
+  const ROUTES_OK = ['home', 'task', 'donow'];
+  const cfgAll = () => ((S() || {}).settings || {}).testMode || {};
+  const cfg = g => cfgAll()[g] || null;
+  /** Is test mode on for this class right now? */
+  const on = g => { const c = cfg(g); return !!(c && c.on && (!c.until || new Date(c.until) > new Date())); };
+  const forStudent = () => { if (!Hub.auth || Hub.auth.role() !== 'student') return false; const s = Hub.roster.byId(Hub.auth.sid()); return !!(s && on(s.group)); };
+  const untilText = c => c && c.until ? 'until ' + new Date(c.until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'until you turn it off';
+  async function set(g, mins) {
+    const st = S(), all = st.settings.testMode = Object.assign({}, st.settings.testMode || {});
+    if (mins === 0) delete all[g]; else all[g] = { on: true, since: new Date().toISOString(), until: mins > 0 ? new Date(Date.now() + mins * 60e3).toISOString() : null };
+    Hub.store.log(`Test mode ${mins === 0 ? 'off' : 'on'} for ${(C().GROUPS[g] || {}).label || g}`); Hub.store.save(true);
+    try { await Hub.store.flush(); toast(mins === 0 ? 'Test mode is off — everything is open again.' : 'Test mode is on. Students see it within a minute.'); } catch (e) { toast(e.message, 'error'); }
+    Hub.app.render();
+  }
+  /* ---------- teacher controls (class dashboard + dashboard strip) ---------- */
+  function cardHTML(g) {
+    const c = cfg(g), isOn = on(g);
+    return `<section class="card ${isOn ? 'act tm-on' : ''} tm-card"><div class="row-between"><h2 class="bar-head ${isOn ? 'pink' : 'blue'}">🔒 Test mode</h2>${isOn ? `<span class="pill red">ON · ${esc(untilText(c))}</span>` : '<span class="pill">off</span>'}</div>
+      <p class="tiny muted">For quizzes and tests in class. Students in this class can only open their quizzes and tests, the formula booklet and the NumWorks — no notebooks, videos, practice, study guides or results. The NumWorks switches off on no-calculator questions.</p>
+      <div class="actions">${isOn ? `<button class="btn primary" type="button" data-tm="${g}" data-min="0">Turn test mode off</button><button class="btn small ghost" type="button" data-tm="${g}" data-min="30">Extend 30 min</button>` :
+        `<button class="btn primary" type="button" data-tm="${g}" data-min="60">Turn on for 1 hour</button><button class="btn small ghost" type="button" data-tm="${g}" data-min="90">90 min</button><button class="btn small ghost" type="button" data-tm="${g}" data-min="-1">Until I turn it off</button>`}</div></section>`;
+  }
+  function bind(root) {
+    $$('[data-tm]', root).forEach(b => (b.onclick = () => { const g = b.dataset.tm, m = +b.dataset.min;
+      if (m === 30 && cfg(g) && cfg(g).until) { const c = cfg(g), left = Math.max(0, (new Date(c.until) - Date.now()) / 60e3); return set(g, Math.round(left + 30)); }
+      set(g, m); }));
+  }
+  /** One line for the teacher's Today strip when any class is in test mode. */
+  function stripHTML() {
+    const gs = Object.keys(C().GROUPS).filter(on); if (!gs.length) return '';
+    return `<div class="tm-strip">🔒 <b>Test mode on:</b> ${gs.map(g => `<a href="#/class/${g}">${esc(C().GROUPS[g].label)}</a> <span class="tiny">(${esc(untilText(cfg(g)))})</span>`).join(' · ')}</div>`;
+  }
+  /* ---------- student side ---------- */
+  /** Called before every student page: returns the page to show instead, or null. */
+  const allowed = page => ROUTES_OK.includes(page);
+  function homeHTML(s) {
+    const tasks = Hub.assess.forStudent(s.id).filter(a => TYPES.includes(a.type) && !Hub.assess.attemptsFor(a.id, s.id).length);
+    const dn = Hub.donow && Hub.donow.forStudent ? Hub.donow.forStudent(s.id) : null;
+    return `<section class="card act tm-home"><h1 class="tm-h">🔒 Test mode</h1><p>Miss Badmus has turned on test mode for your class. You can open your quiz or test, the <b>formula booklet</b> and the <b>NumWorks</b> (not on no-calculator questions). Everything else opens again afterwards.</p>
+      <div class="actions"><button class="btn ghost" type="button" data-booklet>📘 Formula booklet</button></div></section>
+      <section class="card"><h2 class="bar-head green">Your quizzes and tests</h2>${tasks.length || (dn && !dn.done) ? `${dn && !dn.done ? `<div class="todo"><div><b>Your personalised quiz</b></div><a class="btn primary" href="#/donow">Start →</a></div>` : ''}${tasks.map(a => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">${esc(a.type)}${a.minutes ? ` · about ${a.minutes} minutes` : ''}</div></div><a class="btn primary" href="#/task/${encodeURIComponent(a.id)}">Start →</a></div>`).join('')}` : '<p class="small">Nothing to do yet — wait for Miss Badmus to open the quiz or test.</p>'}</section>`;
+  }
+  /** On a mixed quiz or test, the NumWorks follows the question on screen: off on Paper 1 questions, on for Paper 2. */
+  let obs = null;
+  function followQuestions(root, qs) {
+    if (obs) { obs.disconnect(); obs = null; }
+    if (!Hub.calc || !qs.length || !forStudent()) return;
+    const papers = new Set(qs.map(q => q.paper || 1)); if (papers.size < 2) return;
+    const seen = new Map();
+    obs = new IntersectionObserver(es => { es.forEach(e => seen.set(e.target, e.intersectionRatio)); let best = null, r = 0; seen.forEach((v, el) => { if (v > r) { r = v; best = el; } });
+      if (best) Hub.calc.setAllowed(best.dataset.paper !== '1'); }, { threshold: [0, .25, .5, .75, 1] });
+    $$('.q-card', root).forEach((el, i) => { el.dataset.paper = String((qs[i] || {}).paper || 1); obs.observe(el); });
+  }
+  /* poll: students pick up test mode (on or off) within a minute, wherever they are, unless they are mid-answer */
+  let polling = false;
+  async function poll() {
+    if (polling || document.hidden || !Hub.auth || Hub.auth.role() !== 'student' || Hub.auth.isPreview() || !Hub.store.state || Hub.store.dirty) return;
+    const s = Hub.roster.byId(Hub.auth.sid()); if (!s) return;
+    polling = true;
+    try { const r = await Hub.cloud.call('load'); if (!r || !r.state) return;
+      const was = JSON.stringify(cfgAll()[s.group] || null), now = JSON.stringify(((r.state.settings || {}).testMode || {})[s.group] || null);
+      if (was !== now && !Hub.store.dirty) { Hub.store.accept(r.state); const page = (location.hash.match(/^#\/([^/?]*)/) || [])[1] || 'home'; if (on(s.group) && !allowed(page)) location.hash = '#/home'; else Hub.app.render(); }
+    } catch (e) { /* offline: try next time */ } finally { polling = false; }
+  }
+  setInterval(poll, 60e3);
+  Hub.testMode = { on, forStudent, cfg, set, cardHTML, bind, stripHTML, allowed, homeHTML, followQuestions };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/app.js ---- */
 /* App shell: sign-in, navigation, routing (#/page/param?query), preview banner, re-rendering. */
 (function (Hub) {
@@ -10392,7 +10477,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   };
   function shell() {
     const sess = Hub.auth.current(), role = Hub.auth.role(), st = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null;
-    const navItems = role === 'teacher' ? TEACHER_NAV : STUDENT_NAV, q = role === 'teacher' ? Hub.assess.queue().length : 0;
+    const navItems = role === 'teacher' ? TEACHER_NAV : (Hub.testMode && Hub.testMode.forStudent() ? [['home', '🔒', 'Test mode']] : STUDENT_NAV), q = role === 'teacher' ? Hub.assess.queue().length : 0;
     const name = role === 'student' ? (st ? st.name : '') : sess.name, sub = role === 'student' ? (st ? C().GROUPS[st.group].label : '') : 'Teacher · IB AA SL & HL';
     $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><a class="brand" href="#/home"><img src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"><span class="brand-text"><small>Miss Badmus’</small><b>IB Math Hub</b></span></a><p class="slogan">Inquirers. Thinkers. Reflective Learners.</p>
       <nav aria-label="Main">${navItems.map(it => typeof it === 'string' ? `<p class="side-h">${it}</p>` : it).map(it => typeof it === 'string' ? it : (([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && Hub.announce && st && Hub.announce.unread(st).length ? `<span class="badge">${Hub.announce.unread(st).length}</span>` : ''}</a>`)(it)).join('')}</nav>
@@ -10449,12 +10534,16 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const sess = Hub.auth.current();
     if (!sess || (sess.role === 'student' && !Hub.roster.byId(sess.sid))) { shellFor = null; signIn(); return; }
     if (sess.role === 'teacher' && !Hub.auth.isPreview() && Hub.store.state) Hub.assess.autoClose();
-    const key = sess.email + '|' + Hub.auth.role() + '|' + (Hub.auth.sid() || '') + '|' + Hub.assess.queue().length;
+    const key = sess.email + '|' + Hub.auth.role() + '|' + (Hub.auth.sid() || '') + '|' + Hub.assess.queue().length + '|' + (Hub.testMode && Hub.testMode.forStudent() ? 'tm' : '');
     if (shellFor !== key || !$('#main')) { shell(); shellFor = key; }
     const { page, params } = parse(), role = Hub.auth.role(), routes = ROUTES[role], fn = routes[page] || routes.home;
     $$('[data-nav]').forEach(a => { const on = a.dataset.nav === page || (['edit', 'preview', 'print', 'analysis'].includes(page) && a.dataset.nav === 'studio') || (page === 'lesson' && a.dataset.nav === 'lessons') || (page === 'mark' && a.dataset.nav === 'marking') || (page === 'class' && a.dataset.nav === 'home') || (page === 'iaprint' && a.dataset.nav === 'ia') || (['task', 'result'].includes(page) && a.dataset.nav === 'home'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     const main = $('#main');
     if (Hub.calc) Hub.calc.setAllowed(true);
+    const tm = role === 'student' && Hub.testMode && Hub.testMode.forStudent();
+    document.body.classList.toggle('test-mode', !!tm);
+    if (tm && !Hub.testMode.allowed(page)) { if (page !== 'home') { history.replaceState(null, '', '#/home'); } main.innerHTML = Hub.testMode.homeHTML(Hub.roster.byId(Hub.auth.sid())); return; }
+    if (tm && page === 'home') { main.innerHTML = Hub.testMode.homeHTML(Hub.roster.byId(Hub.auth.sid())); return; }
     try { fn(main, params); } catch (e) { console.error(e); main.innerHTML = U.empty('Something went wrong showing this page. Your data is safe.', `<pre class="tiny">${esc(e.message)}</pre><a class="btn" href="#/home">Go home</a>`); }
     (S => { const n = S.notices; if (n && n.length) { const x = n.shift(); toast(x.text, x.kind); Hub.store.save(); } })(Hub.store.state);
     $('#side') && $('#side').classList.remove('open');
