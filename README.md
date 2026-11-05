@@ -37,3 +37,12 @@ This is a small-classroom release using a single versioned classroom document. I
 Hosting uses GitHub Pages and the existing Supabase Free organization. Usage limits still apply; a free project may pause when inactive. No paid add-ons were enabled. Export backups regularly; an independent production security review and school approval are outside this implementation.
 
 The vendored Supabase JavaScript client is pinned to 2.95.3 (MIT). Original local font licenses remain with the assets. The supplied branding and project content remain the owner's materials.
+
+## Safety check
+Every update to `main` runs `.github/workflows/check-and-publish.yml`: the scripts must parse (`tests/check-syntax.cjs`) and
+23 teacher and student pages must open without errors in a headless browser with sample data (`tests/smoke.cjs`).
+With **Settings → Pages → Source: GitHub Actions**, the site is only published when the check passes.
+Run it locally: `npm i --no-save playwright && npx playwright install chromium && node tests/smoke.cjs`.
+
+## Server
+`server/supabase/functions/hub/` is a backup of the deployed Supabase Edge Function (see `server/README.md`).

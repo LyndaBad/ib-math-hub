@@ -1,0 +1,64 @@
+name: Check and publish
+
+# Every update to main: check the site loads and its main pages open without errors.
+# Publishing: while Settings → Pages → Source is "GitHub Actions", the site is only published when the check passes.
+# (While the source is "Deploy from a branch", GitHub publishes every update itself and this only reports.)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      source: ${{ steps.pages.outputs.source }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Scripts parse
+        run: node tests/check-syntax.cjs
+      - name: Install a headless browser
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1
+          npx playwright install --with-deps chromium
+      - name: Main pages open without errors
+        run: node tests/smoke.cjs
+      - name: How is GitHub Pages publishing?
+        id: pages
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const { data } = await github.rest.repos.getPages({ owner: context.repo.owner, repo: context.repo.repo });
+              core.setOutput('source', data.build_type || 'legacy');
+            } catch (e) { core.setOutput('source', 'unknown'); }
+
+  publish:
+    needs: check
+    if: github.event_name != 'pull_request' && needs.check.outputs.source == 'workflow'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
