@@ -708,6 +708,8 @@ body.mp-on { padding-bottom: 76px; }
 @media (max-width: 760px) { .today-row { grid-template-columns: 1fr 1fr; } .today-class { grid-column: 1 / -1; } }
 .keep-open { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; padding: 8px 10px; border: 2px dashed var(--line); border-radius: 10px; } .keep-open.on { border-color: #6AA84F; background: #EEF7E9; } .keep-open label { margin: 0; }
 .new-version { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 9999; background: var(--white); border: 3px solid var(--orange); border-radius: 14px; padding: 10px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.15); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 32px); }
+.dc-locks { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin: 10px 0 4px; } .dc-lk { font-family: var(--f-ui); font-size: .85rem; background: #EEF2FF; border: 1.5px solid #9FC5E8; border-radius: 999px; padding: 3px 10px; } .dc-lk .linkish { background: none; border: 0; padding: 0 0 0 4px; color: var(--orange-d, #c4561d); text-decoration: underline; cursor: pointer; font: inherit; }
+.dc-locked { box-shadow: inset 0 0 0 2px #9FC5E8; }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -5813,6 +5815,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return { at, of: all.length, pct: all.length ? Math.round(100 * at / all.length) : null, below: all.filter(x => x.p.grade < cut()), all, notAssessed: studs.length - studs.filter(s => predicted(s, upTo)).length };
   }
   const cell = r => r && r.of ? `${r.at}/${r.of}` : '';
+  const LOCK_KEY = '_teacher|dclock';
   const tone = p => p === null ? '' : p >= target() ? 'green' : p >= target() - 15 ? 'amber' : 'red';
 
   function chart(rowsBy, ms) {
@@ -5883,6 +5886,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     movePlansOutOfSettings();
     const ms = months(), ok = COURSES.every(boundsOK), C = view0();
     const rowsBy = {}; ['SL', 'HL', 'ALL'].forEach(c => { rowsBy[c] = ms.map(m => m.upTo && ok ? count(c, m.upTo) : null); });
+    // locked months keep the numbers as they were when you reported them (teacher-only record)
+    const locks = ((S().progress || {})[LOCK_KEY] || {}).months || {};
+    ms.forEach((m, i) => { const L = locks[m.first.slice(0, 7)]; if (!L) return; ['SL', 'HL', 'ALL'].forEach(c => { const live = rowsBy[c][i], f = L[c]; if (!f) return;
+      rowsBy[c][i] = Object.assign({ below: [], all: [], notAssessed: 0 }, live || {}, { at: f.at, of: f.of, pct: f.of ? Math.round(100 * f.at / f.of) : null, locked: L.at, liveAt: live ? live.at : null, liveOf: live ? live.of : null }); }); });
     const nowI = ms.findIndex(m => m.current), lastI = nowI >= 0 ? nowI : ms.map(m => !!m.upTo).lastIndexOf(true), now = c => lastI >= 0 ? rowsBy[c][lastI] : null;
     const big = (label, r) => `<div class="dc-big ${r ? tone(r.pct) : ''}"><span class="key-lab">${label}</span><b>${r && r.pct !== null ? r.pct + '%' : '—'}</b><span class="small">${r && r.of ? `${r.at} of ${r.of} students at ${cut()}+` : 'no assessed students yet'}</span></div>`;
     const monthName = lastI >= 0 ? ms[lastI].name : '';
@@ -5900,13 +5907,15 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       $('#dc-print').onclick = () => window.print(); return;
     }
     const brow = c => { const b = bounds(c); return `<tr><th>${c}</th>${[2, 3, 4, 5, 6, 7].map(g => `<td><input class="dc-b" data-c="${c}" data-g="${g}" type="number" min="0" max="100" inputmode="numeric" value="${b[g] ?? ''}" aria-label="${c} grade ${g} lowest %"></td>`).join('')}</tr>`; };
-    const table = `<div class="scroll"><table class="tbl dc-tbl"><thead><tr><th></th>${ms.map(m => `<th>${m.short}</th>`).join('')}</tr></thead><tbody>${[['SL', 'AA SL'], ['HL', 'AA HL'], ['ALL', 'All IB AA']].map(([c, lab]) => `<tr class="${c === 'ALL' ? 'dc-all' : ''}"><th>${lab}</th>${rowsBy[c].map((r, i) => `<td class="${r && r.of ? 'dc-' + tone(r.pct) : ''}">${r && r.of ? `<b>${cell(r)}</b><span>${r.pct}%</span>` : ms[i].upTo ? '<span class="muted">—</span>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const table = `<div class="scroll"><table class="tbl dc-tbl"><thead><tr><th></th>${ms.map(m => `<th>${m.short}</th>`).join('')}</tr></thead><tbody>${[['SL', 'AA SL'], ['HL', 'AA HL'], ['ALL', 'All IB AA']].map(([c, lab]) => `<tr class="${c === 'ALL' ? 'dc-all' : ''}"><th>${lab}</th>${rowsBy[c].map((r, i) => `<td class="${r && r.of ? 'dc-' + tone(r.pct) : ''}${r && r.locked ? ' dc-locked' : ''}"${r && r.locked && r.liveOf !== null && (r.liveAt !== r.at || r.liveOf !== r.of) ? ` title="Live now: ${r.liveAt}/${r.liveOf}"` : ''}>${r && r.of ? `<b>${r.locked ? '🔒 ' : ''}${cell(r)}</b><span>${r.pct}%</span>` : ms[i].upTo ? '<span class="muted">—</span>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     const detail = c => { const r = now(c); if (!r) return ''; const list = r.all.slice().sort((p, q) => p.p.pct - q.p.pct);
       return `<details class="rd-list" ${c === 'SL' ? 'open' : ''}><summary><b>AA ${c}</b> · ${r.below.length} below a ${cut()}${r.notAssessed ? ` · ${r.notAssessed} not assessed yet` : ''}</summary>${list.length ? `<table class="tbl rd-tbl"><thead><tr><th>Student</th><th>Average</th><th>Predicted</th><th>Assessments</th></tr></thead><tbody>${list.map(({ s, p }) => `<tr class="${p.grade < cut() ? 'dc-below' : ''}"><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${p.pct}%</td><td><b>${p.grade}</b></td><td>${p.n}</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No marked work yet.</p>'}</details>`; };
     main.innerHTML = U.heading('PLC GOAL', 'Data cycle', `Predicted IB grades from Tests, Quizzes, Retests and Exit Tickets (not homework), weighted ${weight('Test')} : ${weight('Quiz')} : ${weight('Exit Ticket')}, counted each month as <b>students at ${cut()}+ / students assessed</b>.`, `<a class="btn primary" href="#/datacycle?present=1">Present to department →</a>`) + tabs +
       (ok ? '' : `<section class="card warn-card"><p><b>Enter your grade boundaries below first.</b> Copy the lowest % for each grade from the latest IB grade boundaries for SL and HL. The counts appear as soon as they are saved.</p></section>`) +
       `<div class="dc-bigs">${big('AA SL' + (monthName ? ' · ' + monthName : ''), now('SL'))}${big('AA HL' + (monthName ? ' · ' + monthName : ''), now('HL'))}${big('All IB AA' + (monthName ? ' · ' + monthName : ''), now('ALL'))}</div>
       <section class="card"><div class="row-between"><h2 class="bar-head amber">Your row for the data sheet</h2><button class="btn small" id="dc-copy" type="button" ${ok ? '' : 'disabled'}>Copy for the spreadsheet</button></div>${table}
+        ${ok ? `<div class="dc-locks"><span class="small"><b>Lock a month</b> once you have reported it, so later retests don’t change it:</span>${ms.map((m, i) => { const key = m.first.slice(0, 7), L = locks[key]; if (!m.upTo) return '';
+          return L ? `<span class="dc-lk on">🔒 ${m.short} <button class="linkish" type="button" data-unlock="${key}" title="Locked ${fmtDate(String(L.at).slice(0, 10))}">unlock</button></span>` : `<button class="btn small ghost" type="button" data-lock="${key}" data-i="${i}">Lock ${m.short}</button>`; }).join('')}</div>` : ''}
         <p class="tiny muted">Each month counts every marked Test, Quiz, Retest and Exit Ticket (not homework) up to the end of that month (today for ${esc(ms[nowI] ? ms[nowI].name : 'this month')}). Tests count ${weight('Test')}×, quizzes ${weight('Quiz')}× and Exit Tickets ${weight('Exit Ticket')}×; a retest replaces the original when it is higher. Test students never count. Target: <b>${target()}%</b> at grade ${cut()}+.</p></section>
       <section class="card"><h2 class="bar-head blue">Month by month</h2>${ok ? chart(rowsBy, ms) : '<p class="tiny muted">Appears once boundaries are set.</p>'}</section>
       ${lastI >= 0 ? paperCard(ms[lastI].upTo) + commandCard(ms[lastI].upTo) : ''}
@@ -5930,6 +5939,12 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       try { await Hub.store.flush(); toast('Saved to cloud.'); } catch (e) { toast(e.message, 'error'); }
       Hub.app.render();
     };
+    const saveLocks = async (months, msg) => { S().progress[LOCK_KEY] = { months, updatedAt: new Date().toISOString() }; Hub.store.save(true); try { await Hub.store.flush(); toast(msg); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); };
+    $$('[data-lock]', main).forEach(b => (b.onclick = () => { const i = +b.dataset.i, m = ms[i], snap = { at: new Date().toISOString() };
+      ['SL', 'HL', 'ALL'].forEach(c => { const r = rowsBy[c][i]; snap[c] = { at: r ? r.at : 0, of: r ? r.of : 0 }; });
+      Hub.store.log(`Locked the data cycle for ${m.name}`); saveLocks(Object.assign({}, locks, { [b.dataset.lock]: snap }), `${m.name} locked — these numbers won’t change.`); }));
+    $$('[data-unlock]', main).forEach(b => (b.onclick = async () => { if (!(await U.confirmBox('Unlock this month? Its numbers will go back to live and may change.', 'Unlock'))) return;
+      const next = Object.assign({}, locks); delete next[b.dataset.unlock]; Hub.store.log('Unlocked a data cycle month'); saveLocks(next, 'Unlocked — showing live numbers.'); }));
     const cp = $('#dc-copy'); if (cp) cp.onclick = async () => {
       const txt = [['', ...MONTHS], ...[['SL', 'Badmus AA SL'], ['HL', 'Badmus AA HL'], ['ALL', 'Badmus (all IB AA)']].map(([c, lab]) => [lab, ...rowsBy[c].map(cell)])].map(r => r.join('\t')).join('\n');
       try { await navigator.clipboard.writeText(txt); toast('Copied — click the September cell in the sheet and paste.'); } catch (e) { toast('Could not copy here.', 'error'); }
