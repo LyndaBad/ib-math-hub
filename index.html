@@ -431,6 +431,12 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .sg-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .sg-plan li { margin: 0 0 8px; }
 .ex-tabs { margin: 0 0 14px; }
+.tc-drop { border: 2px solid #EFD3C2; border-radius: 12px; background: var(--white); }
+.tc-drop > summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; list-style: none; font-family: var(--f-ui); }
+.tc-drop > summary::-webkit-details-marker { display: none; }
+.tc-drop[open] > summary { border-bottom: 1px solid var(--line); }
+.tc-menu { max-height: 320px; overflow: auto; padding: 4px 14px 8px; }
+.tc-unit { font-family: var(--f-ui); font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 2px; }
 
 .gp-q.keys-hidden .key { display: none; }
 .gp-sec { margin: 18px 0 8px; font-family: var(--f-head); }
@@ -9941,7 +9947,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
           <div class="actions"><button class="btn primary small" id="sg-save" type="button">Save study guide dates and notes</button></div>` : `<p class="tiny muted">No AA ${course} unit tests in the calendar ahead.</p>`}</section>
       ${unitCardHTML(course)}
       <div class="grid g2"><section class="card"><h2 class="bar-head pink">✔ Topic checks</h2><p class="tiny muted">A short IB exam-style quiz (3–6 questions, about 20 minutes) after each topic. It counts as a Quiz in the data cycle. Tick the topics to include, then check the draft and publish it.</p>
-          ${tps.length ? `<div class="tc-list">${tps.slice(0, 12).map(x => `<label class="tc-row ${x.covered ? 'done' : ''}"><input type="checkbox" class="tc-pick" value="${esc(x.ox)}"${!x.covered && Hub.core.daysBetween(x.finished, asOf) <= 21 ? ' checked' : ''}><span><b>${esc(x.ox)}</b> ${esc(x.name)}<span class="tiny muted"> · finished ${fmtDate(x.finished)}${x.all ? '' : ' (one class so far)'}</span></span>${x.covered ? '<span class="pill green">checked ✓</span>' : ''}</label>`).join('')}</div>
+          ${tps.length ? (() => { const isOn = x => !x.covered && Hub.core.daysBetween(x.finished, asOf) <= 21, on = tps.filter(isOn);
+            const row = x => `<label class="tc-row ${x.covered ? 'done' : ''}"><input type="checkbox" class="tc-pick" value="${esc(x.ox)}"${isOn(x) ? ' checked' : ''}><span><b>${esc(x.ox)}</b> ${esc(x.name)}<span class="tiny muted"> · finished ${fmtDate(x.finished)}${x.all ? '' : ' (one class so far)'}</span></span>${x.covered ? '<span class="pill green">checked ✓</span>' : ''}</label>`;
+            const units = [...new Set(tps.map(x => x.unit))].sort((u, v) => v - u);
+            return `<details class="tc-drop"><summary><span class="tc-sum">${on.length ? `<b>${on.map(x => x.ox).join(', ')}</b> selected` : 'Choose topics'}</span><span class="tiny muted">${tps.length} finished topics ▾</span></summary>
+              <div class="tc-menu">${units.map(u => `<p class="tc-unit">Unit ${u} · ${esc((C().UNITS[course].find(x => x[0] === u) || [0, ''])[1])}</p>${tps.filter(x => x.unit === u).map(row).join('')}`).join('')}</div></details>`; })() + `
             <div class="actions"><button class="btn primary" id="tc-make" type="button">Make topic check</button></div>` : '<p class="tiny muted">No topics finished yet.</p>'}</section>
         <section class="card"><h2 class="bar-head amber">📝 Mock exams</h2><p class="tiny muted">A mock paper from the skills taught so far, shortest questions first like the real paper. ${course} Paper 1 and Paper 2 are ${MOCK[course][1][0]} marks in ${MOCK[course][1][1]} minutes. It is held for you to mark and counts as a Test in the data cycle.</p>
           <div class="mk-opts"><label>Paper <select id="mk-paper"><option value="1">Paper 1 — no calculator</option><option value="2">Paper 2 — calculator</option></select></label><label>Length <select id="mk-len"><option value="full">Full paper</option><option value="half">Half paper (${Math.round(MOCK[course][1][0] / 2)} marks)</option></select></label></div>
@@ -9958,8 +9968,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       Hub.store.log('Updated study guide dates'); Hub.store.save(true);
       try { await Hub.store.flush(); toast('Saved — study guides will open on those dates.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render();
     };
+    $$('.tc-pick', main).forEach(i => (i.onchange = () => { const on = $$('.tc-pick', main).filter(x => x.checked).map(x => x.value); $('.tc-sum', main).innerHTML = on.length ? `<b>${on.map(esc).join(', ')}</b> selected` : 'Choose topics'; }));
     const tc = $('#tc-make'); if (tc) tc.onclick = async () => {
-      const oxs = $$('.tc-pick', main).filter(i => i.checked).map(i => i.value); if (!oxs.length) return toast('Tick at least one topic.', 'error');
+      const oxs = $$('.tc-pick', main).filter(i => i.checked).map(i => i.value); if (!oxs.length) return toast('Open the topic list and tick at least one topic.', 'error');
       const r = makeTopicCheck(course, oxs); if (!r.ok) return toast(r.error, 'error');
       try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); }
       toast('Topic check drafted — check the questions, set the date, then publish.'); Hub.app.nav('#/edit/' + r.assessment.id);
