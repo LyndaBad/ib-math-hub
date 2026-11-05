@@ -11607,6 +11607,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const pctOf = t => { try { const v = Hub.assess.score(t).pct; return v === null || v === undefined || isNaN(v) ? null : Math.round(v); } catch (e) { return null; } };
   const mean = xs => xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null;
   const tone = p => p === null ? '' : p >= 80 ? 'hm-g' : p >= 60 ? 'hm-a' : 'hm-r';
+  /** Sort key: last name (from the roster import when it had a last-name column, otherwise the last word of the name), then first name. */
+  const lastKey = st => { const n = String(st.name || '').trim(), w = n.split(/\s+/); return ((st.last || w[w.length - 1] || '') + ' ' + (st.first || w.slice(0, -1).join(' '))).trim(); };
 
   /** Columns for a class: [{id, kind, title, due, cell(sid) -> {pct, txt}}] oldest first. */
   function columns(g) {
@@ -11625,7 +11627,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return cols.sort((x, y) => String(x.due).localeCompare(String(y.due)));
   }
   function build(g, kind) {
-    const studs = Hub.roster.inGroup(g).slice().sort((a, b) => a.name.localeCompare(b.name)), all = columns(g), cols = kind === 'all' ? all : all.filter(c => c.kind === kind);
+    const studs = Hub.roster.inGroup(g).slice().sort((a, b) => lastKey(a).localeCompare(lastKey(b), 'en', { sensitivity: 'base' })), all = columns(g), cols = kind === 'all' ? all : all.filter(c => c.kind === kind);
     const rows = studs.map(s => { const cells = cols.map(c => c.cell(s.id)), by = {};
       all.forEach(c => { const v = c.cell(s.id); if (v.pct !== null) (by[c.kind] = by[c.kind] || []).push(v.pct); });
       const shown = cells.filter(v => v.pct !== null).map(v => v.pct);
