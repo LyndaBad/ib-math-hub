@@ -4216,8 +4216,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function groupSkill(groupId, skill) {
     const st = Hub.roster.inGroup(groupId).map(s => stat(s.id, skill)), solid = st.filter(x => !['not-taught', 'no-evidence', 'low-evidence'].includes(x.status));
     const avg = solid.length ? Math.round(solid.reduce((a, x) => a + x.pct, 0) / solid.length) : null;
+    // early data: every student with any marked evidence on the skill, even below the evidence threshold
+    const any = st.filter(x => x.pct !== null && x.n > 0), avgAll = any.length ? Math.round(any.reduce((a, x) => a + x.pct, 0) / any.length) : null;
     const counts = {}; st.forEach(x => (counts[x.status] = (counts[x.status] || 0) + 1));
-    return { skill, avg, n: solid.length, counts, taught: st.length ? st[0].taught : false };
+    return { skill, avg, avgAll, n: solid.length, nAll: any.length, counts, taught: st.length ? st[0].taught : false };
   }
   function overall(sid) { const xs = studentSkills(sid).filter(x => x.pct !== null && x.status !== 'low-evidence'); return xs.length ? Math.round(xs.reduce((a, x) => a + x.pct, 0) / xs.length) : null; }
   /** Misconception counts across a group (optionally within the last N days). */
@@ -4872,8 +4874,14 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ${dueHTML}
       <h2 class="sec">Next lessons</h2><div class="grid g4">${cards}</div>
       <div class="grid g2"><section class="card"><h2 class="bar-head amber">Misconception watchlist · last 4 weeks</h2>${mis.length ? `<ul class="mis">${mis.map(m => `<li><span class="mis-n">${m.students}</span><div><b>${esc(Hub.mastery.tagText(m.tag))}</b><br><span class="tiny muted">${C().GROUPS[m.g].label} · ${esc(U.skillName(m.skill))}</span></div></li>`).join('')}</ul>` : '<p>No misconceptions recorded yet.</p>'}<p class="tiny muted">Detected automatically when a wrong answer matches a known error (no AI involved).</p></section>
-      <section class="card"><h2 class="bar-head blue">Class snapshot</h2>${['SL-A', 'SL-B', 'HL-A', 'HL-B'].map(g => { const sk = C().skillsFor(g.slice(0, 2)).filter(k => C().isTaught(k.id, g, asOf)); const avgs = sk.map(k => Hub.mastery.groupSkill(g, k.id).avg).filter(v => v !== null); const av = avgs.length ? Math.round(avgs.reduce((a, b) => a + b, 0) / avgs.length) : null; const low = sk.map(k => [k, Hub.mastery.groupSkill(g, k.id).avg]).filter(x => x[1] !== null).sort((a, b) => a[1] - b[1])[0];
-        return `<div class="snap"><a href="#/mastery?group=${g}"><b>${C().GROUPS[g].label}</b></a><span>${av ?? '—'}%</span>${U.bar(av)}<span class="tiny muted">${low ? 'Lowest: ' + esc(low[0].name) + ' (' + low[1] + '%)' : ''}</span></div>`; }).join('')}<p class="tiny muted">Average of recency-weighted mastery across taught skills. Classroom indicator, not an IB grade.</p></section></div>`;
+      <section class="card"><h2 class="bar-head blue">Class snapshot</h2>${['SL-A', 'SL-B', 'HL-A', 'HL-B'].map(g => {
+        const studs = Hub.roster.inGroup(g), ids = new Set(studs.map(x => x.id)), sk = C().skillsFor(g.slice(0, 2));
+        const gs = sk.map(k => [k, Hub.mastery.groupSkill(g, k.id)]), solid = gs.filter(x => x[1].avg !== null), early = !solid.length;
+        const use = early ? gs.filter(x => x[1].avgAll !== null).map(x => [x[0], x[1].avgAll]) : solid.map(x => [x[0], x[1].avg]);
+        const av = use.length ? Math.round(use.reduce((a, x) => a + x[1], 0) / use.length) : null, low = use.slice().sort((a, b) => a[1] - b[1])[0];
+        const waiting = S().attempts.filter(t => ids.has(t.sid) && t.status === 'submitted').length, todayN = S().attempts.filter(t => ids.has(t.sid) && String(t.date || t.at || '').slice(0, 10) === asOf).length;
+        const note = !studs.length ? 'No students yet.' : av === null ? (waiting ? `${waiting} submission${waiting === 1 ? '' : 's'} waiting in <a href="#/marking">Marking</a> — the snapshot fills in once work is marked and released.` : 'No marked work yet.') : (low ? 'Lowest: ' + esc(low[0].name) + ' (' + low[1] + '%)' : '') + (early ? ' · <b>early data</b> — only a few marks per skill so far' : '') + (waiting ? ` · ${waiting} waiting in <a href="#/marking">Marking</a>` : '');
+        return `<div class="snap"><a href="#/mastery?group=${g}"><b>${C().GROUPS[g].label}</b></a><span>${av ?? '—'}${av === null ? '' : '%'}</span>${U.bar(av)}<span class="tiny muted">${note}${todayN ? ` · ${todayN} submitted today` : ''}</span></div>`; }).join('')}<p class="tiny muted">Average of recency-weighted mastery across skills with marked work. Only marked and released work counts. Classroom indicator, not an IB grade.</p></section></div>`;
   }
 
   /* ================= Assessment Studio: library + builder ================= */
