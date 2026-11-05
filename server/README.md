@@ -19,7 +19,7 @@ the deployed `hub` function is a one-line `index.ts` that imports
 - `deploy/probe.js` — checks the modules load (used by the `hub-probe` test function)
 
 ## Live now
-`hub` **v9.1**, deployed 4 November 2026 at 19:49 New York time from commit `0d81854` (`server/deploy/hub/index.js`); v9.1 = v9 + Exit Tickets marked “Keep open” never close after the lesson. v9 added:
+`hub` **v9.2**, deployed 4 November 2026 at 20:26 New York time from commit `75b87cc` (`server/deploy/hub/index.js`); v9.2 = v9 + “Keep open” (per class, or `true` for every class) stops an Exit Ticket closing after the lesson. v9 added:
 Exit Tickets closing one hour after the lesson except for students marked absent; targeted retests/retakes only for their
 students (and hidden from everyone else); personalised Exit Tickets and Quizzes recorded under their own names.
 Checked after deploying: sign-in required (401), class-code join answers, no start-up errors in the logs.
