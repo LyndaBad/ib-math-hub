@@ -816,6 +816,10 @@ body.mp-on { padding-bottom: 76px; }
 .reg-date select { min-width: 190px; }
 details.reg-card > summary.reg-sumline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; cursor: pointer; list-style: none; }
 details.reg-card > summary::-webkit-details-marker { display: none; }
+details.fold > summary.fold-sum { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary .bar-head { margin: 0; } details.fold .fold-tog { margin-left: auto; } details.fold[open] > summary { margin-bottom: 12px; }
+details.fold:not([open]) { padding-bottom: 14px; }
 .reg-sumline .bar-head { margin: 0; } .reg-status { font-family: var(--f-ui); font-weight: 600; font-size: .9rem; color: #B03A2E; } .reg-status.ok { color: var(--ok, #2E7D32); }
 .reg-tog { margin-left: auto; } details.reg-card:not([open]) { padding-bottom: 12px; } .reg-top { margin-top: 8px; } .absent-note { font-size: .85rem; font-weight: 700; color: #B03A2E; margin: 2px 0; }
 .due-big { font-family: var(--f-ui); font-size: 1.15rem; margin: 6px 0 8px; } .due-big b { font-size: 1.8rem; } .due-row { border-top: 1px dashed var(--line); padding: 6px 0; gap: 10px; } .due-row span { flex: 1; text-align: right; }
@@ -5689,7 +5693,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const libBody = !list.length ? U.empty('Nothing here yet.') : ltype !== 'all' ? `<div class="lib">${list.map(libRow).join('')}</div>`
       : LIB_KINDS.slice(1).map(([k, label]) => { const xs = list.filter(a => kindOf(a) === k); return xs.length ? `<details class="lib-grp" open><summary><b>${label}</b> <span class="tiny muted">(${xs.length})</span></summary><div class="lib">${xs.map(libRow).join('')}</div></details>` : ''; }).join('');
     main.innerHTML = U.heading('TEACHER WORKSPACE', 'Assessment Studio', 'Original IB-style questions with markschemes. Every question must be reviewed before you can approve, and you choose when and to whom it is published.') +
-      `${Hub.bookex ? Hub.bookex.studioCard(group) : ''}<section class="card builder"><h2 class="bar-head green">Build a new draft</h2><form id="build" class="form-grid">
+      `${Hub.bookex ? Hub.bookex.studioCard(group) : ''}<details class="card builder fold" data-fold="build"><summary class="fold-sum"><span class="bar-head green">Build a new draft</span><span class="fold-tog tiny muted">Show ▼</span></summary><form id="build" class="form-grid">
         <label>Group<select id="b-group">${U.groupOptions(group)}</select></label>
         <label>Lesson (from the ${C().GROUPS[group].label} calendar)<select id="b-lesson"><option value="">— choose skills instead —</option>${lessonOpts}</select></label>
         <label>Type<select id="b-type">${Object.keys(Hub.assess.TYPES).map(t => `<option ${t === 'Exit Ticket' ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
@@ -5701,7 +5705,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <label class="b-by-marks" hidden>Total marks <span class="tiny muted">(the paper adds up to exactly this — whole questions only)</span><input id="b-marks" type="number" min="5" max="150" step="1" value="60"></label>
         <fieldset class="skills-pick span2"><legend>Skills <span class="tiny muted">(${course} · ticked from the lesson; change freely)</span></legend><div class="unit-picks">${C().UNITS[course].filter(([u]) => C().skillsFor(course).some(k => k.unit === u)).map(([u, nm]) => `<button type="button" class="btn small ghost" data-allunit="${u}" title="${esc(nm)}">All of Unit ${u}</button>`).join('')}<button type="button" class="btn small ghost" data-allunit="none">Clear</button></div><div id="b-skills" class="skill-grid">${C().skillsFor(course).map(s => `<label class="sk ${U.unitColour(s.unit)}"><input type="checkbox" value="${s.id}" ${nl && nl.skills.includes(s.id) ? 'checked' : ''}> ${U.skillLabel(s.id)}${C().isTaught(s.id, group, asOf) ? '' : ' <span class="tiny muted">(not yet taught)</span>'}</label>`).join('')}</div></fieldset>
         <fieldset class="span2 bb-book"><legend>Book-exercise questions <span class="tiny muted">(optional · new questions labelled with the ${esc(Hub.bookex ? Hub.bookex.BOOK[course] : '')} exercise — add as many exercises as you like)</span></legend>${Hub.bookex ? `<div class="form-grid">${Hub.bookex.pickerHTML(course, 'bb', [], 'Add a book exercise to this draft')}</div><p class="tiny" id="bb-sum"></p>` : ''}</fieldset>
-        <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework answers are typed by students and marked automatically; “show that” parts become self-check with the model answer.</span></div></form></section>
+        <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework answers are typed by students and marked automatically; “show that” parts become self-check with the model answer.</span></div></form></details>
       <section class="card"><div class="row-between"><h2 class="bar-head blue">Library</h2><div class="tabs" role="tablist">${['all', 'draft', 'approved', 'published', 'closed', 'archived'].map(s => `<button role="tab" class="tab ${s === status ? 'on' : ''}" data-status="${s}" aria-selected="${s === status}">${s[0].toUpperCase() + s.slice(1)}</button>`).join('')}</div></div>
       <div class="lib-filters"><div class="tabs lib-cls">${[['all', 'All classes'], ...Object.values(C().GROUPS).map(g => [g.id, g.label.replace('AA ', '')])].map(([id, l]) => `<a class="tab small ${lclass === id ? 'on' : ''}" href="${libQ({ lclass: id })}">${esc(l)}</a>`).join('')}</div>
         <div class="tabs lib-kinds">${LIB_KINDS.map(([k, l]) => { const n = k === 'all' ? base.length : base.filter(a => kindOf(a) === k).length; return n || k === 'all' ? `<a class="tab small ${ltype === k ? 'on' : ''}" href="${libQ({ ltype: k })}">${l} <span class="tiny">${n}</span></a>` : ''; }).join('')}</div></div>
@@ -5729,6 +5733,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       go('#/edit/' + r.assessment.id);
     };
     if (Hub.bookex) Hub.bookex.bindStudio(main, group);
+    main.querySelectorAll('details.fold').forEach(d => {   // book-exercise homework and the draft builder fold away; each remembers open/closed
+      const key = 'studio-fold|' + d.dataset.fold, tog = d.querySelector('.fold-tog'), show = () => { if (tog) tog.textContent = d.open ? 'Hide ▲' : 'Show ▼'; };
+      try { d.open = localStorage.getItem(key) === '1'; } catch (e) {}
+      show(); d.addEventListener('toggle', () => { show(); try { localStorage.setItem(key, d.open ? '1' : '0'); } catch (e) {} });
+    });
     bindLibActions(main);
   }
   const STATUS_TXT = { draft: ['Draft', 'grey'], approved: ['Approved', 'green'], published: ['Published', 'blue'], closed: ['Closed', 'amber'], archived: ['Archived', 'grey'] };
@@ -7401,7 +7410,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function studioCard(group) {
     const g = C().GROUPS[group], course = g.course, nl = C().nextLesson(group, Hub.mastery.asOf()), sugs = nl ? forLesson(course, nl.activity).filter(e => e.ready) : [];
     const first = sugs[0] || (all()[course] || []).find(e => e.ready), ready = (all()[course] || []).filter(e => e.ready).length;
-    return `<section class="card bx-card"><h2 class="bar-head amber">Homework from book exercises</h2>
+    return `<details class="card bx-card fold" data-fold="bx"><summary class="fold-sum"><span class="bar-head amber">Homework from book exercises</span><span class="fold-tog tiny muted">Show ▼</span></summary>
       <p class="small">New questions for each exercise in the ${BOOK[course]} book — the same skills, style and level, with new numbers and wording, full M/A/R markschemes and model answers. Students see the exercise name on each question (e.g. “Exercise ${first ? first.ex : '1O'} · Q3”). ${ready} exercise${ready === 1 ? '' : 's'} ready so far; more are being added.</p>
       <div class="form-grid"><label>Add an exercise to this homework<select id="bx-ex">${options(course)}</select></label>
       <label>Goes to<select id="bx-days"><option value="both">${course} A day and B day (one assignment)</option><option value="${course}-A">${course} A day only</option><option value="${course}-B">${course} B day only</option></select></label></div>
@@ -7414,7 +7423,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <div class="form-grid"><label>Time for the hybrid (minutes)<input id="bx-min" type="number" min="15" max="180" step="5" value="70"></label>
           <label class="inline-check span2"><input type="checkbox" id="bx-extras" checked> Also give each exercise to students as <b>optional extra practice</b> (marked, never counted as missing)</label></div>
         <div class="actions"><button class="btn primary" id="bx-hybrid" type="button">Make hybrid →</button><span class="tiny muted">Uses the ticked questions; about ${MIN_PER_MARK} minutes per mark, as in IB papers.</span></div></details>
-      <p class="tiny muted">Students type their answers and the Hub marks them; “show that” and sketch parts are self-check with the model answer. No photo upload.</p></section>`;
+      <p class="tiny muted">Students type their answers and the Hub marks them; “show that” and sketch parts are self-check with the model answer. No photo upload.</p></details>`;
   }
   /** The exercise picker (select to add, one block per exercise with a question checklist). p = id prefix. */
   function pickerHTML(course, p, initial, label) {
