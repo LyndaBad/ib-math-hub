@@ -1486,6 +1486,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function bxAnswer(a, R) {
     if (a === 'open') return { kind: 'open' };
     if (typeof a === 'number') return { kind: 'num', value: a, exact: true, display: num(a) };
+    if (a.open) return { kind: 'open', display: a.open };
     if (a.mc) { const m = mc(R, a.mc.map((tex, i) => ({ tex, key: 'k' + i })), 'k0'); return Object.assign(m, { display: a.mc[0].replace(/^\$|\$$/g, '') }); }
     if (a.f) { const q = fr(a.f[0], a.f[1]); return { kind: 'num', value: q.val(), exact: true, display: a.d || q.tex() }; }
     if (a.t) return { kind: 'tuple', labels: a.l || a.t.map((_, i) => String.fromCharCode(97 + i)), value: a.t.map(v => Array.isArray(v) ? v[0] / v[1] : v), markEach: !!a.each, exact: a.sf ? false : true, sf: a.sf, display: a.d || a.t.map(v => Array.isArray(v) ? fr(v[0], v[1]).tex() : num(v)).join(',\\ ') };
@@ -3995,6 +3996,279 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       ab('10', R`y = |5 - 4x - x^{2}| - 1`, x => Math.abs(5 - 4 * x - x * x) - 1, -5, -1, true, [-7, 3], [-2, 10], 'all((Abs(5-4*x-x**2)-1).subs(x,v) >= -1 for v in range(-9,6)) and (Abs(5-4*x-x**2)-1).subs(x,1) == -1', [R`$5 - 4x - x^{2} = (5 + x)(1 - x)$ is zero at $x = -5$ and $x = 1$.`, R`The absolute value is never negative, so the least value of $y$ is $0 - 1 = -1$ (at $x = -5$ and $x = 1$). Range $y \ge -1$.`], [pt(-5, -1, 'b'), pt(1, -1, 'b'), pt(-2, 8)])
   ]));
 })(window.Hub = window.Hub || {});
+
+/* ---- js/q_bx_hl2b.js ---- */
+/* AA HL — book-exercise questions, Chapter 2 (2H–2S).
+   NEW questions for each Oxford AA HL (2019) exercise: same skills, style and level; own numbers, contexts and wording. */
+(function (Hub) {
+  'use strict';
+  const B = Hub.qcore.bx, plot = Hub.qcore.plot, R = String.raw;
+  const neg = v => String(v).replace('-', '−');
+  const pt = (x, y, pos) => [x, y, `(${neg(x)}, ${neg(y)})`, pos];
+  const sk = (l, p, fig, ms, w, h, extra) => Object.assign({ l, c: 'Sketch', p, m: 2, a: 'open', ms, w, h, kfig: fig }, extra || {});
+
+  /* ===== 2H · Absolute value equations ===== */
+  B('HL', '2H', { page: 98, sec: '2.2', title: 'Absolute value equations', skill: 'HL-2.2c', paper: 1 }, [
+    { stem: 'Solve each equation algebraically, and check your answers graphically.', parts: [
+      { c: 'Solve', p: R`$|3x - 5| = 7$`, m: 2, a: { list: [4, [-2, 3]], d: R`x = 4,\ x = -\frac{2}{3}` }, ms: [['M1', R`$3x - 5 = 7$ or $3x - 5 = -7$`], ['A1', R`$x = 4,\ x = -\frac{2}{3}$`]], w: [R`$3x - 5 = 7 \Rightarrow x = 4$`, R`$3x - 5 = -7 \Rightarrow x = -\frac{2}{3}$`], h: R`$|A| = 7$ means $A = 7$ or $A = -7$.` },
+      { c: 'Solve', p: R`$|2x + 1| = 9$`, m: 2, a: { list: [4, -5] }, ms: [['M1', 'both cases'], ['A1', R`$x = 4,\ x = -5$`]], w: [R`$2x + 1 = 9 \Rightarrow x = 4$; $2x + 1 = -9 \Rightarrow x = -5$`], h: 'Two cases: positive and negative.' },
+      { c: 'Solve', p: R`$|4x - 1| - 3 = 0$`, m: 2, a: { list: [1, [-1, 2]], d: R`x = 1,\ x = -\frac{1}{2}` }, ms: [['M1', R`$|4x - 1| = 3$`], ['A1', R`$x = 1,\ x = -\frac{1}{2}$`]], w: [R`$|4x - 1| = 3$`, R`$4x - 1 = 3 \Rightarrow x = 1$; $4x - 1 = -3 \Rightarrow x = -\frac{1}{2}$`], h: 'Isolate the absolute value first.' },
+      { c: 'Solve', p: R`$|x - 4| = 2x + 1$`, m: 3, a: { list: [1] }, ms: [['M1', 'both cases'], ['A1', R`$x = 1$`], ['R1', R`rejecting $x = -5$ (the right-hand side would be negative)`]], w: [R`$x - 4 = 2x + 1 \Rightarrow x = -5$, but then $2x + 1 = -9 < 0$: reject.`, R`$x - 4 = -(2x + 1) \Rightarrow 3x = 3 \Rightarrow x = 1$. Check: $|1 - 4| = 3 = 2(1) + 1$ ✓`], h: 'An absolute value is never negative — check each answer.', e: [{ value: [-5, 1], fb: 'x = −5 makes the right-hand side negative, so it must be rejected.' }] },
+      { c: 'Solve', p: R`$|5 - 2x| = x + 4$`, m: 3, a: { list: [[1, 3], 9], d: R`x = \frac{1}{3},\ x = 9` }, ms: [['M1', 'both cases'], ['A1', R`$x = \frac{1}{3}$`], ['A1', R`$x = 9$`]], w: [R`$5 - 2x = x + 4 \Rightarrow x = \frac{1}{3}$ (check: both sides $\frac{13}{3}$ ✓)`, R`$5 - 2x = -(x + 4) \Rightarrow x = 9$ (check: both sides $13$ ✓)`], h: 'Set up both cases, then check each answer in the original equation.' },
+      { c: 'Solve', p: R`$|x + 3| = |2x - 6|$`, m: 3, a: { list: [1, 9] }, ms: [['M1', R`$x + 3 = 2x - 6$ or $x + 3 = -(2x - 6)$ (or squaring both sides)`], ['A1', R`$x = 9$`], ['A1', R`$x = 1$`]], w: [R`$x + 3 = 2x - 6 \Rightarrow x = 9$`, R`$x + 3 = -2x + 6 \Rightarrow x = 1$`], h: R`$|A| = |B|$ means $A = B$ or $A = -B$.` },
+      { c: 'Solve', p: R`$|x^{2} - 4x| = 5$`, m: 3, a: { list: [-1, 5] }, ms: [['M1', R`$x^{2} - 4x = 5$ or $x^{2} - 4x = -5$`], ['A1', R`$x = 5,\ x = -1$`], ['R1', R`$x^{2} - 4x + 5 = 0$ has no real roots ($\Delta = -4$)`]], w: [R`$x^{2} - 4x - 5 = 0 \Rightarrow (x - 5)(x + 1) = 0$`, R`$x^{2} - 4x + 5 = 0$: $\Delta = 16 - 20 < 0$, no real roots`], h: 'Each case is a quadratic — check the discriminant of the second.' },
+      { c: 'Solve', p: R`$3|x - 2| + 4 = 1$`, m: 1, a: { mc: [R`$\text{No solution}$`, R`$x = 1$`, R`$x = 1,\ x = 3$`, R`$x = 3$`] }, ms: [['R1', R`$|x - 2| = -1$ is impossible, so there is no solution`]], w: [R`$3|x - 2| = -3 \Rightarrow |x - 2| = -1$, but an absolute value cannot be negative.`], h: 'Isolate the absolute value. Can it equal a negative number?' }
+    ] },
+    { stem: R`A water tank is meant to hold $40$ litres. A sensor reading $V$ litres is flagged when it differs from $40$ by exactly $6.5$ litres.`, paper: 1, parts: [
+      { c: 'Write down', p: R`an equation involving an absolute value for the flagged readings.`, m: 1, a: { open: R`|V - 40| = 6.5` }, ms: [['A1', R`$|V - 40| = 6.5$`]], w: [R`"Differs from $40$ by $6.5$" means $|V - 40| = 6.5$.`], h: 'Distance between two numbers = absolute value of their difference.' },
+      { c: 'Solve', p: 'your equation.', m: 2, a: { list: [33.5, 46.5] }, ms: [['M1', 'both cases'], ['A1', R`$V = 33.5,\ V = 46.5$`]], w: [R`$V - 40 = \pm 6.5 \Rightarrow V = 46.5$ or $V = 33.5$`], h: 'Two readings: one above, one below.' }
+    ] },
+    { stem: '', paper: 2, parts: [
+      { c: 'Solve', p: R`$|x - 2| = \frac{1}{2}x + 1$, giving exact answers. Check your answers by graphing both sides on your NumWorks.`, m: 4, a: { list: [[2, 3], 6], d: R`x = \frac{2}{3},\ x = 6` }, ms: [['M1', 'considering both cases'], ['A1', R`$x = 6$`], ['A1', R`$x = \frac{2}{3}$`], ['A1', 'both checked (right-hand side positive)']], w: [R`$x - 2 = \frac{1}{2}x + 1 \Rightarrow x = 6$ (both sides $4$ ✓)`, R`$-(x - 2) = \frac{1}{2}x + 1 \Rightarrow -\frac{3}{2}x = -1 \Rightarrow x = \frac{2}{3}$ (both sides $\frac{4}{3}$ ✓)`], h: 'The graphs y = |x − 2| and y = ½x + 1 cross twice.' }
+    ] }
+  ]);
+
+  /* ===== 2I · Absolute value inequalities ===== */
+  const IV = ['lower end', 'upper end'], OUT = ['x ≤ (or <)', 'x ≥ (or >)'];
+  B('HL', '2I', { page: 100, sec: '2.2', title: 'Absolute value inequalities', skill: 'HL-2.2c', paper: 1 }, [
+    { stem: R`Solve each inequality and check your answers graphically. For a solution $a < x < b$ enter $a$ and $b$; for $x < a$ or $x > b$ enter $a$ and $b$.`, parts: [
+      { c: 'Solve', p: R`$|2x - 3| < 5$`, m: 2, a: { t: [-1, 4], l: IV, d: R`-1 < x < 4` }, ms: [['M1', R`$-5 < 2x - 3 < 5$`], ['A1', R`$-1 < x < 4$`]], w: [R`$-5 < 2x - 3 < 5 \Rightarrow -2 < 2x < 8 \Rightarrow -1 < x < 4$`], h: R`$|A| < b \Leftrightarrow -b < A < b$` },
+      { c: 'Solve', p: R`$|x + 4| \ge 3$`, m: 2, a: { t: [-7, -1], l: OUT, d: R`x \le -7 \text{ or } x \ge -1` }, ms: [['M1', R`$x + 4 \le -3$ or $x + 4 \ge 3$`], ['A1', R`$x \le -7$ or $x \ge -1$`]], w: [R`$x + 4 \le -3 \Rightarrow x \le -7$; $x + 4 \ge 3 \Rightarrow x \ge -1$`], h: R`$|A| \ge b \Leftrightarrow A \le -b$ or $A \ge b$` },
+      { c: 'Solve', p: R`$|1 - 3x| > 8$`, m: 2, a: { t: [[-7, 3], 3], l: OUT, d: R`x < -\frac{7}{3} \text{ or } x > 3` }, ms: [['M1', 'two cases'], ['A1', R`$x < -\frac{7}{3}$ or $x > 3$`]], w: [R`$1 - 3x > 8 \Rightarrow x < -\frac{7}{3}$`, R`$1 - 3x < -8 \Rightarrow x > 3$`], h: 'Dividing by −3 reverses the inequality.' },
+      { c: 'Solve', p: R`$|5x + 2| \le 12$`, m: 2, a: { t: [[-14, 5], 2], l: IV, d: R`-\frac{14}{5} \le x \le 2` }, ms: [['M1', R`$-12 \le 5x + 2 \le 12$`], ['A1', R`$-\frac{14}{5} \le x \le 2$`]], w: [R`$-14 \le 5x \le 10 \Rightarrow -\frac{14}{5} \le x \le 2$`], h: 'Write it as a double inequality.' }
+    ] },
+    { stem: 'Solve each inequality.', parts: [
+      { c: 'Solve', p: R`$|2x + 1| > |x - 4|$`, m: 4, a: { t: [-5, 1], l: ['x <', 'x >'], d: R`x < -5 \text{ or } x > 1` }, ms: [['M1', 'squaring both sides (both are non-negative)'], ['A1', R`$3x^{2} + 12x - 15 > 0$`], ['M1', R`$(x + 5)(x - 1) > 0$`], ['A1', R`$x < -5$ or $x > 1$`]], w: [R`$(2x + 1)^{2} > (x - 4)^{2}$`, R`$4x^{2} + 4x + 1 > x^{2} - 8x + 16 \Rightarrow 3x^{2} + 12x - 15 > 0$`, R`$x^{2} + 4x - 5 > 0 \Rightarrow (x + 5)(x - 1) > 0 \Rightarrow x < -5$ or $x > 1$`], h: 'Both sides are non-negative, so you may square.' },
+      { c: 'Solve', p: R`$2|x - 1| - |x + 2| \le 3$`, m: 5, a: { t: [-1, 7], l: IV, d: R`-1 \le x \le 7` }, ms: [['M1', R`splitting at $x = -2$ and $x = 1$`], ['A1', R`$x \ge 1$: $x - 4 \le 3 \Rightarrow x \le 7$`], ['A1', R`$-2 \le x < 1$: $-3x \le 3 \Rightarrow x \ge -1$`], ['A1', R`$x < -2$: $4 - x \le 3 \Rightarrow x \ge 1$, impossible`], ['A1', R`$-1 \le x \le 7$`]], w: [R`For $x \ge 1$: $2(x - 1) - (x + 2) = x - 4 \le 3 \Rightarrow 1 \le x \le 7$`, R`For $-2 \le x < 1$: $2(1 - x) - (x + 2) = -3x \le 3 \Rightarrow -1 \le x < 1$`, R`For $x < -2$: $2(1 - x) + (x + 2) = 4 - x \le 3 \Rightarrow x \ge 1$ — no solutions`, R`Altogether: $-1 \le x \le 7$`], h: 'Split the number line where each expression inside an absolute value is zero.' },
+      { c: 'Solve', p: R`$|x^{2} - 6x| < 8$, giving exact answers.`, m: 5, a: { open: R`3 - \sqrt{17} < x < 2 \text{ or } 4 < x < 3 + \sqrt{17}` }, ms: [['M1', R`$-8 < x^{2} - 6x < 8$`], ['A1', R`$x^{2} - 6x + 8 > 0 \Rightarrow x < 2$ or $x > 4$`], ['A1', R`$x^{2} - 6x - 8 < 0 \Rightarrow 3 - \sqrt{17} < x < 3 + \sqrt{17}$`], ['M1', 'combining both conditions'], ['A1', R`$3 - \sqrt{17} < x < 2$ or $4 < x < 3 + \sqrt{17}$`]], w: [R`Both $x^{2} - 6x > -8$ and $x^{2} - 6x < 8$ must hold.`, R`$(x - 2)(x - 4) > 0$; roots of $x^{2} - 6x - 8 = 0$ are $3 \pm \sqrt{17}$`, R`Intersect: $3 - \sqrt{17} < x < 2$ or $4 < x < 3 + \sqrt{17}$`], h: 'Two quadratic inequalities — both must be true.' }
+    ] },
+    { stem: R`A machine fills bags of rice with a target mass of $500\,\text{g}$. A bag is rejected if its mass $m$ grams differs from the target by more than $12\,\text{g}$.`, paper: 1, parts: [
+      { c: 'Write down', p: 'an inequality involving an absolute value for the masses that are accepted.', m: 1, a: { open: R`|m - 500| \le 12` }, ms: [['A1', R`$|m - 500| \le 12$`]], w: ['Accepted: the difference from 500 is at most 12.'], h: '' },
+      { c: 'Solve', p: 'your inequality.', m: 2, a: { t: [488, 512], l: IV, d: R`488 \le m \le 512` }, ms: [['M1', R`$-12 \le m - 500 \le 12$`], ['A1', R`$488 \le m \le 512$`]], w: [R`$488 \le m \le 512$`], h: '' }
+    ] },
+    { stem: '', paper: 2, parts: [
+      { c: 'Solve', p: R`$|x - 3| < 2x + 1$. Give your answer in the form $x > a$ and enter $a$.`, m: 4, a: { f: [2, 3], d: R`x > \frac{2}{3}` }, ms: [['M1', R`$-(2x + 1) < x - 3 < 2x + 1$`], ['A1', R`$x > -4$`], ['A1', R`$x > \frac{2}{3}$`], ['A1', R`$x > \frac{2}{3}$ (both conditions)`]], w: [R`$x - 3 < 2x + 1 \Rightarrow x > -4$`, R`$x - 3 > -(2x + 1) \Rightarrow 3x > 2 \Rightarrow x > \frac{2}{3}$`, R`Both must hold: $x > \frac{2}{3}$. Graph: $y = 2x + 1$ is above $y = |x - 3|$ to the right of $x = \frac{2}{3}$.`], h: 'Both inequalities in −b < A < b must hold.' }
+    ] }
+  ]);
+
+  /* ===== 2J · Piecewise-defined functions ===== */
+  const pw = rows => R`\begin{cases} ` + rows.map(([e, c]) => `${e}, & ${c}`).join(R` \\ `) + R` \end{cases}`;
+  B('HL', '2J', { page: 101, sec: '2.2', title: 'Piecewise-defined functions', skill: 'HL-2.2c', paper: 1 }, [
+    { stem: R`$f(x) = ${pw([['x^{2} - 1', 'x < 2'], ['7 - x', R`x \ge 2`]])}$`, parts: [
+      { c: 'Find', p: R`$f(-3)$, $f(2)$ and $f(6)$.`, m: 3, a: { t: [8, 5, 1], l: ['f(−3)', 'f(2)', 'f(6)'], each: true }, ms: [['A1', R`$f(-3) = 8$`], ['A1', R`$f(2) = 5$`], ['A1', R`$f(6) = 1$`]], w: [R`$-3 < 2$: $(-3)^{2} - 1 = 8$`, R`$2 \ge 2$: $7 - 2 = 5$`, R`$6 \ge 2$: $7 - 6 = 1$`], h: 'Decide which piece each x-value belongs to first.' },
+      sk('b', 'the graph of the function.', plot({ x: [-4, 8], y: [-2, 9], f: [{ f: x => x * x - 1, from: -3.2, to: 2 }, { f: x => 7 - x, from: 2, to: 8 }], pts: [pt(2, 3, 'r'), pt(2, 5, 'r'), pt(0, -1, 'b')], alt: 'model sketch' }), [['A1', R`parabola piece for $x < 2$ with open circle at $(2,\ 3)$`], ['A1', R`line piece from closed circle at $(2,\ 5)$`]], ['Use an open circle where the end point is not included.'], 'Draw each piece only on its own interval.'),
+      { c: 'Write down', p: 'the domain and the range of the function.', m: 2, a: { open: R`\text{domain } x \in \mathbb{R};\ \text{range } y \in \mathbb{R}` }, ms: [['A1', R`domain $\mathbb{R}$`], ['A1', R`range $\mathbb{R}$ ($y \ge -1$ from the first piece and $y \le 5$ from the second cover every value)`]], w: [R`First piece: $y \ge -1$. Second piece: $y \le 5$. Together they cover all real numbers.`], h: 'Combine the ranges of the two pieces.' }
+    ] },
+    { stem: R`$g(x) = ${pw([['-2x', R`x \le 0`], [R`\sqrt{x}`, R`0 < x \le 9`], ['3', 'x > 9']])}$`, parts: [
+      { c: 'Find', p: R`$g(-4)$, $g(4)$ and $g(16)$.`, m: 3, a: { t: [8, 2, 3], l: ['g(−4)', 'g(4)', 'g(16)'], each: true }, ms: [['A1', '8'], ['A1', '2'], ['A1', '3']], w: [R`$g(-4) = -2(-4) = 8$, $g(4) = \sqrt{4} = 2$, $g(16) = 3$`], h: '' },
+      sk('b', 'the function.', plot({ x: [-4, 14], y: [-1, 9], f: [{ f: x => -2 * x, from: -4, to: 0 }, { f: x => Math.sqrt(x), from: 0, to: 9 }, { f: () => 3, from: 9, to: 14 }], alt: 'model sketch' }), [['A1', 'line and square-root pieces'], ['A1', 'horizontal piece for $x > 9$']], ['Three pieces; all join up at $x = 0$ and $x = 9$.'], ''),
+      { c: 'Write down', p: 'the range of $g$.', m: 1, a: { open: R`g(x) \ge 0` }, ms: [['A1', R`$g(x) \ge 0$`]], w: [R`First piece gives $y \ge 0$; the others lie in $[0,\ 3]$.`], h: '' }
+    ] },
+    { stem: 'Rewrite each function as a piecewise-defined function.', parts: [
+      { c: 'Write down', p: R`$f(x) = |3x - 6|$`, m: 2, a: { open: pw([['3x - 6', R`x \ge 2`], ['6 - 3x', 'x < 2']]) }, ms: [['A1', R`$3x - 6$ for $x \ge 2$`], ['A1', R`$6 - 3x$ for $x < 2$`]], w: [R`$3x - 6 \ge 0 \Leftrightarrow x \ge 2$`], h: 'Where is the expression inside positive?' },
+      { c: 'Write down', p: R`$f(x) = |x + 1| + 2$`, m: 2, a: { open: pw([['x + 3', R`x \ge -1`], ['1 - x', 'x < -1']]) }, ms: [['A1', R`$x + 3$ for $x \ge -1$`], ['A1', R`$1 - x$ for $x < -1$`]], w: [R`For $x \ge -1$: $x + 1 + 2 = x + 3$. For $x < -1$: $-(x + 1) + 2 = 1 - x$.`], h: '' }
+    ] },
+    { stem: 'The graph of $y = f(x)$ is made of two straight line segments.', fig: plot({ x: [-5, 5], y: [-1, 5], f: [{ f: x => x + 4, from: -4, to: 0 }, { f: x => 4 - x, from: 0, to: 4 }], pts: [pt(-4, 0, 'b'), pt(0, 4, 't'), pt(4, 0, 'b')], alt: 'two line segments' }), parts: [
+      { c: 'Write down', p: 'a piecewise definition of $f$.', m: 2, a: { open: pw([['x + 4', R`-4 \le x < 0`], ['4 - x', R`0 \le x \le 4`]]) }, ms: [['A1', R`$x + 4$ for $-4 \le x < 0$`], ['A1', R`$4 - x$ for $0 \le x \le 4$`]], w: ['Gradient 1 through $(-4,\ 0)$, then gradient −1 through $(4,\ 0)$.'], h: 'Find the gradient and intercept of each segment.' },
+      { c: 'Write down', p: 'the domain and range of $f$.', m: 2, a: { t: [-4, 4, 0, 4], l: ['domain from', 'domain to', 'range from', 'range to'] }, ms: [['A1', R`$-4 \le x \le 4$`], ['A1', R`$0 \le y \le 4$`]], w: [''], h: '' }
+    ] },
+    { stem: R`A taxi charges a fixed $\$3$ for any journey up to $2$ km, then $\$1.50$ for each further kilometre.`, paper: 1, parts: [
+      { c: 'Write down', p: R`a piecewise function for the cost $C$ (\$) of a journey of $d$ km.`, m: 2, a: { open: pw([['3', R`0 < d \le 2`], [R`3 + 1.5(d - 2)`, 'd > 2']]) }, ms: [['A1', R`$3$ for $0 < d \le 2$`], ['A1', R`$3 + 1.5(d - 2)$ for $d > 2$`]], w: [''], h: '' },
+      { c: 'Find', p: 'the cost of a $10$ km journey.', m: 1, a: 15, ms: [['A1', R`$\$15$`]], w: [R`$3 + 1.5(8) = 15$`], h: '' },
+      { c: 'Find', p: R`the length of a journey that costs $\$18$.`, m: 2, a: 12, ms: [['M1', R`$3 + 1.5(d - 2) = 18$`], ['A1', R`$d = 12$ km`]], w: [R`$1.5(d - 2) = 15 \Rightarrow d - 2 = 10 \Rightarrow d = 12$`], h: '' }
+    ] }
+  ]);
+
+  /* ===== 2K · One-to-one and onto ===== */
+  const K4 = ['one-to-one and onto', 'one-to-one, not onto', 'onto, not one-to-one', 'neither one-to-one nor onto'];
+  const kq = (p, right, why) => ({ c: 'Determine', p, m: 2, a: { mc: [right, ...K4.filter(x => x !== right)].map(x => R`$\text{${x}}$`) }, ms: [['A1', right], ['R1', why]], w: [why], h: 'One-to-one: different inputs give different outputs (horizontal line test). Onto: every element of the codomain is an output.' });
+  B('HL', '2K', { page: 105, sec: '2.3', title: 'Classification of functions', skill: 'HL-2.3', paper: 1 }, [
+    { stem: 'Determine whether each function is one-to-one, onto, both or neither. Give a reason.', parts: [
+      kq(R`$f: \mathbb{R} \to \mathbb{R},\ f(x) = 3x - 2$`, K4[0], 'A straight line with non-zero gradient: every horizontal line meets it exactly once, and every real number is an output.'),
+      kq(R`$f: \mathbb{R} \to \mathbb{R},\ f(x) = x^{2}$`, K4[3], R`$f(-2) = f(2)$, so not one-to-one; negative numbers are never outputs, so not onto.`),
+      kq(R`$f: \mathbb{R} \to [0,\ \infty[,\ f(x) = x^{2}$`, K4[2], R`Every non-negative number is an output, but $f(-2) = f(2)$.`),
+      kq(R`$f: [0,\ \infty[ \to \mathbb{R},\ f(x) = \sqrt{x}$`, K4[1], R`$\sqrt{x}$ is increasing, so one-to-one, but it never gives negative outputs.`),
+      kq(R`$f: \mathbb{R} \to \mathbb{R},\ f(x) = x^{3} - x$`, K4[2], R`$f(0) = f(1) = 0$, so not one-to-one; a cubic takes every real value, so onto.`),
+      kq(R`$f: \mathbb{R} \to \mathbb{R},\ f(x) = 2^{x}$`, K4[1], R`$2^{x}$ is increasing, so one-to-one, but $2^{x} > 0$, so it is not onto $\mathbb{R}$.`)
+    ] },
+    { stem: R`$X = \{1, 2, 3, 4\}$ and $Y = \{p, q, r\}$. The function $f: X \to Y$ maps $1 \mapsto p,\ 2 \mapsto q,\ 3 \mapsto r,\ 4 \mapsto p$.`, parts: [
+      kq('$f$.', K4[2], R`Every element of $Y$ is used, but $1$ and $4$ both map to $p$.`),
+      { c: 'Explain', p: R`why no function from $X$ to $Y$ can be one-to-one.`, m: 1, a: 'open', ms: [['R1', R`$X$ has 4 elements and $Y$ only 3, so two inputs must share an output`]], w: ['Four inputs, three possible outputs: at least two inputs share one.'], h: '' }
+    ] },
+    { stem: R`The function $f(x) = x^{2} - 6x + 11$ is defined for $x \ge k$.`, parts: [
+      { c: 'Find', p: 'the least value of $k$ for which $f$ is one-to-one.', m: 2, a: 3, ms: [['M1', R`vertex at $x = 3$`], ['A1', R`$k = 3$`]], w: [R`$f(x) = (x - 3)^{2} + 2$: vertex at $x = 3$`], h: 'A quadratic is one-to-one on one side of its vertex.' },
+      { c: 'Write down', p: R`the codomain that makes $f: [3,\ \infty[ \to B$ onto.`, m: 1, a: { open: R`B = [2,\ \infty[` }, ms: [['A1', R`$[2,\ \infty[$`]], w: ['The range is $y \ge 2$.'], h: '' }
+    ] },
+    { stem: '', parts: [{ c: 'Write down', p: 'a function (with domain and codomain) that is (i) onto but not one-to-one; (ii) one-to-one but not onto; (iii) neither; (iv) both.', m: 4, a: 'open', ms: [['A1', R`e.g. $x^{2}: \mathbb{R} \to [0,\ \infty[$`], ['A1', R`e.g. $e^{x}: \mathbb{R} \to \mathbb{R}$`], ['A1', R`e.g. $x^{2}: \mathbb{R} \to \mathbb{R}$`], ['A1', R`e.g. $2x + 1: \mathbb{R} \to \mathbb{R}$`]], w: ['Many answers — check each against the definitions.'], h: '' }] }
+  ]);
+
+  /* ===== 2L · Odd and even functions ===== */
+  const EO = ['Even', 'Odd', 'Neither'];
+  const lq = (p, right, w) => ({ c: 'Determine', p, m: 2, a: { mc: [right, ...EO.filter(x => x !== right)].map(x => R`$\text{${x}}$`) }, ms: [['M1', R`finding $f(-x)$`], ['A1', right]], w, h: R`Find $f(-x)$: equal to $f(x)$ → even; equal to $-f(x)$ → odd.` });
+  B('HL', '2L', { page: 108, sec: '2.3', title: 'Odd and even functions', skill: 'HL-2.3', paper: 1 }, [
+    { stem: 'Determine algebraically whether each function is even, odd or neither. Confirm your answer graphically.', parts: [
+      lq(R`$f(x) = x^{4} - 3x^{2}$`, 'Even', [R`$f(-x) = (-x)^{4} - 3(-x)^{2} = x^{4} - 3x^{2} = f(x)$`]),
+      lq(R`$g(x) = 2x^{3} + x$`, 'Odd', [R`$g(-x) = -2x^{3} - x = -g(x)$`]),
+      lq(R`$h(x) = x^{2} + x$`, 'Neither', [R`$h(-x) = x^{2} - x$, which is neither $h(x)$ nor $-h(x)$`]),
+      lq(R`$p(x) = \frac{x}{x^{2} + 1}$`, 'Odd', [R`$p(-x) = \frac{-x}{x^{2} + 1} = -p(x)$`]),
+      lq(R`$q(x) = |x| - 4$`, 'Even', [R`$q(-x) = |-x| - 4 = |x| - 4 = q(x)$`]),
+      lq(R`$r(x) = (x - 1)^{2}$`, 'Neither', [R`$r(-x) = (x + 1)^{2}$; e.g. $r(1) = 0$ but $r(-1) = 4$`]),
+      lq(R`$s(x) = x|x|$`, 'Odd', [R`$s(-x) = (-x)|-x| = -x|x| = -s(x)$`])
+    ] },
+    { stem: '', parts: [
+      { c: 'State', p: R`whether $f(x) = x^{4} - 3x^{2}$ is one-to-one or many-to-one, and explain.`, m: 1, a: { mc: [R`$\text{many-to-one}$`, R`$\text{one-to-one}$`] }, ms: [['R1', R`many-to-one: e.g. $f(-1) = f(1)$`]], w: ['Every non-zero even function is many-to-one: $f(-a) = f(a)$.'], h: '' },
+      { c: 'Find', p: 'a function that is both even and odd.', m: 1, a: { open: 'f(x) = 0' }, ms: [['A1', R`$f(x) = 0$`]], w: [R`$f(x) = f(-x)$ and $f(-x) = -f(x)$ give $f(x) = -f(x)$, so $f(x) = 0$.`], h: '' }
+    ] }
+  ]);
+
+  /* ===== 2M · Composite functions ===== */
+  B('HL', '2M', { page: 111, sec: '2.4', title: 'Composite functions', skill: 'HL-2.4a', paper: 1 }, [
+    { stem: R`$f(x) = 2x + 1$ and $g(x) = x^{2} - 3$.`, parts: [
+      { c: 'Find', p: R`$g(f(1))$`, m: 2, a: 6, ms: [['M1', R`$f(1) = 3$`], ['A1', '6']], w: [R`$f(1) = 3$, $g(3) = 9 - 3 = 6$`], h: 'Inside first.', e: [{ value: 2, fb: 'That is f(g(1)) — work from the inside out.' }] },
+      { c: 'Find', p: R`$f(g(2))$`, m: 2, a: 3, ms: [['M1', R`$g(2) = 1$`], ['A1', '3']], w: [R`$g(2) = 1$, $f(1) = 3$`], h: '' },
+      { c: 'Find', p: R`$f(g(x))$`, m: 2, a: { open: R`2x^{2} - 5` }, ms: [['M1', R`$2(x^{2} - 3) + 1$`], ['A1', R`$2x^{2} - 5$`]], w: [R`$f(g(x)) = 2(x^{2} - 3) + 1 = 2x^{2} - 5$`], h: '' },
+      { c: 'Find', p: R`$g(f(x))$`, m: 2, a: { open: R`4x^{2} + 4x - 2` }, ms: [['M1', R`$(2x + 1)^{2} - 3$`], ['A1', R`$4x^{2} + 4x - 2$`]], w: [R`$(2x + 1)^{2} - 3 = 4x^{2} + 4x + 1 - 3$`], h: '' }
+    ] },
+    { stem: R`$f(x) = \sqrt{x - 1},\ x \ge 1$ and $g(x) = x^{2} + 1,\ x \in \mathbb{R}$.`, parts: [
+      { c: 'Find', p: R`$(f \circ g)(x)$ and state its domain and range.`, m: 3, a: { open: R`(f \circ g)(x) = |x|;\ x \in \mathbb{R};\ y \ge 0` }, ms: [['A1', R`$\sqrt{x^{2}} = |x|$`], ['A1', R`domain $\mathbb{R}$`], ['A1', R`range $y \ge 0$`]], w: [R`$f(x^{2} + 1) = \sqrt{x^{2}} = |x|$`, R`$g(x) \ge 1$ for every $x$, so every real $x$ is allowed.`], h: R`$\sqrt{x^{2}}$ is not always $x$.` },
+      { c: 'Find', p: R`$(g \circ f)(x)$ and state its domain and range.`, m: 3, a: { open: R`(g \circ f)(x) = x;\ x \ge 1;\ y \ge 1` }, ms: [['A1', R`$(\sqrt{x - 1})^{2} + 1 = x$`], ['A1', R`domain $x \ge 1$`], ['A1', R`range $y \ge 1$`]], w: [R`$g(\sqrt{x - 1}) = x - 1 + 1 = x$, but only for $x \ge 1$ (the domain of $f$).`], h: 'The domain of g∘f is limited by the domain of f.' }
+    ] },
+    { stem: R`$f(x) = 3x + a$ and $g(x) = 2x - 5$.`, parts: [
+      { c: 'Find', p: R`the value of $a$ such that $f(g(x)) = g(f(x))$ for all $x$.`, m: 3, a: -10, ms: [['M1', R`$f(g(x)) = 6x - 15 + a$`], ['M1', R`$g(f(x)) = 6x + 2a - 5$`], ['A1', R`$a = -10$`]], w: [R`$-15 + a = 2a - 5 \Rightarrow a = -10$`], h: 'Expand both and compare the constants.' }
+    ] },
+    { stem: R`$h(x) = \frac{1}{x - 2},\ x \ne 2$ and $f(x) = x + 3$.`, parts: [
+      { c: 'Find', p: R`$h(f(x))$ and state its domain.`, m: 2, a: { open: R`\frac{1}{x + 1},\ x \ne -1` }, ms: [['A1', R`$\frac{1}{x + 1}$`], ['A1', R`$x \ne -1$`]], w: [R`$h(x + 3) = \frac{1}{x + 1}$`], h: '' },
+      { c: 'Find', p: R`$h(h(3))$`, m: 2, a: -1, ms: [['M1', R`$h(3) = 1$`], ['A1', R`$-1$`]], w: [R`$h(3) = 1$, $h(1) = \frac{1}{-1} = -1$`], h: '' }
+    ] },
+    { stem: R`Without using $f(x) = x$ or $g(x) = x$, find functions $f$ and $g$ such that:`, parts: [
+      { c: 'Find', p: R`$f(g(x)) = (3x - 1)^{4}$`, m: 2, a: { open: R`g(x) = 3x - 1,\ f(x) = x^{4}` }, ms: [['A1', R`$g(x) = 3x - 1$`], ['A1', R`$f(x) = x^{4}$`]], w: ['Inner function: $3x - 1$; outer: raise to the power 4.'], h: '' },
+      { c: 'Find', p: R`$f(g(x)) = \sqrt{x^{2} + 5}$`, m: 2, a: { open: R`g(x) = x^{2} + 5,\ f(x) = \sqrt{x}` }, ms: [['A1', R`$g(x) = x^{2} + 5$`], ['A1', R`$f(x) = \sqrt{x}$`]], w: [''], h: '' },
+      { c: 'Find', p: R`$f(g(x)) = \frac{2}{x + 4} - 1$`, m: 2, a: { open: R`g(x) = x + 4,\ f(x) = \frac{2}{x} - 1` }, ms: [['A1', R`$g(x) = x + 4$`], ['A1', R`$f(x) = \frac{2}{x} - 1$`]], w: [''], h: '' }
+    ] },
+    { stem: R`The number of bacteria in a food sample at temperature $T$ °C is $N(T) = 15T^{2} - 60T + 400$, for $2 \le T \le 12$. When the food is taken out of the fridge, its temperature after $t$ hours is $T(t) = 3t + 2$, for $0 \le t \le 3$.`, paper: 2, parts: [
+      { c: 'Find', p: R`$(N \circ T)(t)$, simplifying your answer.`, m: 3, a: { open: R`135t^{2} + 340` }, ms: [['M1', R`$15(3t + 2)^{2} - 60(3t + 2) + 400$`], ['A1', 'correct expansion'], ['A1', R`$135t^{2} + 340$`]], w: [R`$15(9t^{2} + 12t + 4) - 180t - 120 + 400 = 135t^{2} + 340$`], h: 'Substitute T(t) for T.' },
+      { c: 'Find', p: 'the time when the number of bacteria reaches $1420$.', m: 2, a: { n: 2 * Math.SQRT2, sf: 3 }, ms: [['M1', R`$135t^{2} + 340 = 1420$`], ['A1', R`$t = 2\sqrt{2} \approx 2.83$ hours`]], w: [R`$135t^{2} = 1080 \Rightarrow t^{2} = 8 \Rightarrow t = 2\sqrt{2} \approx 2.83$`], h: '' }
+    ] }
+  ]);
+
+  /* ===== 2N · Inverse functions ===== */
+  B('HL', '2N', { page: 116, sec: '2.4', title: 'Inverse functions', skill: 'HL-2.4b', paper: 1 }, [
+    { stem: 'State whether the inverse of each relation is a function. Give a reason.', parts: [
+      { c: 'State', p: R`$\{(1,\ 4),\ (2,\ 5),\ (3,\ 6),\ (4,\ 7)\}$`, m: 2, a: { mc: [R`$\text{Inverse is a function}$`, R`$\text{Inverse is not a function}$`] }, ms: [['A1', 'inverse is a function'], ['R1', 'every output comes from exactly one input']], w: [R`Inverse: $\{(4,\ 1),\ (5,\ 2),\ (6,\ 3),\ (7,\ 4)\}$ — no repeated first element.`], h: '' },
+      { c: 'State', p: R`$\{(-2,\ 3),\ (0,\ 3),\ (2,\ 5)\}$`, m: 2, a: { mc: [R`$\text{Inverse is not a function}$`, R`$\text{Inverse is a function}$`] }, ms: [['A1', 'not a function'], ['R1', R`$3$ would map to both $-2$ and $0$`]], w: [R`The inverse contains $(3,\ -2)$ and $(3,\ 0)$.`], h: '' }
+    ] },
+    { stem: 'Find the inverse of each function, and state the domain of the inverse.', parts: [
+      { c: 'Find', p: R`$f(x) = 4x - 7$`, m: 2, a: { open: R`f^{-1}(x) = \frac{x + 7}{4},\ x \in \mathbb{R}` }, ms: [['M1', 'interchanging $x$ and $y$'], ['A1', R`$\frac{x + 7}{4}$`]], w: [R`$x = 4y - 7 \Rightarrow y = \frac{x + 7}{4}$`], h: '' },
+      { c: 'Find', p: R`$f(x) = \frac{x + 2}{x - 3},\ x \ne 3$`, m: 3, a: { open: R`f^{-1}(x) = \frac{3x + 2}{x - 1},\ x \ne 1` }, ms: [['M1', 'interchanging'], ['M1', R`collecting $y$ terms`], ['A1', R`$\frac{3x + 2}{x - 1},\ x \ne 1$`]], w: [R`$x(y - 3) = y + 2 \Rightarrow xy - y = 3x + 2 \Rightarrow y = \frac{3x + 2}{x - 1}$`], h: '' },
+      { c: 'Find', p: R`$f(x) = \sqrt{x + 5},\ x \ge -5$`, m: 3, a: { open: R`f^{-1}(x) = x^{2} - 5,\ x \ge 0` }, ms: [['M1', R`$x = \sqrt{y + 5}$`], ['A1', R`$x^{2} - 5$`], ['A1', R`$x \ge 0$`]], w: [R`$x^{2} = y + 5 \Rightarrow y = x^{2} - 5$; the range of $f$ is $y \ge 0$, so the domain of $f^{-1}$ is $x \ge 0$`], h: 'The domain of the inverse is the range of the original.' },
+      { c: 'Find', p: R`$f(x) = (x - 1)^{2},\ x \ge 1$`, m: 3, a: { open: R`f^{-1}(x) = 1 + \sqrt{x},\ x \ge 0` }, ms: [['M1', R`$x = (y - 1)^{2}$`], ['A1', R`$1 + \sqrt{x}$ (positive root)`], ['A1', R`$x \ge 0$`]], w: [R`$y - 1 = \sqrt{x}$ (positive, since $y \ge 1$)`], h: '' },
+      { c: 'Find', p: R`$f^{-1}(5)$ for $f(x) = 4x - 7$.`, m: 1, a: 3, ms: [['A1', '3']], w: [R`$\frac{5 + 7}{4} = 3$`], h: '' }
+    ] },
+    { stem: R`$f(x) = 5 - 2x$ and $g(x) = \frac{5 - x}{2}$.`, parts: [
+      { c: 'Show that', p: '$f$ and $g$ are inverses of each other.', m: 3, a: 'open', ms: [['M1', R`$f(g(x)) = 5 - (5 - x)$`], ['A1', R`$f(g(x)) = x$`], ['A1', R`$g(f(x)) = \frac{5 - (5 - 2x)}{2} = x$`]], w: [R`$f(g(x)) = 5 - 2\cdot\frac{5 - x}{2} = x$ and $g(f(x)) = \frac{2x}{2} = x$`], h: 'Show both compositions give x.' }
+    ] },
+    { stem: R`$f(x) = x^{2} - 4x + 1,\ x \ge k$.`, parts: [
+      { c: 'Find', p: 'the least value of $k$ for which $f^{-1}$ exists.', m: 2, a: 2, ms: [['M1', R`$(x - 2)^{2} - 3$`], ['A1', R`$k = 2$`]], w: [R`Vertex at $x = 2$`], h: '' },
+      { c: 'Find', p: R`$f^{-1}(x)$ for this value of $k$, and state its domain.`, m: 3, a: { open: R`f^{-1}(x) = 2 + \sqrt{x + 3},\ x \ge -3` }, ms: [['M1', R`$x = (y - 2)^{2} - 3$`], ['A1', R`$2 + \sqrt{x + 3}$`], ['A1', R`$x \ge -3$`]], w: [''], h: '' }
+    ] },
+    { stem: R`$f(x) = 2x + 3$ and $g(x) = x^{3}$.`, parts: [
+      { c: 'Show that', p: R`$(g \circ f)^{-1}(x) = (f^{-1} \circ g^{-1})(x)$.`, m: 4, a: 'open', ms: [['A1', R`$(g \circ f)(x) = (2x + 3)^{3}$`], ['A1', R`$(g \circ f)^{-1}(x) = \frac{\sqrt[3]{x} - 3}{2}$`], ['A1', R`$f^{-1}(x) = \frac{x - 3}{2}$, $g^{-1}(x) = \sqrt[3]{x}$`], ['A1', R`$f^{-1}(g^{-1}(x)) = \frac{\sqrt[3]{x} - 3}{2}$`]], w: ['Both sides give the same expression.'], h: 'Find each side separately.' },
+      { c: 'Find', p: R`$(g \circ f)^{-1}(125)$`, m: 1, a: 1, ms: [['A1', '1']], w: [R`$\frac{\sqrt[3]{125} - 3}{2} = \frac{5 - 3}{2} = 1$`], h: '' }
+    ] }
+  ]);
+
+  /* ===== 2O · y = |f(x)| and y = f(|x|) ===== */
+  const ofs = [
+    ['f(x) = 2x - 3', x => 2 * x - 3, [-4, 4], [-6, 6], 'The part below the x-axis (x < 1.5) is reflected up; vertex at (1.5, 0).', 'The part for x ≥ 0 is kept and reflected in the y-axis: a V with vertex at (0, −3).'],
+    ['f(x) = x^{2} - 4x', x => x * x - 4 * x, [-5, 6], [-5, 8], 'Between x = 0 and x = 4 the curve is below the axis: reflect it up (local max at (2, 4)).', 'Keep x ≥ 0 and reflect in the y-axis: minima at (±2, −4), touching the origin.'],
+    ['f(x) = 1 - x^{3}', x => 1 - x ** 3, [-2.5, 2.5], [-6, 6], 'For x > 1 the curve is below the axis: reflect it up.', 'Keep x ≥ 0 and reflect in the y-axis: symmetrical, maximum value 1 at x = 0.'],
+    ['f(x) = (x + 1)(x - 3)', x => (x + 1) * (x - 3), [-4, 5], [-5, 8], 'Between −1 and 3 the curve is below the axis: reflect it up (local max at (1, 4)).', 'Keep x ≥ 0 (crosses at x = 3) and reflect: x-intercepts ±3, y-intercept −3.']
+  ];
+  B('HL', '2O', { page: 118, sec: '2.5', title: 'Graphs of |f(x)| and f(|x|)', skill: 'HL-2.5b', paper: 1 }, ofs.map(([tex, f, xr, yr, w1, w2]) => ({ stem: `For $${tex}$, sketch each graph on the same axes as $y = f(x)$.`, parts: [
+    sk('a', R`$y = |f(x)|$`, plot({ x: xr, y: yr, f: [{ f, dash: true }, { f: x => Math.abs(f(x)) }], alt: 'model sketch' }), [['A1', 'parts above the x-axis unchanged'], ['A1', 'parts below the x-axis reflected in the x-axis']], [w1], 'Anything below the x-axis is flipped up.'),
+    sk('b', R`$y = f(|x|)$`, plot({ x: xr, y: yr, f: [{ f, dash: true }, { f: x => f(Math.abs(x)) }], alt: 'model sketch' }), [['A1', R`the graph for $x \ge 0$ unchanged`], ['A1', 'reflected in the y-axis to give the left half']], [w2], 'Keep the right half; mirror it in the y-axis.')
+  ] })));
+
+  /* ===== 2P · Reciprocal graphs y = 1/f(x) ===== */
+  B('HL', '2P', { page: 120, sec: '2.5', title: 'Reciprocal graphs', skill: 'HL-2.5b', paper: 1 }, [
+    { stem: R`For each function, sketch $y = \frac{1}{f(x)}$ on the same axes as $y = f(x)$, labelling intercepts, asymptotes and turning points.`, parts: [
+      sk('a', R`$f(x) = x - 2$`, plot({ x: [-3, 7], y: [-5, 5], vl: [2], f: [{ f: x => x - 2, dash: true }, { f: x => 1 / (x - 2), from: -3, to: 1.95 }, { f: x => 1 / (x - 2), from: 2.05, to: 7 }], alt: 'model sketch' }), [['A1', R`vertical asymptote $x = 2$, horizontal asymptote $y = 0$`], ['A1', R`branches in the correct quadrants; $y$-intercept $-\frac{1}{2}$`]], [R`Zero of $f$ at $x = 2$ becomes the vertical asymptote; $f(0) = -2$ gives $y$-intercept $-\frac{1}{2}$.`], ''),
+      sk('b', R`$f(x) = x^{2} - 1$`, plot({ x: [-4, 4], y: [-4, 5], vl: [-1, 1], f: [{ f: x => x * x - 1, dash: true }, { f: x => 1 / (x * x - 1), from: -4, to: -1.05 }, { f: x => 1 / (x * x - 1), from: -0.95, to: 0.95 }, { f: x => 1 / (x * x - 1), from: 1.05, to: 4 }], alt: 'model sketch' }), [['A1', R`asymptotes $x = \pm 1$, $y = 0$`], ['A1', R`local maximum $(0,\ -1)$; positive branches outside $\pm 1$`]], [R`Minimum of $f$ at $(0,\ -1)$ becomes a maximum of $\frac{1}{f}$ at $(0,\ -1)$.`], ''),
+      sk('c', R`$f(x) = x(4 - x)$`, plot({ x: [-2, 6], y: [-4, 5], vl: [0, 4], f: [{ f: x => x * (4 - x), dash: true }, { f: x => 1 / (x * (4 - x)), from: -2, to: -0.05 }, { f: x => 1 / (x * (4 - x)), from: 0.05, to: 3.95 }, { f: x => 1 / (x * (4 - x)), from: 4.05, to: 6 }], alt: 'model sketch' }), [['A1', R`asymptotes $x = 0$, $x = 4$, $y = 0$`], ['A1', R`local minimum $\left(2,\ \frac{1}{4}\right)$`]], [R`Maximum of $f$ at $(2,\ 4)$ becomes a minimum of $\frac{1}{f}$ at $\left(2,\ \frac{1}{4}\right)$.`], '')
+    ] },
+    { stem: R`Let $f(x) = x(4 - x)$.`, parts: [
+      { c: 'Write down', p: R`the equations of the vertical asymptotes of $y = \frac{1}{f(x)}$.`, m: 2, a: { list: [0, 4], d: 'x = 0,\\ x = 4' }, ms: [['A1', R`$x = 0$`], ['A1', R`$x = 4$`]], w: [R`The zeros of $f$`], h: 'Where is f(x) = 0?' },
+      { c: 'Find', p: R`the coordinates of the local minimum of $y = \frac{1}{f(x)}$ for $0 < x < 4$.`, m: 2, a: { t: [2, [1, 4]], l: ['x', 'y'], d: R`\left(2,\ \frac{1}{4}\right)` }, ms: [['M1', R`maximum of $f$ at $(2,\ 4)$`], ['A1', R`$\left(2,\ \frac{1}{4}\right)$`]], w: [R`$f$ has maximum $4$ at $x = 2$, so $\frac{1}{f}$ has minimum $\frac{1}{4}$ there.`], h: '' }
+    ] },
+    { stem: R`$f(x) = x^{2} + 2$.`, parts: [
+      { c: 'Explain', p: R`why $y = \frac{1}{f(x)}$ has no vertical asymptotes.`, m: 1, a: 'open', ms: [['R1', R`$x^{2} + 2 \ge 2 > 0$, so $f$ is never zero`]], w: [''], h: '' },
+      { c: 'Write down', p: R`the range of $y = \frac{1}{f(x)}$.`, m: 2, a: { open: R`0 < y \le \frac{1}{2}` }, ms: [['A1', R`$y \le \frac{1}{2}$`], ['A1', R`$y > 0$`]], w: [R`$f(x) \ge 2$, so $0 < \frac{1}{f(x)} \le \frac{1}{2}$`], h: '' }
+    ] }
+  ]);
+
+  /* ===== 2Q · Transformations of graphs ===== */
+  B('HL', '2Q', { page: 126, sec: '2.5', title: 'Transformations of graphs', skill: 'HL-2.5a', paper: 1 }, [
+    { stem: R`The point $P(-1,\ 4)$ lies on the graph of $y = f(x)$. Find the image of $P$ on each graph.`, parts: [
+      ['f(-x)', [1, 4]], ['-f(x)', [-1, -4]], ['f(2x)', [[-1, 2], 4]], ['3f(x)', [-1, 12]], ['f(x + 6)', [-7, 4]], ['f(x) - 3', [-1, 1]]
+    ].map(([g, t], i) => ({ c: 'Find', p: `$y = ${g}$`, m: 1, a: { t, l: ['x', 'y'] }, ms: [['A1', `correct image`]], w: [{ 0: 'Reflection in the y-axis: (x, y) → (−x, y).', 1: 'Reflection in the x-axis: (x, y) → (x, −y).', 2: 'Horizontal stretch, factor ½: (x, y) → (½x, y).', 3: 'Vertical stretch, factor 3: (x, y) → (x, 3y).', 4: 'Translation 6 left: (x, y) → (x − 6, y).', 5: 'Translation 3 down: (x, y) → (x, y − 3).' }[i]], h: 'Changes inside the bracket act on x — and do the opposite of what they look like.' })) },
+    { stem: R`The function $f$ has domain $-2 \le x \le 4$ and range $-1 \le y \le 5$.`, parts: [
+      { c: 'Write down', p: R`the domain and range of $g(x) = f(x + 3) - 2$.`, m: 2, a: { t: [-5, 1, -3, 3], l: ['domain from', 'domain to', 'range from', 'range to'] }, ms: [['A1', R`$-5 \le x \le 1$`], ['A1', R`$-3 \le y \le 3$`]], w: ['3 left and 2 down.'], h: '' },
+      { c: 'Write down', p: R`the domain and range of $h(x) = 2f(-x)$.`, m: 2, a: { t: [-4, 2, -2, 10], l: ['domain from', 'domain to', 'range from', 'range to'] }, ms: [['A1', R`$-4 \le x \le 2$`], ['A1', R`$-2 \le y \le 10$`]], w: ['Reflect in the y-axis, then stretch vertically by 2.'], h: '' }
+    ] },
+    { stem: R`Describe the single transformation that maps the graph of $y = x^{2}$ onto each graph.`, parts: [
+      ['(x - 3)^{2}', 'Translation 3 units to the right', ['Translation 3 units to the left', 'Translation 3 units up', 'Vertical stretch, factor 3']],
+      ['x^{2} + 5', 'Translation 5 units up', ['Translation 5 units to the right', 'Vertical stretch, factor 5', 'Translation 5 units to the left']],
+      ['(2x)^{2}', 'Horizontal stretch, factor ½', ['Horizontal stretch, factor 2', 'Translation 2 units to the right', 'Vertical stretch, factor ½']],
+      ['-x^{2}', 'Reflection in the x-axis', ['Reflection in the y-axis', 'Translation 1 unit down', 'Rotation of 90°']]
+    ].map(([g, right, wrong]) => ({ c: 'Describe', p: `$y = ${g}$`, m: 1, a: { mc: [right, ...wrong].map(x => `$\\text{${x}}$`) }, ms: [['A1', right]], w: [right + '.'], h: '' })) },
+    { stem: R`The graph of $y = x^{2}$ is translated $2$ units to the left, then stretched vertically by a factor of $3$, then translated $5$ units down.`, parts: [
+      { c: 'Write down', p: 'the equation of the final graph.', m: 2, a: { open: R`y = 3(x + 2)^{2} - 5` }, ms: [['A1', R`$3(x + 2)^{2}$`], ['A1', R`$-5$`]], w: [R`$(x + 2)^{2} \to 3(x + 2)^{2} \to 3(x + 2)^{2} - 5$`], h: '' },
+      { c: 'Write down', p: 'the coordinates of its vertex.', m: 1, a: { t: [-2, -5], l: ['x', 'y'] }, ms: [['A1', R`$(-2,\ -5)$`]], w: [''], h: '' }
+    ] }
+  ]);
+
+  /* ===== 2R · Rational functions as transformations of 1/x ===== */
+  const ASY = ['vertical x =', 'horizontal y ='];
+  B('HL', '2R', { page: 134, sec: '2.5', title: 'Rational functions and transformations', skill: 'HL-2.5a', paper: 1 }, [
+    { stem: R`The graph of $y = \frac{1}{x}$ is stretched vertically by a factor of $3$, then translated by $\begin{pmatrix} 2 \\ -1 \end{pmatrix}$.`, parts: [
+      { c: 'Write down', p: 'the equation of the new graph.', m: 2, a: { open: R`y = \frac{3}{x - 2} - 1` }, ms: [['A1', R`$\frac{3}{x}$`], ['A1', R`$\frac{3}{x - 2} - 1$`]], w: [''], h: '' },
+      { c: 'Write down', p: 'the equations of its asymptotes.', m: 2, a: { t: [2, -1], l: ASY }, ms: [['A1', R`$x = 2$`], ['A1', R`$y = -1$`]], w: ['The asymptotes move with the translation.'], h: '' }
+    ] },
+    { stem: R`The graph of $y = \frac{1}{x}$ is stretched horizontally by a factor of $\frac{1}{2}$, then translated $4$ units up.`, parts: [
+      { c: 'Write down', p: 'the equation of the new graph.', m: 2, a: { open: R`y = \frac{1}{2x} + 4` }, ms: [['A1', R`$\frac{1}{2x}$`], ['A1', R`$+4$`]], w: [''], h: '' }
+    ] },
+    { stem: R`$f(x) = \frac{2x + 7}{x + 3}$`, parts: [
+      { c: 'Show that', p: R`$f(x) = 2 + \frac{1}{x + 3}$.`, m: 2, a: 'open', ms: [['M1', R`$2x + 7 = 2(x + 3) + 1$`], ['A1', 'AG']], w: [R`$\frac{2(x + 3) + 1}{x + 3} = 2 + \frac{1}{x + 3}$`], h: '' },
+      { c: 'Describe', p: R`the transformations that map $y = \frac{1}{x}$ onto $y = f(x)$.`, m: 2, a: { open: R`\text{translation } \begin{pmatrix} -3 \\ 2 \end{pmatrix}` }, ms: [['A1', '3 units left'], ['A1', '2 units up']], w: [''], h: '' },
+      { c: 'Write down', p: 'the equations of the asymptotes.', m: 2, a: { t: [-3, 2], l: ASY }, ms: [['A1', R`$x = -3$`], ['A1', R`$y = 2$`]], w: [''], h: '' }
+    ] },
+    { stem: R`$g(x) = \frac{4x - 1}{2x - 1}$`, parts: [
+      { c: 'Show that', p: R`$g(x) = 2 + \frac{1}{2x - 1}$.`, m: 2, a: 'open', ms: [['M1', R`$4x - 1 = 2(2x - 1) + 1$`], ['A1', 'AG']], w: [''], h: '' },
+      { c: 'Write down', p: 'the equations of the asymptotes.', m: 2, a: { t: [[1, 2], 2], l: ASY }, ms: [['A1', R`$x = \frac{1}{2}$`], ['A1', R`$y = 2$`]], w: [''], h: '' },
+      { c: 'Describe', p: R`a sequence of transformations that maps $y = \frac{1}{x}$ onto $y = g(x)$.`, m: 3, a: 'open', ms: [['A1', R`horizontal stretch, factor $\frac{1}{2}$`], ['A1', R`translation $\frac{1}{2}$ right`], ['A1', '2 up']], w: [R`$\frac{1}{2x - 1} = \frac{1}{2\left(x - \frac{1}{2}\right)}$`], h: 'Factor out the 2 inside the bracket.' }
+    ] },
+    { stem: R`$h(x) = \frac{3x - 10}{x - 4}$`, parts: [
+      { c: 'Write', p: R`$h(x)$ in the form $a + \frac{b}{x - 4}$.`, m: 2, a: { open: R`3 + \frac{2}{x - 4}` }, ms: [['M1', R`$3(x - 4) + 2$`], ['A1', R`$3 + \frac{2}{x - 4}$`]], w: [''], h: '' },
+      { c: 'Find', p: 'the $x$- and $y$-intercepts of the graph.', m: 2, a: { t: [[10, 3], [5, 2]], l: ['x-intercept', 'y-intercept'] }, ms: [['A1', R`$x = \frac{10}{3}$`], ['A1', R`$y = \frac{5}{2}$`]], w: [R`$3x - 10 = 0$; $h(0) = \frac{-10}{-4}$`], h: '' }
+    ] }
+  ]);
+
+  /* ===== 2S · Composite transformations ===== */
+  B('HL', '2S', { page: 139, sec: '2.5', title: 'Composite transformations', skill: 'HL-2.5a', paper: 1 }, [
+    { stem: R`For each pair, describe the transformations (in order) that map the graph of the first function onto the second, and find the image of the given point.`, parts: [
+      { c: 'Find', p: R`$f(x) = x^{2}$ and $y = -f(3 - x) + 1$: the image of the vertex $(0,\ 0)$.`, m: 3, a: { t: [3, 1], l: ['x', 'y'] }, ms: [['M1', R`$-(3 - x)^{2} + 1 = -(x - 3)^{2} + 1$`], ['A1', 'transformations in a correct order'], ['A1', R`$(3,\ 1)$`]], w: ['Reflect in the x-axis, translate 3 right and 1 up (the reflection in the y-axis has no effect on a symmetric parabola).'], h: R`$3 - x = 0$ gives the new $x$.` },
+      { c: 'Find', p: R`$f(x) = \sqrt{x}$ and $y = 3f(2x - 3) - 1$: the image of $(4,\ 2)$.`, m: 3, a: { t: [[7, 2], 5], l: ['x', 'y'] }, ms: [['M1', R`$2x - 3 = 4$`], ['A1', R`$x = \frac{7}{2}$`], ['A1', R`$y = 3(2) - 1 = 5$`]], w: ['Translate 3 right, stretch horizontally by ½, stretch vertically by 3, translate 1 down.'], h: 'Solve "inside = old x" for the new x.' },
+      { c: 'Find', p: R`$f(x) = |x|$ and $y = -2f(2x - 2) + 2$: the image of the vertex $(0,\ 0)$.`, m: 2, a: { t: [1, 2], l: ['x', 'y'] }, ms: [['M1', R`$2x - 2 = 0$`], ['A1', R`$(1,\ 2)$`]], w: [''], h: '' },
+      { c: 'Find', p: R`$f(x) = \frac{1}{x}$ and $y = -f(2x + 1) - 2$: the equations of the asymptotes.`, m: 2, a: { t: [[-1, 2], -2], l: ASY }, ms: [['A1', R`$x = -\frac{1}{2}$`], ['A1', R`$y = -2$`]], w: [''], h: '' },
+      { c: 'Find', p: R`$f(x) = x^{3} - 1$ and $y = 2f(-x) + 3$: the image of $(1,\ 0)$.`, m: 2, a: { t: [-1, 3], l: ['x', 'y'] }, ms: [['A1', R`$x = -1$`], ['A1', R`$y = 3$`]], w: [R`$(1,\ 0) \to (-1,\ 0) \to (-1,\ 0) \to (-1,\ 3)$`], h: '' }
+    ] },
+    { stem: R`Sketch, showing each stage, the graph of $y = -2|2x + 1| - 2$ starting from $y = |x|$.`, parts: [
+      sk('a', 'the final graph, labelling the vertex.', plot({ x: [-4, 3], y: [-10, 3], f: [{ f: x => Math.abs(x), dash: true }, { f: x => -2 * Math.abs(2 * x + 1) - 2 }], pts: [pt(-0.5, -2, 't')], alt: 'model sketch' }), [['A1', R`vertex $\left(-\frac{1}{2},\ -2\right)$`], ['A1', 'opens downwards, steeper (gradient ±4)']], ['Horizontal stretch ½, translate ½ left, vertical stretch 2 with reflection in the x-axis, translate 2 down.'], ''),
+      { c: 'Write down', p: 'the range of the final function.', m: 1, a: { open: R`y \le -2` }, ms: [['A1', R`$y \le -2$`]], w: [''], h: '' }
+    ] }
+  ]);
+})(window.Hub = window.Hub || {});
+
 
 /* ---- js/q_cr2.js ---- */
 /* Unit tests that mirror the Oxford 2019 end-of-chapter "Exam-style questions" — one generator per book question, in the
