@@ -17,3 +17,11 @@ the deployed `hub` function is a one-line `index.ts` that imports
 - `deploy/hub/` — current server (built from `supabase/functions/hub/`)
 - `deploy/hub-v8/` — rollback: the server exactly as it was before 4 November 2026
 - `deploy/probe.js` — checks the modules load (used by the `hub-probe` test function)
+
+## Live now
+`hub` **v9**, deployed 4 November 2026 at 19:45 New York time from commit `a922e40` (`server/deploy/hub/index.js`). Adds:
+Exit Tickets closing one hour after the lesson except for students marked absent; targeted retests/retakes only for their
+students (and hidden from everyone else); personalised Exit Tickets and Quizzes recorded under their own names.
+Checked after deploying: sign-in required (401), class-code join answers, no start-up errors in the logs.
+To roll back: deploy `hub` with `index.ts` importing `.../ib-math-hub@a922e40/server/deploy/hub-v8/index.js`.
+The `hub-probe` function only reports that the modules load; it returns no data.
