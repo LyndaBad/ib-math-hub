@@ -4908,7 +4908,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         const av = use.length ? Math.round(use.reduce((a, x) => a + x[1], 0) / use.length) : null, low = use.slice().sort((a, b) => a[1] - b[1])[0];
         const waiting = S().attempts.filter(t => ids.has(t.sid) && t.status === 'submitted').length, todayN = S().attempts.filter(t => ids.has(t.sid) && String(t.date || t.at || '').slice(0, 10) === asOf).length;
         const note = !studs.length ? 'No students yet.' : av === null ? (waiting ? `${waiting} submission${waiting === 1 ? '' : 's'} waiting in <a href="#/marking">Marking</a> — the snapshot fills in once work is marked and released.` : 'No marked work yet.') : (low ? 'Lowest: ' + esc(low[0].name) + ' (' + low[1] + '%)' : '') + (early ? ' · <b>early data</b> — only a few marks per skill so far' : '') + (waiting ? ` · ${waiting} waiting in <a href="#/marking">Marking</a>` : '');
-        return `<div class="snap"><a href="#/mastery?group=${g}"><b>${C().GROUPS[g].label}</b></a><span>${av ?? '—'}${av === null ? '' : '%'}</span>${U.bar(av)}<span class="tiny muted">${note}${todayN ? ` · ${todayN} submitted today` : ''}</span></div>`; }).join('')}<p class="tiny muted">Average of recency-weighted mastery across skills with marked work. Only marked and released work counts. Classroom indicator, not an IB grade.</p></section></div>`;
+        return `<div class="snap"><a href="#/mastery?group=${g}"><b>${C().GROUPS[g].label}</b></a><span>${av ?? '—'}${av === null ? '' : '%'}</span>${U.bar(av)}<span class="tiny muted">${note}${todayN ? ` · ${todayN} submitted today` : ''}</span></div>`; }).join('')}<p class="tiny muted">Average of recency-weighted mastery across skills with marked work. Only marked and released work counts. Classroom indicator, not an IB grade. <span id="auto-upd" class="tiny">Updates automatically every couple of minutes.</span></p></section></div>`;
   }
 
   /* ================= Assessment Studio: library + builder ================= */
@@ -9243,6 +9243,32 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       await Hub.auth.init();
     }catch(e){signIn();$('#login-error').textContent=e.message;return;}
     Hub.store.onExternal(() => { shellFor = null; render(); });
+  /* ---------- keep the data fresh without pressing Refresh ----------
+     Every 2 minutes while the hub is on screen (students: 5), and when you come back to the tab, quietly load the latest.
+     Only redraw when something changed, only on pages that just show data, never while typing, in a dialog,
+     or mid-task — and keep the scroll position and any opened sections. */
+  const AUTO_OK = { teacher: /^#\/(home)?$|^#\/(class|datacycle|marking$|marking\?|announce|mastery|student\/|ia$|ia\?)/, student: /^#\/(home)?$|^#\/(progress|calendar)/ };
+  let lastAuto = 0, autoBusy = false;
+  const stamp = st => !st ? '' : [st.attempts.length, st.attempts.filter(t => t.status === 'released').length, st.attempts.reduce((n, t) => n + (t.final ? 1 : 0), 0), st.evidence.length, Object.keys(st.progress || {}).length, Object.values(st.progress || {}).reduce((n, v) => n + String(v && v.updatedAt || '').length, 0), st.assessments.map(a => a.id + a.status + (a.keepOpen ? 1 : 0)).join(), JSON.stringify(st.donow || {}).length, JSON.stringify((st.settings || {}).announce || []).length].join('|');
+  async function autoRefresh(force) {
+    const role = Hub.auth.role && Hub.auth.role(); if (!role || autoBusy || document.hidden || !Hub.store.state) return;
+    if (Date.now() - lastAuto < (force ? 30e3 : (role === 'teacher' ? 115e3 : 295e3))) return;
+    const h = currentHash() || '#/home', okRe = AUTO_OK[Hub.auth.isPreview() ? 'student' : role] || AUTO_OK.student;
+    const ae = document.activeElement;
+    if (!okRe.test(h) || Hub.store.dirty || Hub.store.blocked || document.querySelector('.modal, .modal-back, dialog[open]') || (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || (ae && ae.isContentEditable)) return;
+    autoBusy = true; lastAuto = Date.now();
+    try {
+      const r = await Hub.cloud.call('load'); if (!r || !r.state) return;
+      if (stamp(r.state) === stamp(Hub.store.state) || Hub.store.dirty || currentHash() !== h) return;
+      const y = window.scrollY, open = [...document.querySelectorAll('main details[open] > summary')].map(x => x.textContent.trim());
+      Hub.store.accept(r.state); shellFor = null; render();
+      requestAnimationFrame(() => { document.querySelectorAll('main details > summary').forEach(x => { if (open.includes(x.textContent.trim())) x.parentElement.open = true; }); window.scrollTo(0, y); });
+      const u = document.getElementById('auto-upd'); if (u) u.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } catch (e) { /* offline or signed out: try again next time */ } finally { autoBusy = false; }
+  }
+  setInterval(() => autoRefresh(false), 30e3);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) autoRefresh(true); });
+  window.addEventListener('focus', () => autoRefresh(true));
     window.addEventListener('hub-conflict', () => { const b = $('#conflict-banner'); if (b) b.hidden = !Hub.store.blocked; });
     // A link to the page that is already showing (e.g. "Back to the editor" after a preview drawn in place) must still re-render.
     document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href^="#/"]'); if (!ART && a && !e.defaultPrevented && a.getAttribute('href') === location.hash) { e.preventDefault(); render(); window.scrollTo(0, 0); } });
