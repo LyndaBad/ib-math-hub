@@ -145,6 +145,16 @@ export function mergeStudent(base,next,current,sid){
  const filter=o=>Object.fromEntries(Object.entries(o||{}).filter(([k])=>k.startsWith(prefix)).map(([k,v])=>[k,Object.fromEntries(['responses','uploads','reflection','updatedAt','createdAt'].filter(f=>own(v,f)).map(f=>[f,v[f]]))]));
  const merged=mergeMap(filter(base.progress),filter(next.progress),filter(current.progress),'saved answers');
  for(const k of Object.keys(out.progress))if(k.startsWith(prefix)){const server=out.progress[k]._serverAssessment;if(server)merged[k]={...(merged[k]||{}),_serverAssessment:server};delete out.progress[k];}Object.assign(out.progress,merged);
+ // Teacher-only records under a student's name: absence marks from the register and reminders. A student can never create,
+ // change or delete them; the only thing a student may do is mark their own reminder as read.
+ const teacherOnly=k=>k.startsWith(prefix+'att:')||k.startsWith(prefix+'nudge:');
+ for(const k of new Set([...Object.keys(out.progress),...Object.keys(current.progress||{})])){
+  if(!k.startsWith(prefix)||!teacherOnly(k))continue;
+  const cur=(current.progress||{})[k],mine=out.progress[k];
+  if(!cur){delete out.progress[k];continue;}
+  const read=k.startsWith(prefix+'nudge:')&&!!(mine&&mine.responses&&mine.responses.read);
+  out.progress[k]=clone(cur);if(read)out.progress[k].responses={...(cur.responses||{}),read:true};
+ }
  const b=base.ia?.[sid]||{},n=next.ia?.[sid]||{},c=current.ia?.[sid]||{};
  if(!equal(b,n)){
  // A locked or closed stage cannot be changed, whatever the browser sends.
