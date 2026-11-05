@@ -430,6 +430,7 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .sg-skill .inline-check { flex: 1 1 220px; margin: 0; }
 .sg-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .sg-plan li { margin: 0 0 8px; }
+.ex-tabs { margin: 0 0 14px; }
 
 .gp-q.keys-hidden .key { display: none; }
 .gp-sec { margin: 18px 0 8px; font-family: var(--f-head); }
@@ -4722,13 +4723,34 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const gens = (o.skills || []).length ? pickGenerators(o.skills, o.paper, o.style) : [];
     if ((o.skills || []).length && !gens.length) return { ok: false, error: o.style === 'exam' ? 'No IB exam-style questions exist for those skills yet. Choose “Mixed”.' : o.paper === 'P1' ? 'No Paper 1 (non-calculator) questions exist for that selection yet. Try Mixed.' : 'Choose at least one skill.' };
     const cnt = o.count === 0 || o.count === '0' ? 0 : Number(o.count) || t.count, n = gens.length ? Math.max(bookQs.length ? 0 : 1, Math.min(12, cnt)) : 0, qs = [];
-    for (let i = 0; i < n; i++) qs.push(buildQ(gens[i % gens.length], o.rigour === 'challenge', o.type === 'Homework', !!o.mc));
+    if (o.marks > 0 && gens.length) qs.push(...byMarks(gens, +o.marks, o));
+    else for (let i = 0; i < n; i++) qs.push(buildQ(gens[i % gens.length], o.rigour === 'challenge', o.type === 'Homework', !!o.mc));
     qs.push(...bookQs);
     const exs = [...new Set(bookQs.map(q => q.bookRef.split(' ')[1]))], exText = exs.length ? `Exercise${exs.length > 1 ? 's' : ''} ${exs.join(', ')}` : '';
     const skills = [...new Set([...(o.skills || []), ...bookQs.map(q => q.skill)])].filter(Boolean);
     const a = { id: uid('a'), course: o.course, title: o.title || (n ? defaultTitle(o) + (exText ? ' + ' + exText : '') : `${o.course} · ${exText} · ${o.type}`), type: o.type, lessonDate: o.lessonDate || null, skills, paper: o.paper || 'Mixed', rigour: o.rigour || 'standard', ...(exs.length ? { book: { course: o.course, ex: exs[0], exs } } : {}),
       questions: qs, reviewed: {}, status: 'draft', version: 1, groups: o.groups || [], uploadRequired: t.upload, release: t.release, minutes: t.minutes, due: null, retestOf: o.retestOf || null, cap: o.type === 'Retest' ? 80 : null, createdAt: new Date().toISOString(), history: [] };
     hist(a, 'Draft generated'); S().assessments.unshift(a); Hub.store.log(`Generated draft “${a.title}”`); Hub.store.save(); return { ok: true, assessment: a };
+  }
+  /** Whole questions adding up to exactly `target` marks (or as close below it as the skills allow), spread across the skills.
+      Builds a pool (at most 3 versions of each question type), then finds an exact subset; Paper 1 questions come first, shortest first. */
+  function byMarks(gens, target, o) {
+    const hard = o.rigour === 'challenge', hw = o.type === 'Homework', mcq = !!o.mc, pool = [];
+    const per = Math.max(1, Math.min(3, Math.ceil(30 / gens.length)));
+    gens.forEach(g => { for (let k = 0; k < per; k++) pool.push(buildQ(g, hard, hw, mcq)); });
+    let best = null;
+    for (let attempt = 0; attempt < 30 && !(best && best.sum === target); attempt++) {
+      const sh = pool.map(q => [Math.random(), q]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+      // one of each question type first, then repeats — so the paper covers as many skills as possible
+      const seen = new Set(), firsts = [], rest = []; sh.forEach(q => { if (seen.has(q.gen)) rest.push(q); else { seen.add(q.gen); firsts.push(q); } }); const order = firsts.concat(rest);
+      // subset sum: reach[s] = index of the item that first reached sum s
+      const reach = new Array(target + 1).fill(-2); reach[0] = -1; const from = new Array(target + 1).fill(-1);
+      order.forEach((q, i) => { for (let s2 = target; s2 >= q.marks; s2--) if (reach[s2] === -2 && reach[s2 - q.marks] !== -2 && (s2 - q.marks === 0 || reach[s2 - q.marks] < i)) { reach[s2] = i; from[s2] = s2 - q.marks; } });
+      let sum = target; while (sum > 0 && reach[sum] === -2) sum--;
+      const pick = []; for (let x = sum; x > 0; x = from[x]) pick.push(order[reach[x]]);
+      if (!best || sum > best.sum || (sum === best.sum && new Set(pick.map(q => q.gen)).size > new Set(best.pick.map(q => q.gen)).size)) best = { sum, pick };
+    }
+    return (best ? best.pick : []).slice(0, 30).sort((a, b) => (a.paper - b.paper) || (a.marks - b.marks));
   }
   function defaultTitle(o) { const sk = o.skills.map(id => Hub.curriculum.SKILL[id]).filter(Boolean); return `${o.course} · ${sk.length === 1 ? sk[0].ox ? sk[0].ox + ' ' + sk[0].name : sk[0].name : 'Unit ' + (sk[0] ? sk[0].unit : '')} · ${o.type}`; }
   /** A part students mark themselves: they write it on paper, then see the model answer (used for show that / prove / sketch in homework). */
@@ -5336,7 +5358,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <label>Paper<select id="b-paper"><option value="P1">Paper 1 · no calculator</option><option value="Mixed" selected>Mixed (Paper 1 + Paper 2)</option></select></label>
         <label>Rigour<select id="b-rigour"><option value="standard">${course} course level</option><option value="challenge">Challenge (top band)</option></select></label>
         <label>Question style<select id="b-style"><option value="mixed">Mixed: exam-style + skill practice</option><option value="exam">IB exam-style only (multi-part)</option><option value="practice">Skill practice only</option></select></label>
-        <label>Generated questions <span class="tiny muted">(from the skills; 0 = book exercises only)</span><input id="b-count" type="number" min="0" max="12" value="2"></label>
+        <label>Size by <select id="b-sizeby"><option value="count">Number of questions</option><option value="marks">Total marks</option></select></label>
+        <label class="b-by-count">Generated questions <span class="tiny muted">(from the skills; 0 = book exercises only)</span><input id="b-count" type="number" min="0" max="12" value="2"></label>
+        <label class="b-by-marks" hidden>Total marks <span class="tiny muted">(the paper adds up to exactly this — whole questions only)</span><input id="b-marks" type="number" min="5" max="150" step="1" value="60"></label>
         <fieldset class="skills-pick span2"><legend>Skills <span class="tiny muted">(${course} · ticked from the lesson; change freely)</span></legend><div id="b-skills" class="skill-grid">${C().skillsFor(course).map(s => `<label class="sk ${U.unitColour(s.unit)}"><input type="checkbox" value="${s.id}" ${nl && nl.skills.includes(s.id) ? 'checked' : ''}> ${U.skillLabel(s.id)}${C().isTaught(s.id, group, asOf) ? '' : ' <span class="tiny muted">(not yet taught)</span>'}</label>`).join('')}</div></fieldset>
         <fieldset class="span2 bb-book"><legend>Book-exercise questions <span class="tiny muted">(optional · new questions labelled with the ${esc(Hub.bookex ? Hub.bookex.BOOK[course] : '')} exercise — add as many exercises as you like)</span></legend>${Hub.bookex ? `<div class="form-grid">${Hub.bookex.pickerHTML(course, 'bb', [], 'Add a book exercise to this draft')}</div><p class="tiny" id="bb-sum"></p>` : ''}</fieldset>
         <div class="span2 actions"><button class="btn primary" type="submit">Generate review draft →</button><span class="tiny muted">Homework answers are typed by students and marked automatically; “show that” parts become self-check with the model answer.</span></div></form></section>
@@ -5345,14 +5369,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#b-group').onchange = e => { pref('group', e.target.value); go('#/studio?group=' + e.target.value); };
     $('#b-lesson').onchange = e => { const l = C().lessons(group).find(x => x.date === e.target.value); $$('#b-skills input').forEach(c => (c.checked = !!(l && l.skills.includes(c.value)))); };
     $('#b-type').onchange = e => { $('#b-count').value = Hub.assess.TYPES[e.target.value].count; };
+    $('#b-sizeby').onchange = e => { const m = e.target.value === 'marks'; $('.b-by-count', main).hidden = m; $('.b-by-marks', main).hidden = !m; };
     $$('.tab[data-status]').forEach(b => (b.onclick = () => { pref('studio-status', b.dataset.status); go('#/studio?status=' + b.dataset.status + '&group=' + group); }));
     const bb = Hub.bookex ? Hub.bookex.bindPicker($('#build'), course, 'bb', api => { const n = api.chosen().length, q = api.only().length; $('#bb-sum').textContent = n ? `${n} exercise${n > 1 ? 's' : ''} · ${q} question${q === 1 ? '' : 's'} · ${api.marks()} marks added to this draft` : ''; }) : null;
     $('#build').onsubmit = e => {
       e.preventDefault(); const skills = $$('#b-skills input:checked').map(c => c.value), book = bb && bb.chosen().length ? { exs: bb.chosen(), only: bb.only() } : null;
       if (!skills.length && !book) return toast('Tick at least one skill, or add a book exercise.', 'error');
       const count = book && !skills.length ? 0 : $('#b-count').value;
-      const r = Hub.assess.createDraft({ course, type: $('#b-type').value, skills: book && Number(count) === 0 ? [] : skills, paper: $('#b-paper').value, style: $('#b-style').value, rigour: $('#b-rigour').value, count, lessonDate: $('#b-lesson').value || null, groups: [group], book });
-      if (!r.ok) return toast(r.error, 'error'); toast('Draft ready — review each question.'); go('#/edit/' + r.assessment.id);
+      const byMarks = $('#b-sizeby').value === 'marks' && skills.length, marks = byMarks ? Math.max(5, Math.min(150, Number($('#b-marks').value) || 0)) : 0;
+      const r = Hub.assess.createDraft({ course, type: $('#b-type').value, skills: book && Number(count) === 0 ? [] : skills, paper: $('#b-paper').value, style: $('#b-style').value, rigour: $('#b-rigour').value, count, marks, lessonDate: $('#b-lesson').value || null, groups: [group], book });
+      if (!r.ok) return toast(r.error, 'error');
+      if (marks) { const got = r.assessment.questions.reduce((n, q) => n + q.marks, 0); toast(got === marks ? `Draft ready — ${r.assessment.questions.length} questions, exactly ${got} marks. Review each question.` : `The closest these skills allow is ${got} marks (${r.assessment.questions.length} questions). Add a skill or change the total for an exact match.`, got === marks ? undefined : 'error'); }
+      else toast('Draft ready — review each question.');
+      go('#/edit/' + r.assessment.id);
     };
     if (Hub.bookex) Hub.bookex.bindStudio(main, group);
     bindLibActions(main);
@@ -6691,7 +6720,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     B: 'Answer <b>all</b> questions in the spaces provided. Working may be continued on extra paper, if necessary.'
   };
   const SECT_NOTE = 'Full marks are not necessarily awarded for a correct answer with no working. Answers must be supported by working and/or explanations. Solutions found from a graphic display calculator should be supported by suitable working. Where an answer is incorrect, some marks may be given for a correct method, provided this is shown by written working. You are therefore advised to show all working.';
-  const secOf = (a, q) => a.mock ? (q.section || 'A') : (q.paper === 2 ? 'B' : 'A');
+  const secOf = (a, q) => a.mock ? (q.section || 'A') : ((q.paper || 1) >= 2 ? 'B' : 'A');
   function ibCover(a, o, secs) {
     const course = a.course === 'HL' ? 'Higher level' : 'Standard level', marks = total(o.qs), papers = [...new Set(o.qs.map(q => q.paper || 1))];
     const paperName = a.mock ? `Paper ${a.mock === 'P2' ? 2 : 1}` : a.type === 'Retest' ? 'Retest' : 'Unit test', mins = a.minutes || 60;
@@ -9724,7 +9753,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const title = (l.activity.split(';').find(x => /test|exam/i.test(x)) || l.activity).trim().replace(/^UNIT (\d+) TEST$/, 'Unit $1 Test');
       const skills = C().skillsFor(g.course).filter(s => unit ? s.unit === unit : (C().taughtDate(s.id, groupId) || '9999') < l.date).map(s => s.id);
       return { date: l.date, title, unit, skills, group: groupId };
-    }).filter((t, i, all) => all.findIndex(x => x.date === t.date) === i);
+    }).filter((t, i, all) => all.findIndex(x => x.date === t.date) === i && !(i > 0 && all[i - 1].title === t.title));
   }
   const gkey = (groupId, date) => groupId + '|' + date;
   const guideCfg = () => (S().settings || {}).studyGuides || {};
@@ -9900,16 +9929,16 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /* ---------- teacher page #/exam ---------- */
   function teacherView(main, params) {
     const asOf = Hub.mastery.asOf(), course = params.course === 'HL' ? 'HL' : 'SL', groups = Object.values(C().GROUPS);
-    const upcoming = groups.flatMap(g => tests(g.id).filter(t => t.date >= asOf && t.skills.length).slice(0, 2).map(t => Object.assign(t, guideInfo(t), { label: g.label })));
+    const upcoming = groups.filter(g => g.course === course).flatMap(g => tests(g.id).filter(t => t.date >= asOf && t.skills.length).slice(0, 3).map(t => Object.assign(t, guideInfo(t), { label: g.label })));
     const tps = topics(course), mocks = S().assessments.filter(a => a.mock && a.course === course && a.status !== 'archived');
     const taught = C().skillsFor(course).filter(k => groups.some(g => g.course === course && C().isTaught(k.id, g.id, asOf)));
     main.innerHTML = U.heading('IB EXAM PREPARATION', 'Exam prep', 'Study guides before every test, topic checks after every topic, and full mock papers — every question original and IB exam-style.') +
-      `<section class="card"><h2 class="bar-head blue">📘 Study guides</h2><p class="tiny muted">Each opens for the class on My day ${GUIDE_DAYS} days before the test, built from the unit’s skills — each student sees their weakest skills first, with practice, Revision Dojo videos, the formula booklet and a day-by-day plan. Change the date or add a note if you like.</p>
+      `<div class="tabs no-print ex-tabs"><a class="tab ${course === 'SL' ? 'on' : ''}" href="#/exam">AA SL</a><a class="tab ${course === 'HL' ? 'on' : ''}" href="#/exam?course=HL">AA HL</a></div>
+      <section class="card"><h2 class="bar-head blue">📘 Study guides · AA ${course}</h2><p class="tiny muted">Each opens for the class on My day ${GUIDE_DAYS} days before the test, built from the unit’s skills — each student sees their weakest skills first, with practice, Revision Dojo videos, the formula booklet and a day-by-day plan. Change the date or add a note if you like.</p>
         ${upcoming.length ? `<div class="scroll"><table class="tbl sg-tbl"><thead><tr><th>Class</th><th>Test</th><th>Date</th><th>Guide opens</th><th>Note to students</th><th></th></tr></thead><tbody>${upcoming.map(t => `<tr data-sg="${esc(gkey(t.group, t.date))}"><td>${esc(t.label)}</td><td><b>${esc(t.title)}</b><div class="tiny muted">${t.skills.length} skills</div></td><td>${fmtDate(t.date, true)}</td>
           <td><input type="date" class="sg-rel" value="${t.release}" max="${t.date}"><label class="inline-check tiny"><input type="checkbox" class="sg-off"${t.off ? ' checked' : ''}> don’t release</label><div class="tiny ${t.release <= asOf && !t.off ? 'gc-ok' : 'muted'}">${t.off ? 'Not released' : t.release <= asOf ? '✓ Students can see it' : 'Opens in ' + Hub.core.daysBetween(asOf, t.release) + ' days'}</div></td>
           <td><input type="text" class="sg-note" maxlength="300" value="${esc(t.note)}" placeholder="e.g. Bring your NumWorks — retest slots on Friday"></td><td><a class="btn small ghost" href="#/guide?group=${t.group}&d=${t.date}">View</a></td></tr>`).join('')}</tbody></table></div>
-          <div class="actions"><button class="btn primary small" id="sg-save" type="button">Save study guide dates and notes</button></div>` : '<p class="tiny muted">No unit tests in the calendar ahead.</p>'}</section>
-      <div class="tabs no-print"><a class="tab ${course === 'SL' ? 'on' : ''}" href="#/exam">AA SL</a><a class="tab ${course === 'HL' ? 'on' : ''}" href="#/exam?course=HL">AA HL</a></div>
+          <div class="actions"><button class="btn primary small" id="sg-save" type="button">Save study guide dates and notes</button></div>` : `<p class="tiny muted">No AA ${course} unit tests in the calendar ahead.</p>`}</section>
       ${unitCardHTML(course)}
       <div class="grid g2"><section class="card"><h2 class="bar-head pink">✔ Topic checks</h2><p class="tiny muted">A short IB exam-style quiz (3–6 questions, about 20 minutes) after each topic. It counts as a Quiz in the data cycle. Tick the topics to include, then check the draft and publish it.</p>
           ${tps.length ? `<div class="tc-list">${tps.slice(0, 12).map(x => `<label class="tc-row ${x.covered ? 'done' : ''}"><input type="checkbox" class="tc-pick" value="${esc(x.ox)}"${!x.covered && Hub.core.daysBetween(x.finished, asOf) <= 21 ? ' checked' : ''}><span><b>${esc(x.ox)}</b> ${esc(x.name)}<span class="tiny muted"> · finished ${fmtDate(x.finished)}${x.all ? '' : ' (one class so far)'}</span></span>${x.covered ? '<span class="pill green">checked ✓</span>' : ''}</label>`).join('')}</div>
