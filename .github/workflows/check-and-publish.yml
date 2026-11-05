@@ -33,7 +33,7 @@ jobs:
         run: node tests/check-syntax.cjs
       - name: Install a headless browser
         run: |
-          npm install --no-save --no-audit --no-fund playwright@1
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Main pages open without errors
         run: node tests/smoke.cjs
