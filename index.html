@@ -182,6 +182,7 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 .mp-grade b { display: block; font-size: 2.6rem; line-height: 1; } .mp-grade span { font-size: .75rem; }
 .p-lead { display: block; margin: 10px 0 6px; padding-top: 8px; border-top: 1px dashed var(--line, #ccc); }
 .up-row { display: grid; grid-template-columns: 1fr auto 120px; gap: 10px; align-items: center; margin: 4px 0; } .upkeep-note .btn { margin-left: 6px; }
+.tm-clock.soon { border-color: var(--amber, #d69e2e); } .tm-rows { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 8px 0; } .tm-rows input[type=number] { width: 70px; } .tm-list { margin: 6px 0; }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -5614,7 +5615,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     });
   }
   const progressKey = (sid, aid) => sid + '|' + aid;
-  function saveProgress(sid, aid, data) { if (Hub.auth.isPreview()) return; S().progress[progressKey(sid, aid)] = Object.assign({ updatedAt: new Date().toISOString() }, data); Hub.store.save(); }
+  function saveProgress(sid, aid, data) { if (Hub.auth.isPreview()) return; const old = S().progress[progressKey(sid, aid)]; S().progress[progressKey(sid, aid)] = Object.assign({ updatedAt: new Date().toISOString() }, old && old.createdAt ? { createdAt: old.createdAt } : {}, data); Hub.store.save(); }
   const getProgress = (sid, aid) => S().progress[progressKey(sid, aid)] || null;
 
   /** Mark responses against an assessment-like object {questions}. */
@@ -6203,9 +6204,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <div id="qs">${a.questions.map((q, i) => editorCard(a, q, i, locked)).join('')}</div>
       ${!locked ? `<div class="add-q card"><label>Add a question on<select id="add-skill">${C().skillsFor(a.course).map(s => `<option value="${s.id}">${s.ox ? s.ox + ' ' : ''}${esc(s.name)}</option>`).join('')}</select></label><button class="btn ghost" id="add-q">+ Add question</button></div>` : ''}
       <section class="card approve-card" id="approve-card">${approvePanel(a, probs, rev)}</section>
+      ${Hub.timer && Hub.timer.timed(a) ? `<section class="card timer-card" id="timer-card">${Hub.timer.cardHTML(a)}</section>` : ''}
       <div class="actions end"><button class="btn small ghost danger" id="destroy">🗑 Delete this ${esc(a.type.toLowerCase())}</button></div>
       <details class="card history"><summary>History (${(a.history || []).length})</summary><ul>${(a.history || []).slice().reverse().map(h => `<li><span class="tiny muted">${fmtDateTime(h.at)} · ${esc(h.who)}</span> ${esc(h.what)}</li>`).join('')}</ul></details>`;
-    bindEditor(main, a, locked);
+    bindEditor(main, a, locked); if (Hub.timer) Hub.timer.bindCard(main, a);
   }
   /** One tick for the whole assessment instead of one per question. */
   function reviewAllBar(a) {
@@ -6525,6 +6527,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     if (Hub.calc && a.type !== 'Practice' && a.questions.length && a.questions.every(q => q.paper === 1)) Hub.calc.setAllowed(false);
     const form = $('#take');
     if (Hub.testMode) Hub.testMode.followQuestions(form, a.questions); let ups = uploads.slice(); const hints = {};
+    if (Hub.timer && s) Hub.timer.attach(main, form, a, s, opts);
     const listUps = () => { const ul = $('#up-list'); if (ul) ul.innerHTML = ups.map((u, i) => `<li>📄 ${esc(u.name)} <span class="tiny muted">${Math.round(u.size / 1024)} KB</span> <button type="button" class="btn small ghost" data-rmup="${i}">Remove</button></li>`).join(''); $$('[data-rmup]').forEach(b => (b.onclick = () => { ups.splice(Number(b.dataset.rmup), 1); listUps(); persist(); })); };
     const persist = () => { if (opts.preview || !s || opts.noProgress) return; Hub.assess.saveProgress(s.id, key, { responses: U.readResponses(form, a.questions), uploads: ups, reflection: $('#reflection') ? $('#reflection').value : '' }); const el = $('#autosave'); if (el) el.textContent = 'Saving answers to cloud…'; };
     U.bindPreviews(form, persist); listUps();
@@ -6536,10 +6539,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const responses = U.readResponses(form, a.questions);
       const blanks = a.questions.reduce((n, q) => n + q.parts.filter(p => p.answer.kind !== 'open' && [].concat(responses[q.id][p.id]).every(v => v === '' || v === undefined)).length, 0);
       const bad = []; a.questions.forEach((q, i) => q.parts.forEach(p => { if (['num', 'tuple', 'list'].includes(p.answer.kind)) [].concat(responses[q.id][p.id]).forEach(v => { if (v && String(v).trim() && Hub.math.parse(v).error) bad.push(`Q${i + 1}(${p.label})`); }); }));
-      if (bad.length) return toast(`I can’t read your answer in ${bad.join(', ')}. Use numbers, fractions like 3/4, sqrt( ) or pi.`, 'error');
-      if (a.uploadRequired && !ups.length && !opts.preview) return toast('Upload a photo of your working before submitting.', 'error');
-      if (a.type === 'Retest' && !opts.preview && !($('#proof') && $('#proof').checked)) return toast('Tick the proof-of-studying box first.', 'error');
-      if (!(await U.confirmBox(`${blanks ? `<b>${blanks} answer${blanks > 1 ? 's are' : ' is'} blank.</b> ` : ''}Submit now? You can’t change your answers afterwards.`, 'Submit'))) return;
+      const auto = form.dataset.autosubmit === '1';
+      if (bad.length && !auto) return toast(`I can’t read your answer in ${bad.join(', ')}. Use numbers, fractions like 3/4, sqrt( ) or pi.`, 'error');
+      if (a.uploadRequired && !ups.length && !opts.preview && !auto) return toast('Upload a photo of your working before submitting.', 'error');
+      if (a.type === 'Retest' && !opts.preview && !auto && !($('#proof') && $('#proof').checked)) return toast('Tick the proof-of-studying box first.', 'error');
+      if (!auto && !(await U.confirmBox(`${blanks ? `<b>${blanks} answer${blanks > 1 ? 's are' : ' is'} blank.</b> ` : ''}Submit now? You can’t change your answers afterwards.`, 'Submit'))) return;
       busy = true; $('#submit').disabled = true; $('#submit').textContent = 'Submitting…';
       let r; try { r = await opts.submit({ responses, uploads: ups, reflection: $('#reflection') ? $('#reflection').value : '', proof: $('#proof') ? $('#proof').checked : false, token, hints }); } catch(e) { r={ok:false,error:e.message}; }
       if (!r.ok) { busy = false; $('#submit').disabled = false; $('#submit').textContent = 'Submit'; return toast(r.error, 'error'); }
@@ -11532,6 +11536,89 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $$('[data-fbreply]', main).forEach(b => (b.onclick = () => { const t = $(`[data-fbtext="${CSS.escape(b.dataset.fbreply)}"]`, main).value.trim(); if (!t) return toast('Write a reply first.', 'error'); upd(b.dataset.fbreply, { reply: t.slice(0, 500), replyAt: new Date().toISOString(), seenReply: false, status: 'done' }, 'Reply sent — the student sees it on My day.'); }));
   }
   Hub.feedback = { list, newCount, unseenReplies, student, teacher, replyCardHTML, CATS };
+})(window.Hub = window.Hub || {});
+
+/* ---- js/timer.js ---- */
+/* Timers for quizzes and tests. Miss Badmus sets the minutes on the task page and can change them at any time — more time
+   for everyone, for one class, or for one student; switch it off; or let it submit automatically when time runs out.
+   Each student's clock starts when they first open the task (kept in their saved progress, so a refresh doesn't reset it).
+   Students on the task pick up changes within about 30 seconds. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast } = Hub.core, S = () => Hub.store.state, C = () => Hub.curriculum, U = () => Hub.ui;
+  const timed = a => !!a && (['Quiz', 'Unit test', 'Retest', 'Test'].includes(a.type) || !!a.mock);
+  const cfg = a => a.timer || {};
+  const isOn = a => timed(a) && cfg(a).on === true && +cfg(a).minutes > 0;
+  /** Minutes this student gets: base + class extra + student extra. */
+  const minutesFor = (a, st) => { const t = cfg(a); return Math.max(1, (+t.minutes || 0) + (+((t.addClass || {})[st.group]) || 0) + (+((t.extra || {})[st.id]) || 0)); };
+  const save = async (a, what) => { (a.history = a.history || []).push({ at: new Date().toISOString(), who: Hub.auth.who(), what }); Hub.store.log(`${what}: “${a.title}”`); Hub.store.save(true); try { await Hub.store.flush(); toast(what + '.'); } catch (e) { toast(e.message, 'error'); } };
+
+  function cardHTML(a) {
+    const t = cfg(a), groups = (a.groups && a.groups.length ? a.groups : Object.values(C().GROUPS).filter(g => g.course === a.course).map(g => g.id));
+    const studs = groups.flatMap(g => Hub.roster.inGroup(g)), def = a.minutes || (Hub.assess.TYPES[a.type] || {}).minutes || 30;
+    const extras = Object.entries(t.extra || {}).filter(([, m]) => +m);
+    return `<h2 class="bar-head pink">⏱ Timer</h2>
+      <form id="tm-form" class="form-grid">
+        <label class="inline-check span2"><input type="checkbox" id="tm-on" ${t.on ? 'checked' : ''}> Time this ${esc(a.type.toLowerCase())} — students see a countdown that starts when they open it</label>
+        <label>Minutes<input type="number" id="tm-min" min="1" max="240" value="${t.minutes || def}"></label>
+        <label>When time runs out<select id="tm-auto"><option value="0" ${t.auto ? '' : 'selected'}>Show “time is up” — they can still submit</option><option value="1" ${t.auto ? 'selected' : ''}>Submit their answers automatically</option></select></label>
+        <div class="actions span2"><button class="btn primary" type="submit">Save timer</button><button class="btn ghost" type="button" data-tmadd="5">+5 min for everyone</button><button class="btn ghost" type="button" data-tmadd="-5">−5 min</button></div></form>
+      <details class="tm-more"${Object.keys(t.addClass || {}).length || extras.length ? ' open' : ''}><summary class="small">Extra time for a class or a student</summary>
+        <div class="tm-rows">${groups.map(g => `<label class="inline">${esc(C().GROUPS[g].label)} <input type="number" class="tm-cls" data-g="${g}" min="-60" max="120" value="${(t.addClass || {})[g] || 0}"> extra min</label>`).join('')}</div>
+        <div class="tm-rows"><label class="inline">Student <select id="tm-st">${studs.map(st => `<option value="${esc(st.id)}">${esc(st.name)} · ${esc(st.group)}</option>`).join('')}</select></label><label class="inline"><input type="number" id="tm-stmin" min="-60" max="240" value="10"> extra min</label><button class="btn small" type="button" id="tm-stadd">Set</button></div>
+        ${extras.length ? `<ul class="small tm-list">${extras.map(([sid, m]) => { const st = Hub.roster.byId(sid); return `<li>${esc(st ? st.name : sid)}: +${m} min <button class="btn small ghost" type="button" data-tmclear="${esc(sid)}">Remove</button></li>`; }).join('')}</ul>` : ''}
+        <p class="tiny muted">Use this for students with extra-time accommodations or anyone who started late. A negative number takes time away.</p></details>
+      <p class="tiny muted">${t.on ? `On: <b>${t.minutes} min</b>${t.auto ? ', submits automatically' : ''}. Changes reach students who are already working within about 30 seconds.` : 'Off — students see “about ' + def + ' minutes” but no countdown.'}</p>`;
+  }
+  function bindCard(main, a) {
+    const box = $('#timer-card', main); if (!box) return;
+    const redraw = () => { box.innerHTML = cardHTML(a); bindCard(main, a); };
+    const f = $('#tm-form', box);
+    f.onsubmit = async e => { e.preventDefault(); const t = a.timer = Object.assign({}, cfg(a));
+      t.on = $('#tm-on', box).checked; t.minutes = Math.max(1, Math.min(240, +$('#tm-min', box).value || 30)); t.auto = $('#tm-auto', box).value === '1';
+      $$('.tm-cls', box).forEach(i => { const v = +i.value || 0; t.addClass = Object.assign({}, t.addClass); if (v) t.addClass[i.dataset.g] = v; else delete t.addClass[i.dataset.g]; });
+      await save(a, t.on ? `Timer set to ${t.minutes} min${t.auto ? ' (auto-submit)' : ''}` : 'Timer switched off'); redraw(); };
+    $$('[data-tmadd]', box).forEach(b => (b.onclick = async () => { const d = +b.dataset.tmadd, t = a.timer = Object.assign({}, cfg(a)); t.on = true; t.minutes = Math.max(1, (+t.minutes || +$('#tm-min', box).value || 30) + d); await save(a, `Timer ${d > 0 ? '+' : ''}${d} min (now ${t.minutes})`); redraw(); }));
+    $('#tm-stadd', box).onclick = async () => { const sid = $('#tm-st', box).value, v = +$('#tm-stmin', box).value || 0, t = a.timer = Object.assign({}, cfg(a)); t.extra = Object.assign({}, t.extra); if (v) t.extra[sid] = v; else delete t.extra[sid]; const st = Hub.roster.byId(sid); await save(a, `Extra time for ${st ? st.name : 'a student'}: ${v} min`); redraw(); };
+    $$('[data-tmclear]', box).forEach(b => (b.onclick = async () => { const t = a.timer = Object.assign({}, cfg(a)); t.extra = Object.assign({}, t.extra); delete t.extra[b.dataset.tmclear]; await save(a, 'Extra time removed'); redraw(); }));
+  }
+
+  /* ---------- student side ---------- */
+  let live = null;
+  function startOf(a, st, preview) {
+    const lsKey = 'tm-start|' + st.id + '|' + a.id; let ls = null; try { ls = localStorage.getItem(lsKey); } catch (e) {}
+    if (preview) return ls || new Date().toISOString();
+    const key = st.id + '|' + a.id, pr = S().progress[key];
+    const start = [pr && pr.createdAt, ls].filter(Boolean).sort()[0] || new Date().toISOString();
+    try { localStorage.setItem(lsKey, start); } catch (e) {}
+    if (!pr || !pr.createdAt) { S().progress[key] = Object.assign({}, pr || {}, { createdAt: start, updatedAt: new Date().toISOString() }); Hub.store.save(); }
+    return start;
+  }
+  function attach(main, form, a, st, opts) {
+    if (live) { clearInterval(live.tick); clearInterval(live.poll); live = null; }
+    if (!timed(a) || !isOn(a) || a.type === 'Practice') return;
+    const start = Date.parse(startOf(a, st, opts.preview)), clock = document.createElement('div'); clock.className = 'xp-clock tm-clock'; clock.setAttribute('role', 'timer');
+    const head = main.querySelector('.page-head'); if (head) head.after(clock); else form.before(clock);
+    let warned = false, done = false;
+    const tick = () => {
+      if (!document.body.contains(clock)) { clearInterval(live && live.tick); clearInterval(live && live.poll); return; }
+      const cur = (S().assessments.find(x => x.id === a.id) || a); if (!isOn(cur)) { clock.remove(); return; }
+      const left = Math.round(start / 1000 + minutesFor(cur, st) * 60 - Date.now() / 1000), m = Math.floor(Math.abs(left) / 60), sec = String(Math.abs(left) % 60).padStart(2, '0');
+      clock.textContent = left >= 0 ? `⏱ ${m}:${sec} left` : `⏱ Time is up — ${m}:${sec} over`; clock.classList.toggle('over', left < 0); clock.classList.toggle('soon', left >= 0 && left <= 300);
+      if (left <= 300 && left > 0 && !warned) { warned = true; toast('5 minutes left.'); }
+      if (left <= 0 && !done) { done = true;
+        if (cfg(cur).auto && !opts.preview) { toast('Time is up — submitting your answers.'); form.dataset.autosubmit = '1'; form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true })); }
+        else toast('Time is up. Finish the line you are on and submit.', 'error'); }
+      if (left > 0) done = false;
+    };
+    // pick up changes to the timer (more time, switched off) while the student works
+    const poll = async () => { if (document.hidden || opts.preview || !Hub.auth || Hub.auth.role() !== 'student') return;
+      try { const r = await Hub.cloud.call('load'); const n = r && r.state && (r.state.assessments || []).find(x => x.id === a.id); const mine = S().assessments.find(x => x.id === a.id);
+        if (n && mine && JSON.stringify(n.timer || null) !== JSON.stringify(mine.timer || null)) { const before = minutesFor(mine, st); mine.timer = n.timer; const after = isOn(mine) ? minutesFor(mine, st) : 0;
+          if (!isOn(mine)) toast('The timer has been switched off.'); else if (after > before) toast(`Miss Badmus gave you ${after - before} more minute${after - before === 1 ? '' : 's'}.`); else if (after < before) toast('Your time has been changed.'); } } catch (e) {} };
+    live = { tick: setInterval(tick, 1000), poll: setInterval(poll, 30e3) }; tick();
+  }
+  Hub.timer = { timed, isOn, minutesFor, cardHTML, bindCard, attach };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/upkeep.js ---- */
