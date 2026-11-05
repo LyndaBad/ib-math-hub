@@ -17,7 +17,7 @@
    yellow highlighter; handwriting in orange for worked solutions. Deliberately one (light) visual world. */
 :root {
   --cream: #FEF5F0; --peach: #FFDDC8; --orange: #FF9756; --orange-d: #E8732F; --white: #FFFFFF;
-  --ink: #1F2A44; --ink-2: #4A5571; --muted: #6B7390; --line: #F3D9CB;
+  --ink: #1F2A44; --ink-2: #4A5571; --muted: #555D78; --line: #F3D9CB;
   --pink: #FFECF9; --pink-b: #FF96D4; --sticky: #FFD3EA; --tape: rgba(255, 245, 214, .85);
   --green: #B6D7A8; --amber: #F6B26B; --blue: #9FC5E8; --hl: #FFFF00;
   --ok: #2E7D4F; --ok-bg: #DDF1E3; --warn: #9A5B00; --warn-bg: #FFE9C7; --bad: #B4232F; --bad-bg: #FFE0E3; --wait-bg: #E3EEFA; --wait: #1F4E86;
@@ -29,7 +29,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { background-color: var(--cream); background-image: radial-gradient(var(--peach) 2.3px, transparent 2.7px); background-size: 26px 26px; color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+body { background-color: var(--cream); background-image: radial-gradient(rgba(246, 150, 100, .2) 2.1px, transparent 2.5px); background-size: 26px 26px; color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
 a { color: var(--ink); text-decoration-color: var(--orange); text-underline-offset: 3px; }
 h1, h2, h3, h4 { font-family: var(--f-head); line-height: 1.15; margin: 0; text-wrap: balance; font-weight: 700; }
 h1 { font-size: clamp(1.9rem, 3.2vw, 2.7rem); }
@@ -84,7 +84,7 @@ main#main { padding-block: 26px 40px; padding-left: max(16px, env(safe-area-inse
 .lead { font-size: 1.05rem; color: var(--ink-2); }
 .hero-wolf { width: 120px; height: 120px; object-fit: contain; }
 .back { font-family: var(--f-ui); font-weight: 600; text-decoration: none; color: var(--ink-2); align-self: flex-start; }
-.card { background: var(--white); border: var(--bw) solid var(--orange); border-radius: var(--r); padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card { background: var(--white); border: 2px solid #EFD3C2; box-shadow: 0 2px 10px rgba(31, 42, 68, .05); border-radius: var(--r); padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .grid { display: grid; gap: 18px; } .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .sec { font-size: 1.15rem; }
 .bar-head { display: inline-block; align-self: flex-start; padding: 4px 14px; border-radius: 12px; font-size: 1.05rem; background: var(--green); }
@@ -463,6 +463,40 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .gr-up { color: #2E7D32; } .gr-down { color: #D93025; }
 .ab-tbl td:not(:first-child), .ab-tbl th:not(:first-child) { text-align: center; }
 @media print { .calc-panel, .fb-launch, .calc-launch { display: none !important; } }
+
+
+/* IB exam-paper layout */
+.ib-cover .ibc-top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 12px; }
+.ibc-subj { font-size: 22px; font-weight: 700; margin: 0; } .ibc-lvl, .ibc-paper { font-size: 18px; margin: 2px 0 0; } .ibc-title { margin: 10px 0 0; font-size: 14px; color: #444; }
+.ibc-meta { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin: 14px 0; font-size: 15px; }
+.ibc-name { display: flex; align-items: center; gap: 8px; } .ibc-name i { display: inline-block; width: 3.2in; height: 30px; border: 1.5px solid #111; }
+.ibc-h { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; margin: 18px 0 6px; }
+.ibc-ins { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.ibc-table { margin-top: 20px; } .ibc-foot { margin-top: 24px; font-size: 13px; color: #444; }
+.ib-run { display: flex; justify-content: space-between; font-size: 11px; color: #555; border-bottom: 1px solid #999; padding-bottom: 4px; margin-bottom: 10px; }
+.ib-sec { font-size: 20px; margin: 6px 0 4px; } .ib-sec-i { font-size: 13.5px; margin: 0 0 6px; } .ib-sec-n { font-size: 12.5px; font-style: italic; margin: 0 0 14px; }
+.ib-q { margin: 0 0 18px; break-inside: avoid; } .ib-qh { display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px; } .ib-qh span { font-size: 13.5px; }
+.ib-lines { margin: 6px 0 4px; } .ib-lines i { display: block; height: 0.32in; border-bottom: 1px dotted #888; }
+.ib-box { border: 1.5px solid #111; padding: 2px 10px 8px; margin-top: 10px; }
+.ib-ms { margin: 4px 0 8px 28px; font-size: 13px; } .ib-msl { display: flex; justify-content: space-between; gap: 18px; padding: 2px 0; border-bottom: 1px dotted #ccc; } .ib-msl b { min-width: 34px; text-align: right; }
+.ib-msl.ans { border-bottom: 0; font-weight: 600; } .ib-pm { text-align: right; margin: 2px 0 0; font-weight: 700; } .ib-tot { text-align: right; font-weight: 700; border-top: 1.5px solid #111; padding-top: 4px; }
+.ib-work { font-size: 12.5px; margin-top: 4px; } .ib-end { text-align: right; font-size: 12px; margin-top: 18px; font-style: italic; }
+@media print { .ib-work { display: none; } .ib-sheet { break-before: page; } }
+.gp-intro { font-size: .92rem; background: #FFFBF4; border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+
+
+/* ---- tidy-up: action cards keep the orange border; buttons sit at their natural width ---- */
+.card.act, .today, .donow-card, .sg-card, .wk-dash, .group-card, .ut-card { border: var(--bw) solid var(--orange); box-shadow: none; }
+.ann-banner { border: var(--bw) solid var(--pink, #FF96D4); }
+.card > .btn, .card > a.btn, .card > button.btn { align-self: flex-start; }
+.btn { white-space: nowrap; }
+.side-h { font-family: var(--f-ui); font-size: .7rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 12px 12px 2px; }
+.hero.slim { padding: 14px 20px; } .hero.slim h1 { font-size: clamp(1.4rem, 3vw, 1.9rem); }
+.all-good { font-family: var(--f-ui); font-weight: 600; color: var(--ok, #2E7D32); margin: 0 0 12px; }
+@media (max-width: 640px) {
+  .ann-item { flex-direction: column; align-items: stretch; } .ann-item .btn { align-self: flex-start; }
+  .ann-item p { font-size: .95rem; }
+}
 
 /* ================= Lesson notebooks ================= */
 .ls { display: flex; flex-direction: column; }
@@ -2271,7 +2305,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const ext = Math.max((p - h) ** 2, (q - h) ** 2), mn = c - ext, ends = [c - (p - h) ** 2, c - (q - h) ** 2];
     const bb = b === 0 ? 1 : b;
     return {
-      stem: `Let $f(x) = \\sqrt{${a} - x} + \\frac{1}{x ${sgn(bb)}}$ and $g(x) = ${c} - (x ${sgn(-h)})^{2}$, $${p} \\le x \\le ${q}$.`,
+      stem: `Let $f(x) = \\sqrt{${a} - x} + \\frac{1}{x ${sgn(bb)}}$ and $g(x) = ${c} - ${h === 0 ? 'x' : `(x ${sgn(-h)})`}^{2}$, $${p} \\le x \\le ${q}$.`,
       parts: [
         { command: 'Write down', prompt: 'the largest value of $x$ in the domain of $f$.', marks: 1, answer: { kind: 'num', value: a, exact: true, display: String(a) }, ms: [['A1', `$x \\le ${a}$`]], working: [`$${a} - x \\ge 0 \\Rightarrow x \\le ${a}$`], hint: 'Square roots need a non-negative input.', verify: `${a}` },
         { command: 'Write down', prompt: 'the value of $x$ that must also be excluded from the domain of $f$.', marks: 1, answer: { kind: 'num', value: -bb, exact: true, display: String(-bb) }, ms: [['A1', `$x \\ne ${-bb}$`]], working: [`Denominator zero at $x = ${-bb}$`], hint: 'Where is the denominator zero?', verify: `solve(x+(${bb}),x)[0]` },
@@ -5260,19 +5294,20 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const ets = S().assessments.filter(a => a.type === 'Exit Ticket' && ['published', 'closed'].includes(a.status) && (a.groups || []).includes(g.id) && Hub.assess.dueFor(a, g.id) === asOf);
       const etDone = ets.reduce((n, a) => n + studs.filter(st => Hub.assess.attemptsFor(a.id, st.id).length).length, 0), etTotal = ets.length * studs.length;
       const toMark = Hub.assess.queue().filter(t => ids.has(t.sid)).length;
-      return `<div class="today-row"><a class="today-class" href="#/class/${g.id}"><b>${esc(g.label)}</b><span class="tiny muted">${esc(g.block)} · ${esc((L.activity || '').slice(0, 48))}</span></a>
+      return `<div class="today-row"><a class="today-class" href="#/class/${g.id}"><b>${esc(g.label)}</b><span class="tiny muted">${esc(g.block)} · ${esc((t => t.length > 60 ? t.slice(0, 60).replace(/\s+\S*$/, '') + '…' : t)(L.activity || ''))}</span></a>
         <a class="today-step ${reg ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>1</span>${reg ? `Register ✓${reg.absent ? ` · ${reg.absent} absent` : ''}` : 'Take the register'}</a>
         <a class="today-step ${!ets.length ? 'none' : etDone >= etTotal ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>2</span>${ets.length ? `Exit Ticket ${etDone}/${etTotal} done${Hub.attendance && ets.some(a => Hub.attendance.keptOpen(a, g.id)) ? ' · kept open' : ''}` : 'No Exit Ticket due'}</a>
         <a class="today-step ${toMark ? 'todo' : 'ok'}" href="#/marking"><span>3</span>${toMark ? `${toMark} to mark` : 'Marking ✓'}</a></div>`; }).filter(Boolean);
     const todayHTML = `<section class="card today"><h2 class="bar-head green">Today · ${fmtDate(asOf, true)}</h2>${todayRows.length ? todayRows.join('') : '<p class="tiny muted">No lessons today.</p>'}</section>`;
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
-    main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', 'Inquirers. Thinkers. Reflective Learners.', `<img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo">`) +
-      todayHTML + (Hub.insights ? Hub.insights.dashCard() : '') + (Hub.exam ? Hub.exam.dashHTML() : '') + `<div class="attention">
-        <a class="att ${q.length ? 'hot' : ''}" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark${(r => r ? `<br><small class="att-ready">${r} ready to release</small>` : '')(Hub.assess.readyToRelease().length)}</span></a>
-        <a class="att ${drafts.length ? 'warm' : ''}" href="#/studio?status=draft"><b>${drafts.length}</b><span>draft${drafts.length === 1 ? '' : 's'} to review</span></a>
-        <a class="att" href="#/studio?status=approved"><b>${S().assessments.filter(a => a.status === 'approved').length}</b><span>approved, not published</span></a>
-        <a class="att" href="#/ia"><b>${Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length}</b><span>IA checkpoints waiting</span></a>
+    main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.') +
+      todayHTML + (Hub.insights ? Hub.insights.dashCard() : '') + (Hub.exam ? Hub.exam.dashHTML() : '') + (() => { const nA = S().assessments.filter(a => a.status === 'approved').length, nIA = Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length;
+        const tiles = [q.length ? `<a class="att hot" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark${(r => r ? `<br><small class="att-ready">${r} ready to release</small>` : '')(Hub.assess.readyToRelease().length)}</span></a>` : '',
+          drafts.length ? `<a class="att warm" href="#/studio?status=draft"><b>${drafts.length}</b><span>draft${drafts.length === 1 ? '' : 's'} to review</span></a>` : '',
+          nA ? `<a class="att" href="#/studio?status=approved"><b>${nA}</b><span>approved, not published</span></a>` : '',
+          nIA ? `<a class="att" href="#/ia"><b>${nIA}</b><span>IA checkpoints waiting</span></a>` : ''].filter(Boolean);
+        return tiles.length ? `<div class="attention">${tiles.join('')}` : `<div><p class="all-good">✓ All caught up — nothing to mark, review or publish.</p>`; })() + `
       </div>
       ${dueHTML}
       <h2 class="sec">Next lessons</h2><div class="grid g4">${cards}</div>
@@ -5630,11 +5665,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const todo = tasks.filter(x => !x.t), returned = S().attempts.filter(t => t.sid === s.id && t.status === 'released').slice().reverse().slice(0, 4);
     const stats = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null).sort((a, b) => a.pct - b.pct);
     const ia = C().iaSchedule(s.group).find(x => x.date && x.date >= asOf), hour = new Date().getHours();
-    main.innerHTML = `${Hub.announce ? Hub.announce.bannerHTML(s) : ''}<section class="hero"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1><p class="lead">Inquirers. Thinkers. Reflective Learners.</p>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div><img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"></section>
+    main.innerHTML = `${Hub.announce ? Hub.announce.bannerHTML(s) : ''}<section class="hero slim"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div></section>
       ${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
-        <section class="card donow-card"><h2 class="bar-head amber">☀ ${dn ? (dn.kind !== 'Do Now' ? 'Your personalised ' + esc(dn.kind) : 'Today’s Do Now') : 'Just for me'}</h2>${dn ? (dn.done ? `<p>Done — <b>${Hub.assess.score(dn.done).earned}/${dn.done.max}</b>.</p><a class="btn small" href="#/result/${dn.done.id}">See feedback</a>` : `<p>${dn.items.filter(it => it.question).length} questions picked just for you${dn.kind === 'Do Now' ? ' for ' + fmtDate(dn.rec.lessonDate, true) : ''}.</p><a class="btn primary" href="#/donow">Start my ${esc(dn.kind === 'Do Now' ? 'Do Now' : dn.kind)} →</a>`) : '<p>Your personalised Do Now, Exit Ticket or quiz appears here once Miss Badmus publishes it.</p>'}</section>
+        <section class="card act"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b>${Hub.attendance && Hub.attendance.absentAccess(a, s.id) ? '<div class="absent-note">You were absent — catch up on the lesson and complete this.</div>' : ''}<div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
         ${(L => L ? `<section class="card"><h2 class="bar-head blue">▣ Lesson notebook</h2><p><b>${esc(L.title)}</b></p><a class="btn primary" href="#/notebook/${encodeURIComponent(L.id)}">Open today’s notebook →</a></section>` : '')(Hub.lessons && Hub.lessons.latestFor(s))}
-        <section class="card"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b>${Hub.attendance && Hub.attendance.absentAccess(a, s.id) ? '<div class="absent-note">You were absent — catch up on the lesson and complete this.</div>' : ''}<div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
+        ${dn ? `<section class="card donow-card"><h2 class="bar-head amber">☀ ${dn ? (dn.kind !== 'Do Now' ? 'Your personalised ' + esc(dn.kind) : 'Today’s Do Now') : 'Just for me'}</h2>${dn ? (dn.done ? `<p>Done — <b>${Hub.assess.score(dn.done).earned}/${dn.done.max}</b>.</p><a class="btn small" href="#/result/${dn.done.id}">See feedback</a>` : `<p>${dn.items.filter(it => it.question).length} questions picked just for you${dn.kind === 'Do Now' ? ' for ' + fmtDate(dn.rec.lessonDate, true) : ''}.</p><a class="btn primary" href="#/donow">Start my ${esc(dn.kind === 'Do Now' ? 'Do Now' : dn.kind)} →</a>`) : '<p>Your personalised Do Now, Exit Ticket or quiz appears here once Miss Badmus publishes it.</p>'}</section>` : ''}
         <section class="card"><h2 class="bar-head blue">Feedback</h2>${returned.length ? returned.map(t => `<div class="todo"><div><b>${esc(t.inline ? t.inline.title : (Hub.assess.byId(t.aid) || {}).title || t.type)}</b><div class="tiny muted">${fmtDate(t.date)} · ${Hub.assess.score(t).earned}/${t.max}${t.comment ? ' · 💬 comment from Miss Badmus' : ''}</div></div><a class="btn small ghost" href="#/result/${t.id}">Open</a></div>`).join('') : '<p>Marked work will appear here.</p>'}${tasks.filter(x => x.t && x.t.status === 'submitted').map(({ a, t }) => `<div class="todo"><div><b>${esc(a.title)}</b><div class="tiny muted">Submitted ${fmtDateTime(t.at)} · waiting for Miss Badmus</div></div><a class="btn small ghost" href="#/result/${t.id}">View</a></div>`).join('')}</section>
         <section class="card wtw"><h2 class="bar-head pink">What to work on</h2>${(() => {
           const since = Hub.core.addDays(asOf, -56), mine = S().attempts.filter(t => t.sid === s.id && String(t.date || t.at || '').slice(0, 10) >= since);
@@ -6649,6 +6684,49 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const blockFor = course => (Object.values(C().GROUPS).find(g => g.course === course) || {}).block || '';
   const total = qs => qs.reduce((s, q) => s + q.marks, 0);
   const isTest = a => a.type === 'Unit test' || a.type === 'Retest';
+  /* IB exam-paper layout (unit tests, retests, mocks): IB-style front page and instructions, "[Maximum mark: n]" on every
+     question, Section A with ruled answer boxes, Section B with ruled working space, and an IB-style markscheme. */
+  const SECT_IB = {
+    A: 'Answer <b>all</b> questions. Answers must be written within the answer boxes provided. Working may be continued below the lines, if necessary.',
+    B: 'Answer <b>all</b> questions in the spaces provided. Working may be continued on extra paper, if necessary.'
+  };
+  const SECT_NOTE = 'Full marks are not necessarily awarded for a correct answer with no working. Answers must be supported by working and/or explanations. Solutions found from a graphic display calculator should be supported by suitable working. Where an answer is incorrect, some marks may be given for a correct method, provided this is shown by written working. You are therefore advised to show all working.';
+  const secOf = (a, q) => a.mock ? (q.section || 'A') : (q.paper === 2 ? 'B' : 'A');
+  function ibCover(a, o, secs) {
+    const course = a.course === 'HL' ? 'Higher level' : 'Standard level', marks = total(o.qs), papers = [...new Set(o.qs.map(q => q.paper || 1))];
+    const paperName = a.mock ? `Paper ${a.mock === 'P2' ? 2 : 1}` : a.type === 'Retest' ? 'Retest' : 'Unit test', mins = a.minutes || 60;
+    const calc = papers.length === 1 ? (papers[0] === 1 ? 'You are not permitted access to any calculator for this paper.' : 'A graphic display calculator (NumWorks) is required for this paper.') : 'Section A: you are not permitted access to any calculator. Section B: a graphic display calculator (NumWorks) is required.';
+    const ins = ['Write your name in the box above.', 'Do not open this examination paper until instructed to do so.', calc,
+      'Section A: answer all questions. Answers must be written within the answer boxes provided.', secs.length > 1 ? 'Section B: answer all questions in the spaces provided.' : '',
+      'Unless otherwise stated in the question, all numerical answers should be given exactly or correct to three significant figures.',
+      'A clean copy of the <b>mathematics: analysis and approaches formula booklet</b> is required for this paper.', `The maximum mark for this examination paper is <b>[${marks} marks]</b>.`,
+      a.type === 'Retest' ? `This is a retest: your recorded score is capped at ${a.cap || 80}%.` : ''].filter(Boolean);
+    return `<section class="sheet ib-cover"><div class="ibc-top"><div><p class="ibc-subj">Mathematics: analysis and approaches</p><p class="ibc-lvl">${course}</p><p class="ibc-paper">${esc(paperName)}</p><p class="ibc-title">${esc(a.title.replace(/^(SL|HL) · /, ''))}</p></div><img class="cover-logo" src="${Hub.LOGO}" alt=""></div>
+      <div class="ibc-meta"><span>${Math.floor(mins / 60) ? Math.floor(mins / 60) + ' hour' + (Math.floor(mins / 60) > 1 ? 's' : '') : ''}${mins % 60 ? ' ' + (mins % 60) + ' minutes' : ''}</span>${o.key ? '<b>Markscheme</b>' : `<div class="ibc-name"><span>Name</span><i></i></div><div class="ibc-day"><span class="tick"></span> A day <span class="tick"></span> B day</div>`}</div>
+      <h2 class="ibc-h">Instructions to candidates</h2><ul class="ibc-ins">${ins.map(x => `<li>${x}</li>`).join('')}</ul>
+      <table class="cover-table ibc-table"><thead><tr><th>Section</th><th>Questions</th><th>Marks</th><th>Score</th></tr></thead><tbody>${secs.map(([k, list]) => `<tr><td><b>${k}</b></td><td>${list.length}</td><td>${total(list)}</td><td></td></tr>`).join('')}<tr class="tot"><td colspan="2"><b>Total</b></td><td><b>${marks}</b></td><td></td></tr></tbody></table>
+      <p class="ibc-foot">${o.qs.length} questions · ${marks} marks</p></section>`;
+  }
+  const ruled = (n, box) => `<div class="ib-lines${box ? ' ib-box' : ''}">${'<i></i>'.repeat(n)}</div>`;
+  function ibQuestion(q, n, o, sec) {
+    const lines = Math.min(sec === 'A' ? 16 : 10, Math.max(sec === 'A' ? 6 : 4, Math.round(q.marks * (sec === 'A' ? 1.6 : 1.3))));
+    return `<article class="pq ib-q${o.key ? ' pq-key' : ''}"><div class="ib-qh"><b>${n}.</b> <span>[Maximum mark: ${q.marks}]</span></div>
+      ${q.stem ? `<div class="pq-stem">${M(q.stem)}</div>` : ''}${q.fig ? `<div class="q-fig">${q.fig}</div>` : ''}
+      ${q.parts.map(p => `<div class="pp"><div class="pp-q">${q.parts.length > 1 || p.label !== 'a' ? `<span class="pp-l">(${esc(p.label)})</span>` : ''}<div class="pp-t">${U.cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="pp-m">[${p.marks}]</span></div>
+        ${o.key ? ibKey(p) : sec === 'B' ? ruled(Math.min(12, 3 + 2 * p.marks)) : ''}</div>`).join('')}
+      ${!o.key && sec === 'A' ? ruled(lines, true) : ''}${o.key ? `<p class="ib-tot">Total [${q.marks} marks]</p>` : ''}</article>`;
+  }
+  function ibKey(p) {
+    return `<div class="ib-ms">${p.ms.map(([m, t]) => `<div class="ib-msl"><span>${M(t)}</span><b>${esc(m)}</b></div>`).join('')}${p.answer.kind !== 'open' ? `<div class="ib-msl ans"><span>Answer: ${U.answerDisplay(p)}</span></div>` : ''}${p.working.length ? `<details class="ib-work"><summary>Worked solution</summary>${p.working.map(w => `<div>${M(w)}</div>`).join('')}</details>` : ''}${p.kfig ? `<div class="q-fig">${p.kfig}</div>` : ''}<p class="ib-pm">[${p.marks} mark${p.marks === 1 ? '' : 's'}]</p></div>`;
+  }
+  function ibSheets(a, o) {
+    const by = {}; o.qs.forEach(q => (by[secOf(a, q)] = by[secOf(a, q)] || []).push(q));
+    const secs = ['A', 'B'].filter(k => by[k]).map(k => [k, by[k]]); o.qs = secs.flatMap(([, l]) => l);
+    let n = 0;
+    return ibCover(a, o, secs) + secs.map(([k, list]) => `<section class="sheet ib-sheet"><div class="ib-run"><span>${esc(a.title)}</span><span>${o.key ? 'Markscheme' : 'Name: ____________________'}</span></div>
+      <h2 class="ib-sec">Section ${k}</h2>${o.key ? '' : `<p class="ib-sec-i">${SECT_IB[k]}</p>${k === 'A' ? `<p class="ib-sec-n">${SECT_NOTE}</p>` : ''}`}
+      ${list.map(q => ibQuestion(q, ++n, o, k)).join('')}<p class="ib-end">${k === secs[secs.length - 1][0] ? '— End of paper —' : 'Turn over'}</p></section>`).join('');
+  }
 
   /** Title on ONE line: the font shrinks for long titles instead of wrapping. */
   function titleLine(text, tag = 'h1', max = 26) {
@@ -6728,6 +6806,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return secs.map(([p, list], si) => `<section class="ws-sec${isTest(a) && si > 0 ? ' new-page' : ''}"><h2 class="sec-h"><span>Section ${SECTION[p][0]}</span> ${SECTION[p][1]} · ${SECTION[p][2]} · ${total(list)} marks</h2>${list.map(q => question(q, ++n, o, true)).join('')}</section>`).join('');
   }
   function sheets(a, o) {
+    if (o.ib) return ibSheets(a, o);
     const secs = sectionsOf(o.qs);
     if (isTest(a)) {
       const ordered = secs.flatMap(([, l]) => l); o.qs = ordered;
@@ -6741,17 +6820,18 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function view(main, params) {
     const a = Hub.assess.byId(params.id);
     if (!a) { main.innerHTML = U.empty('That assessment no longer exists.', '<a class="btn" href="#/studio">Back to the studio</a>'); return; }
-    const o = { key: params.key === '1', mc: params.mc === '1', space: SPACE[params.space] ? params.space : 'large', two: params.two === undefined ? a.type === 'Exit Ticket' : params.two === '1', qs: a.questions.slice() };
+    const o = { key: params.key === '1', mc: params.mc === '1', space: SPACE[params.space] ? params.space : 'large', two: params.two === undefined ? a.type === 'Exit Ticket' : params.two === '1', qs: a.questions.slice(), ib: isTest(a) && params.ib !== '0' };
     if (o.key) o.two = false;
     const hasConverted = a.questions.some(q => q.parts.some(p => p.wasNumeric)), canTwo = !isTest(a) && !o.key;
-    const link = ch => { const p = Object.assign({ key: o.key ? '1' : '0', mc: o.mc ? '1' : '0', space: o.space, two: o.two ? '1' : '0' }, ch); return `#/print/${a.id}?` + new URLSearchParams(p).toString(); };
+    const link = ch => { const p = Object.assign({ key: o.key ? '1' : '0', mc: o.mc ? '1' : '0', space: o.space, two: o.two ? '1' : '0', ib: o.ib ? '1' : '0' }, ch); return `#/print/${a.id}?` + new URLSearchParams(p).toString(); };
     const unreviewed = a.status === 'draft' && a.questions.some(q => !a.reviewed[q.id]);
     main.innerHTML = `<div class="no-print print-bar">
         <div class="row-between"><a class="back" href="#/edit/${a.id}">← Back to the editor</a><span class="pill">${esc(a.type)} · AA ${a.course}</span></div>
         <h1 class="print-h">Print: ${esc(a.title)}</h1>
         ${unreviewed ? '<div class="notice preview">This is still a draft with unreviewed questions. Check them in the editor before printing for students.</div>' : ''}
         <div class="print-ctl">
-          <div class="seg" role="group" aria-label="Version"><a class="seg-b ${o.key ? '' : 'on'}" href="${link({ key: '0' })}" aria-current="${!o.key}">Student worksheet</a><a class="seg-b ${o.key ? 'on' : ''}" href="${link({ key: '1' })}" aria-current="${o.key}">Answer key</a></div>
+          <div class="seg" role="group" aria-label="Version"><a class="seg-b ${o.key ? '' : 'on'}" href="${link({ key: '0' })}" aria-current="${!o.key}">Student worksheet</a><a class="seg-b ${o.key ? 'on' : ''}" href="${link({ key: '1' })}" aria-current="${o.key}">${o.ib ? 'Markscheme' : 'Answer key'}</a></div>
+          ${isTest(a) ? `<label class="inline-check"><input type="checkbox" id="pr-ib" ${o.ib ? 'checked' : ''}> IB exam paper layout</label>` : ''}
           ${hasConverted ? `<label class="inline-check"><input type="checkbox" id="pr-mc" ${o.mc ? 'checked' : ''}> Include the multiple-choice options</label>` : ''}
           ${canTwo ? `<label class="inline-check"><input type="checkbox" id="pr-two" ${o.two ? 'checked' : ''}> Two per page (cut in half)</label>` : ''}
           ${o.key ? '' : `<label class="inline">Working space <select id="pr-space"><option value="compact" ${o.space === 'compact' ? 'selected' : ''}>Compact</option><option value="large" ${o.space === 'large' ? 'selected' : ''}>Large</option><option value="xl" ${o.space === 'xl' ? 'selected' : ''}>Extra large</option></select></label>`}
@@ -6764,6 +6844,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const mc = $('#pr-mc'); if (mc) mc.onchange = () => go(link({ mc: mc.checked ? '1' : '0' }));
     const two = $('#pr-two'); if (two) two.onchange = () => go(link({ two: two.checked ? '1' : '0' }));
     const sp = $('#pr-space'); if (sp) sp.onchange = () => go(link({ space: sp.value }));
+    const ibc = $('#pr-ib'); if (ibc) ibc.onchange = () => go(link({ ib: ibc.checked ? '1' : '0' }));
     const pg = $('#pr-go'); if (pg) pg.onclick = () => window.print();
     // Two-per-page only if one copy really fits in half a page; otherwise fall back to one per page.
     if (o.two) requestAnimationFrame(() => { const h = $('.half'); if (h && h.scrollHeight > h.clientHeight + 4) { const s = $('.sheet.halves'); s.classList.remove('halves'); $$('.half', s).slice(1).forEach(x => x.remove()); $$('.half', s).forEach(x => x.classList.remove('half')); const c = $('.cut', s); if (c) c.remove(); const w = $('#pr-warn'); w.hidden = false; w.textContent = 'This one is too long for half a page, so it prints one per page.'; } });
@@ -9566,7 +9647,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const U = Hub.ui, C = () => Hub.curriculum, S = () => Hub.store.state, M = t => Hub.math.render(t);
 
   /* ---------- formula booklet ---------- */
-  const BOOKLET_PDF = 'https://assets.revisiondojo.com/assets/data-booklet/ib/ib-math-aa/default/f686de9fd368/booklet.pdf';
+  const BOOKLET_PDF = 'https://dp.uwcea.org/docs/Mathematics%20Analysis%20and%20Approaches%20Formula%20Booklet.pdf';
   const BOOKLET_PAGE = 'https://www.revisiondojo.com/ib/ib-math-aa/data-booklet';
   let fb = null;
   function bookletToggle(open) {
@@ -9752,17 +9833,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function makeMock(course, paper, half, skills) {
     const full = MOCK[course][paper], target = half ? Math.round(full[0] / 2) : full[0], minutes = half ? Math.round(full[1] / 2) : full[1];
     const P = paper === 1 ? 'P1' : 'P2';
-    let gens = skills.flatMap(id => C().SKILL[id].gens).filter(g => { const r = Hub.qcore.registry[g]; return r && r.paper === paper; });
-    const examG = gens.filter(g => Hub.qcore.registry[g].exam); if (examG.length >= 4) gens = examG.concat(gens.filter(g => !Hub.qcore.registry[g].exam).slice(0, examG.length));
+    const gens = [...new Set(skills.flatMap(id => C().SKILL[id].gens))].filter(g => { const r = Hub.qcore.registry[g]; return r && !r.book && r.paper === paper; });
     if (!gens.length) return { ok: false, error: `No Paper ${paper} questions exist for those skills yet.` };
     const r = Hub.assess.createDraft({ course, type: 'Unit test', skills, paper: P, style: 'mixed', count: 1 }); if (!r.ok) return r;
-    const a = r.assessment, qs = []; let marks = 0, bag = [];
-    for (let n = 0; marks < target && n < 40; n++) {
-      if (!bag.length) bag = gens.map(g => [Math.random(), g]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
-      const q = Hub.assess.buildQ(bag.pop(), false, false, false); if (marks + q.marks > target + 6 && marks >= target - 8) continue; qs.push(q); marks += q.marks;
-    }
-    // section A (short) before section B (long), like the IB papers
-    qs.sort((x, y) => x.marks - y.marks);
+    const a = r.assessment, mk = g => { try { return Hub.qcore.build(g, 3).marks; } catch (e) { return 0; } };
+    // Like the IB papers: Section A = short questions (about half the marks); Section B = long, multi-part exam questions at the harder end.
+    const shortG = gens.filter(g => mk(g) <= 7), longG = gens.filter(g => mk(g) >= 8 && Hub.qcore.registry[g].exam);
+    const fill = (pool, goal, sec, hard) => { const out = []; let m = 0, bag = []; for (let n = 0; m < goal - 2 && n < 40 && pool.length; n++) {
+      if (!bag.length) bag = pool.map(g => [Math.random(), g]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+      const q = Hub.assess.buildQ(bag.pop(), hard, false, false); if (m + q.marks > goal + 4 && m > 0) continue; q.section = sec; out.push(q); m += q.marks; } return out; };
+    const A = fill(shortG.length ? shortG : gens, Math.round(target / 2), 'A', false);
+    const marksA = A.reduce((n, q) => n + q.marks, 0);
+    const B = fill(longG.length ? longG : gens, target - marksA, 'B', true);
+    const qs = A.sort((x, y) => x.marks - y.marks).concat(B.sort((x, y) => x.marks - y.marks)), marks = qs.reduce((n, q) => n + q.marks, 0);
     Object.assign(a, { questions: qs, reviewed: {}, title: `${course} · Mock Paper ${paper}${half ? ' (half paper)' : ''} · ${paper === 1 ? 'no calculator' : 'calculator'}`, minutes, mock: P, paper: P, uploadRequired: true, release: 'hold', groups: Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id) });
     Hub.store.save(true); return { ok: true, assessment: a, marks };
   }
@@ -9811,7 +9894,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     let sec = 0;
     return `<section class="card gp-paper" id="pp-paper"><div class="row-between"><h2 class="bar-head green">Practice test — same questions as your test, different numbers</h2><button class="btn small" type="button" id="pp-new">🔁 New numbers</button></div>
       <p class="small">${qs.length} questions · ${total} marks · about ${Math.round(total * 60 / 55 / 5) * 5} minutes. Do it on paper under test conditions, then press <b>Show markscheme</b> on each question to mark yourself.</p>
-      ${qs.map((q, i) => { const head = q.paper !== sec ? `<h3 class="gp-sec">${q.paper === 1 ? 'Section A · Paper 1 style · no calculator' : 'Section B · Paper 2 style · NumWorks allowed'}</h3>` : ''; sec = q.paper; return head + U.question(q, i, { mode: 'teacher', cls: 'gp-q keys-hidden', footer: `<button class="btn small ghost" type="button" data-ppkey>Show markscheme</button>` }); }).join('')}</section>`;
+      ${qs.map((q, i) => { const head = q.paper !== sec ? `<h3 class="gp-sec">${q.paper === 1 ? 'Section A · no calculator' : 'Section B · NumWorks allowed'}</h3><p class="gp-intro">${q.paper === 1 ? 'Answer all questions. Write your answers in the answer boxes. Full marks are not necessarily awarded for a correct answer with no working — show all your working.' : 'Answer all questions. Solutions found from your NumWorks should be supported by suitable working.'}</p>` : ''; sec = q.paper; return head + U.question(q, i, { mode: 'teacher', cls: 'gp-q keys-hidden', footer: `<button class="btn small ghost" type="button" data-ppkey>Show markscheme</button>` }); }).join('')}</section>`;
   }
 
   /* ---------- teacher page #/exam ---------- */
@@ -10049,7 +10132,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 (function (Hub) {
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
-  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['announce', '✉', 'Announcements'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], ['exam', '📝', 'Exam prep'], ['weekly', '📋', 'Monday summary'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
+  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['weekly', '📋', 'Monday summary'], 'Teaching', ['lessons', '▣', 'Lessons & notebooks'], ['donow', '☀', 'Personalised quizzes'], ['announce', '✉', 'Announcements'], 'Assessment', ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['exam', '📝', 'Exam prep'], 'Data', ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], 'Course', ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
   const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
@@ -10068,7 +10151,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const navItems = role === 'teacher' ? TEACHER_NAV : STUDENT_NAV, q = role === 'teacher' ? Hub.assess.queue().length : 0;
     const name = role === 'student' ? (st ? st.name : '') : sess.name, sub = role === 'student' ? (st ? C().GROUPS[st.group].label : '') : 'Teacher · IB AA SL & HL';
     $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><a class="brand" href="#/home"><img src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"><span class="brand-text"><small>Miss Badmus’</small><b>IB Math Hub</b></span></a><p class="slogan">Inquirers. Thinkers. Reflective Learners.</p>
-      <nav aria-label="Main">${navItems.map(([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && Hub.announce && st && Hub.announce.unread(st).length ? `<span class="badge">${Hub.announce.unread(st).length}</span>` : ''}</a>`).join('')}</nav>
+      <nav aria-label="Main">${navItems.map(it => typeof it === 'string' ? `<p class="side-h">${it}</p>` : it).map(it => typeof it === 'string' ? it : (([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && Hub.announce && st && Hub.announce.unread(st).length ? `<span class="badge">${Hub.announce.unread(st).length}</span>` : ''}</a>`)(it)).join('')}</nav>
       <button class="calc-launch" type="button" data-calc aria-controls="calc-panel"><span class="ic" aria-hidden="true">▦</span>NumWorks calculator</button>
       <button class="calc-launch fb-launch" type="button" data-booklet><span class="ic" aria-hidden="true">📘</span>Formula booklet</button>
       ${role === 'teacher' ? pickerHTML() : ''}
