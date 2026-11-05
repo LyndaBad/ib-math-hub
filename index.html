@@ -436,6 +436,7 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .tm-card.tm-on { border-color: #D93025; }
 .tm-home { border-color: #D93025; } .tm-h { font-family: var(--f-head); font-size: clamp(1.5rem, 4vw, 2.1rem); margin: 0 0 6px; }
 body.test-mode .watch, body.test-mode .pv-pick, body.test-mode .side .slogan { display: none !important; }
+.bx-capl input[type=number] { width: 70px; margin: 0 4px; }
 .unit-picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .tc-drop { border: 2px solid #EFD3C2; border-radius: 12px; background: var(--white); }
 .tc-drop > summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; list-style: none; font-family: var(--f-ui); }
@@ -7275,9 +7276,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   const get = (course, ex) => (all()[course] || []).find(e => e.ex === ex) || null;
   /** Exercises for the sections a lesson's calendar text mentions (e.g. "2.2 … and 2.3 …"). */
+  /* Sections taught over several lessons: which exercises belong to which day (Miss Badmus' split). */
+  const DAYS = { 'HL|2.2|1': ['2B', '2C', '2D', '2E'], 'HL|2.2|2': ['2F', '2G', '2H', '2I', '2J'] };
   function forLesson(course, text) {
-    const secs = [...String(text || '').matchAll(/\b(\d{1,2}\.\d{1,2})\b/g)].map(m => m[1]);
-    return (all()[course] || []).filter(e => e.sec && secs.includes(e.sec));
+    const secs = [...String(text || '').matchAll(/\b(\d{1,2}\.\d{1,2})\b/g)].map(m => m[1]), day = (String(text || '').match(/Day\s*(\d)/i) || [])[1];
+    return (all()[course] || []).filter(e => e.sec && secs.includes(e.sec) && (!day || !DAYS[`${course}|${e.sec}|${day}`] || DAYS[`${course}|${e.sec}|${day}`].includes(e.ex)));
   }
   const marksOf = e => e.qs.reduce((s, id) => { try { const q = Hub.qcore.build(id, 1); return s + q.marks; } catch (_) { return s; } }, 0);
 
@@ -7354,6 +7357,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <label>Goes to<select id="bx-days"><option value="both">${course} A day and B day (one assignment)</option><option value="${course}-A">${course} A day only</option><option value="${course}-B">${course} B day only</option></select></label></div>
       <p class="tiny muted">Pick as many exercises as you like — each one is added below, in order, as one homework. Untick any questions you don’t want.</p>
       ${sugs.length ? `<p class="tiny">Suggested for the next lesson (${Hub.core.fmtDate(nl.date)}): <b>${sugs.map(e => 'Exercise ' + e.ex).join(', ')}</b>${sugs.length > 1 ? ' <button class="btn small ghost" type="button" id="bx-sug">Add all of these</button>' : ''}</p>` : ''}
+      <label class="inline-check bx-capl"><input type="checkbox" id="bx-capon" checked> Cap the homework at <input id="bx-cap" type="number" min="10" max="200" step="5" value="65"> marks <span class="tiny muted">(questions are taken evenly from each exercise, in book order)</span></label>
       <div id="bx-list">${first ? block(first) : ''}</div>
       <div class="actions"><button class="btn primary" id="bx-make" type="button" ${first ? '' : 'disabled'}>Make homework draft →</button><span class="tiny" id="bx-sum"></span></div>
       <details class="bx-hy"><summary><b>Or make a hybrid</b> <span class="tiny muted">— a balanced mix from every exercise above, sized to a time</span></summary>
@@ -7383,12 +7387,19 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const sum = () => { const n = chosen().length, ticks = $$('input[type="checkbox"]:checked', list), m = ticks.reduce((t, c) => t + Number(c.dataset.marks || 0), 0);
       $('#bx-sum', card).textContent = n ? `${n} exercise${n > 1 ? 's' : ''} · ${ticks.length} question${ticks.length === 1 ? '' : 's'} · ${m} marks` : 'Add at least one exercise.'; make.disabled = !n || !ticks.length; };
     const add = ex => { const e = get(course, ex); if (!e || !e.ready) return; if (chosen().includes(ex)) return toast(`Exercise ${ex} is already in this homework.`); list.insertAdjacentHTML('beforeend', block(e)); sum(); };
-    sel.onchange = () => { if (sel.value) add(sel.value); sel.value = ''; };
-    const sg = $('#bx-sug', card); if (sg) sg.onclick = () => { const nl = C().nextLesson(group, Hub.mastery.asOf()); forLesson(course, nl.activity).filter(e => e.ready).forEach(e => { if (!chosen().includes(e.ex)) add(e.ex); }); };
+    sel.onchange = () => { if (sel.value) add(sel.value); sel.value = ''; trim(); };
+    /** Untick questions so the total stays within the cap, taking one question from each exercise in turn (book order). */
+    const capOn = () => $('#bx-capon', card).checked, capVal = () => Math.max(10, +$('#bx-cap', card).value || 65);
+    const trim = () => { if (!capOn()) return; const blocks = $$('.bx-block', list).map(b => $$('input[type="checkbox"]', b)); blocks.flat().forEach(c => (c.checked = false));
+      let m = 0, more = true; const pos = blocks.map(() => 0);
+      while (more) { more = false; blocks.forEach((bs, i) => { while (pos[i] < bs.length) { const c = bs[pos[i]++], mk = Number(c.dataset.marks || 0); if (m + mk <= capVal()) { c.checked = true; m += mk; more = true; break; } } }); }
+      sum(); };
+    $('#bx-cap', card).onchange = trim; $('#bx-capon', card).onchange = () => { if (capOn()) trim(); else { $$('input[type="checkbox"]', list).forEach(c => (c.checked = true)); sum(); } };
+    const sg = $('#bx-sug', card); if (sg) sg.onclick = () => { const nl = C().nextLesson(group, Hub.mastery.asOf()); $$('.bx-block', list).forEach(b => b.remove()); forLesson(course, nl.activity).filter(e => e.ready).forEach(e => { if (!chosen().includes(e.ex)) add(e.ex); }); trim(); };
     list.addEventListener('click', e => { const rm = e.target.closest('[data-bxrm]'), al = e.target.closest('[data-bxall]');
       if (rm) { rm.closest('.bx-block').remove(); sum(); }
       if (al) { const bs = $$('input[type="checkbox"]', al.closest('.bx-block')), on = bs.some(c => !c.checked); bs.forEach(c => (c.checked = on)); sum(); } });
-    list.addEventListener('change', sum); sum();
+    list.addEventListener('change', sum); sum(); trim();
     const hy = $('#bx-hybrid', card); if (hy) hy.onclick = async () => {
       const days = $('#bx-days', card).value, only = $$('input:checked', list).map(c => c.value), mins = Math.max(15, Math.min(180, +$('#bx-min', card).value || 70));
       const r = hybrid(course, chosen(), mins, { groups: days === 'both' ? [course + '-A', course + '-B'] : [days], only, extras: $('#bx-extras', card).checked });
