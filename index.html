@@ -181,6 +181,7 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 .mp-row { display: flex; gap: 16px; align-items: flex-start; } .mp-grade { min-width: 96px; padding: 12px; border-radius: 14px; text-align: center; border: 1px solid var(--line, #ddd); }
 .mp-grade b { display: block; font-size: 2.6rem; line-height: 1; } .mp-grade span { font-size: .75rem; }
 .p-lead { display: block; margin: 10px 0 6px; padding-top: 8px; border-top: 1px dashed var(--line, #ccc); }
+.up-row { display: grid; grid-template-columns: 1fr auto 120px; gap: 10px; align-items: center; margin: 4px 0; } .upkeep-note .btn { margin-left: 6px; }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -6074,7 +6075,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const todayHTML = `<section class="card today"><h2 class="bar-head green">Today · ${fmtDate(asOf, true)}</h2>${todayRows.length ? todayRows.join('') : '<p class="tiny muted">No lessons today.</p>'}</section>`;
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
-    main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.') +
+    main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', '', Hub.upkeep ? Hub.upkeep.buttonHTML() : '') + (Hub.upkeep ? Hub.upkeep.nudgeHTML() : '') +
       (Hub.testMode ? Hub.testMode.stripHTML() : '') + todayHTML + (Hub.insights ? Hub.insights.dashCard() : '') + (Hub.exam ? Hub.exam.dashHTML() : '') + (() => { const nA = S().assessments.filter(a => a.status === 'approved').length, nIA = Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length;
         const tiles = [q.length ? `<a class="att hot" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark${(r => r ? `<br><small class="att-ready">${r} ready to release</small>` : '')(Hub.assess.readyToRelease().length)}</span></a>` : '',
           drafts.length ? `<a class="att warm" href="#/studio?status=draft"><b>${drafts.length}</b><span>draft${drafts.length === 1 ? '' : 's'} to review</span></a>` : '',
@@ -7490,7 +7491,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
  Hub.shared.settings=function(main){
  const st=Hub.store.state;main.innerHTML=U.heading('YOUR CLASSROOM','Data & settings','Your roster, assessments, results, notebooks and uploaded work are stored privately in Supabase.')+`
  <div class="grid g2"><section class="card"><h2 class="bar-head blue">Cloud connection</h2><p><span class="pill green">Supabase connected</span> Teacher: ${esc(Hub.auth.current().email)}</p><p>Changes save automatically while online. Wait for “Saved to cloud” before closing the tab. Refresh to see new work from another device.</p><div class="actions"><button class="btn" id="cloud-refresh">Save & refresh</button><button class="btn ghost" id="cloud-retry">Retry save</button></div><p class="tiny">If two people edit the same item, a conflict stops the save. Export your pending copy before reloading.</p><button class="btn small ghost" id="cloud-reload">Discard pending changes & reload</button></section>
- <section class="card"><h2 class="bar-head green">Export your data</h2><div class="actions"><button class="btn" id="bk">Download full data backup</button><button class="btn ghost" id="roster-csv">Roster CSV</button><button class="btn ghost" id="results-csv">Results CSV</button><button class="btn ghost" id="evidence-csv">Evidence CSV</button></div><p class="tiny">Backups include data and attachment references. Photos/PDFs remain in private storage; download an attachment from the marking screen for a separate copy.</p></section>
+ ${Hub.upkeep ? Hub.upkeep.cardHTML() : ''}<section class="card"><h2 class="bar-head green">Export your data</h2><div class="actions"><button class="btn" id="bk">Download full data backup</button><button class="btn ghost" id="roster-csv">Roster CSV</button><button class="btn ghost" id="results-csv">Results CSV</button><button class="btn ghost" id="evidence-csv">Evidence CSV</button></div><p class="tiny">Backups include data and attachment references. Photos/PDFs remain in private storage; download an attachment from the marking screen for a separate copy.</p></section>
  <section class="card"><h2 class="bar-head pink">Upload your roster</h2><p>${Hub.roster.all().filter(s=>!s.test).length} students on your roster. <b>Only first and last names are needed</b> — no emails. Students join with the class code and are matched to these names.</p>
  <label>1. Which class is this list for?<select id="roster-pdf-group"><option value="">Choose the class…</option>${Object.values(Hub.curriculum.GROUPS).map(g=>`<option value="${g.id}">${esc(g.label)}</option>`).join('')}</select></label>
  <label>2. Paste the names — one student per line (<i>First Last</i> or <i>Last, First</i>)<textarea id="roster-text" rows="7" placeholder="Okafor, Amara&#10;Theo Lindqvist&#10;De la Cruz, Mateo"></textarea></label>
@@ -11531,6 +11532,65 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $$('[data-fbreply]', main).forEach(b => (b.onclick = () => { const t = $(`[data-fbtext="${CSS.escape(b.dataset.fbreply)}"]`, main).value.trim(); if (!t) return toast('Write a reply first.', 'error'); upd(b.dataset.fbreply, { reply: t.slice(0, 500), replyAt: new Date().toISOString(), seenReply: false, status: 'done' }, 'Reply sent — the student sees it on My day.'); }));
   }
   Hub.feedback = { list, newCount, unseenReplies, student, teacher, replyCardHTML, CATS };
+})(window.Hub = window.Hub || {});
+
+/* ---- js/upkeep.js ---- */
+/* One-click backup and "keep the Hub fast": a backup button on the dashboard (with a weekly reminder), and a card in
+   Data & settings that shows how big the saved data is and tidies away what is no longer needed — expired practice
+   sessions and archived drafts nothing uses. A full backup downloads first, every time. */
+(function (Hub) {
+  'use strict';
+  const { esc, toast } = Hub.core, U = Hub.ui, S = () => Hub.store.state;
+  const KEY = 'hub-last-backup', kb = n => n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : Math.round(n / 1e3) + ' KB';
+  const last = () => { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
+  function backup() {
+    const name = 'ib-math-hub-backup-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.json';
+    Hub.core.download(name, Hub.store.exportBackup()); try { localStorage.setItem(KEY, new Date().toISOString()); } catch (e) {}
+    toast('Backup downloaded — keep it somewhere safe (e.g. Google Drive).');
+  }
+  function sizes() { const st = S(), out = {}; Object.keys(st).forEach(k => { try { out[k] = JSON.stringify(st[k]).length; } catch (e) { out[k] = 0; } }); return { total: Object.values(out).reduce((a, b) => a + b, 0), parts: out }; }
+  /** What tidy-up would remove: practice sessions older than 3 days (answers are kept with the attempt) and archived drafts nothing points to. */
+  function candidates() {
+    const st = S(), cutoff = Date.now() - 3 * 864e5;
+    const prac = Object.keys(st.progress || {}).filter(k => { const v = st.progress[k]; return v && v._serverAssessment && Date.parse(v.createdAt || 0) < cutoff; });
+    const used = new Set(st.attempts.map(t => t.aid)), refs = JSON.stringify(st.settings || {});
+    st.assessments.forEach(a => { if (a.retestOf) used.add(a.retestOf); if (a.extraFor) used.add(a.extraFor); });
+    const arch = st.assessments.filter(a => a.status === 'archived' && !used.has(a.id) && !refs.includes(a.id));
+    const bytes = prac.reduce((n, k) => n + JSON.stringify(st.progress[k]).length, 0) + arch.reduce((n, a) => n + JSON.stringify(a).length, 0);
+    return { prac, arch, bytes };
+  }
+  function tone(total) { return total < 3e6 ? ['green', 'Fast'] : total < 6e6 ? ['amber', 'Getting big'] : ['red', 'Slow — tidy up and ask Claude to move old work out']; }
+  function buttonHTML() { return `<button class="btn small ghost" type="button" data-backup title="Download everything as one file">⬇ Backup</button>`; }
+  function nudgeHTML() {
+    const l = last(), days = l ? Math.floor((Date.now() - Date.parse(l)) / 864e5) : null, sz = sizes().total;
+    const msgs = [];
+    if (days === null || days >= 7) msgs.push(`${days === null ? 'No backup downloaded on this computer yet.' : `Last backup ${days} days ago.`} <button class="btn small" type="button" data-backup>⬇ Download a backup</button>`);
+    if (sz >= 4e6) msgs.push(`Saved data is ${kb(sz)} — <a href="#/settings">tidy up in Data &amp; settings</a> to keep the Hub fast.`);
+    return msgs.length ? `<div class="notice upkeep-note">${msgs.join('<br>')}</div>` : '';
+  }
+  function cardHTML() {
+    const z = sizes(), [col, word] = tone(z.total), c = candidates(), top = Object.entries(z.parts).filter(([k]) => !['schema', 'updatedAt', 'notices'].includes(k)).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const names = { assessments: 'Tasks and their questions', attempts: 'Student submissions', donow: 'Personalised tasks', progress: 'Notebooks, drafts and practice sessions', evidence: 'Mastery evidence', log: 'Activity log', roster: 'Roster', settings: 'Settings and lessons', ia: 'IA work' };
+    return `<section class="card upkeep-card"><h2 class="bar-head amber">Keep the Hub fast</h2>
+      <p><span class="pill ${col}">${word}</span> Everything saved together is <b>${kb(z.total)}</b>. Under 3 MB loads quickly on Chromebooks.</p>
+      <div class="up-bars">${top.map(([k, n]) => `<div class="up-row"><span class="small">${esc(names[k] || k)}</span><span class="tiny muted">${kb(n)}</span>${U.bar(Math.round(100 * n / z.total), '')}</div>`).join('')}</div>
+      <p class="small">Tidy-up can remove <b>${c.prac.length}</b> expired practice session${c.prac.length === 1 ? '' : 's'} and <b>${c.arch.length}</b> archived draft${c.arch.length === 1 ? '' : 's'} that no submission, retake or notebook uses (${kb(c.bytes)}). Submissions, marks and mastery are never touched.</p>
+      <div class="actions"><button class="btn" type="button" data-backup>⬇ Download backup</button><button class="btn ghost" type="button" id="up-tidy" ${c.prac.length + c.arch.length ? '' : 'disabled'}>Back up, then tidy up</button></div>
+      <p class="tiny muted">Last backup on this computer: ${last() ? Hub.core.fmtDateTime(last()) : 'never'}.</p></section>`;
+  }
+  async function tidy() {
+    const c = candidates(); if (!c.prac.length && !c.arch.length) return toast('Nothing to tidy.');
+    if (!(await U.confirmBox(`Download a backup, then remove ${c.prac.length} expired practice session${c.prac.length === 1 ? '' : 's'} and ${c.arch.length} unused archived draft${c.arch.length === 1 ? '' : 's'}${c.arch.length ? ` (${c.arch.slice(0, 4).map(a => '“' + esc(a.title) + '”').join(', ')}${c.arch.length > 4 ? '…' : ''})` : ''}?`, 'Back up and tidy'))) return;
+    backup(); const st = S();
+    c.prac.forEach(k => delete st.progress[k]); const gone = new Set(c.arch.map(a => a.id)); st.assessments = st.assessments.filter(a => !gone.has(a.id));
+    Hub.store.log(`Tidy-up: removed ${c.prac.length} practice sessions and ${c.arch.length} archived drafts`); Hub.store.save(true);
+    try { await Hub.store.flush(); toast(`Tidied — saved ${kb(c.bytes)}.`); } catch (e) { toast(e.message, 'error'); } Hub.app.render();
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-backup]')) { e.preventDefault(); if (Hub.auth && Hub.auth.isTeacher()) backup(); }
+    if (e.target.closest('#up-tidy')) { e.preventDefault(); tidy(); }
+  });
+  Hub.upkeep = { backup, sizes, candidates, buttonHTML, nudgeHTML, cardHTML, tidy };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/gradebook.js ---- */
