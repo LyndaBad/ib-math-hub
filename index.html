@@ -175,6 +175,9 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 .lib { display: flex; flex-direction: column; }
 .lib-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 2px dotted var(--line); }
 .lib-row:last-child { border-bottom: none; }
+.gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
+.gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
+.gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
 .gb-wrap { max-height: 70vh; overflow: auto; } .gb-tbl { border-collapse: collapse; font-family: var(--f-ui); font-size: .85rem; }
 .gb-tbl th, .gb-tbl td { border: 1px solid var(--line); padding: 5px 7px; text-align: center; white-space: nowrap; }
 .gb-tbl thead th { position: sticky; top: 0; background: var(--white); z-index: 1; vertical-align: bottom; min-width: 74px; white-space: normal; }
@@ -4604,12 +4607,333 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 
   reg('cr.hl2.q16', { skill: 'HL-2.4a', title: 'Find g given f and gf', paper: 1 }, findG);
 
+
+  /* ======================= AA SL · Chapter 3 (Unit 3: Linear and quadratic functions) ======================= */
+  const vtx = (a, h, k) => `${a === 1 ? '' : a === -1 ? '-' : a}(x${sg(-h)})^{2}${sg(k)}`;   // a(x − h)² + k
+  const surd = (p, q, n) => `${p} \\pm ${q === 1 ? '' : q}\\sqrt{${n}}`;
+
+  // Q6 — complete the square, vertex, translated vertex
+  reg('cr.sl3.q6', { skill: 'SL-3.4', title: 'Vertex form, vertex and a translated vertex', paper: 1 }, R => {
+    const a = R.pick([2, 3, 4]), h = R.nz(-5, 5), k = R.nz(-9, 9), b = -2 * a * h, c = a * h * h + k, p = R.int(2, 6), q = R.int(2, 6);
+    return { stem: `The function $f(x) = ${quad(a, b, c)}$ can be written in the form $f(x) = a(x - h)^{2} + k$.`, paper: 1, parts: [
+      P('Find', 'the values of (i) $a$ (ii) $h$ (iii) $k$.', 4, { t: [a, h, k], l: ['a', 'h', 'k'], each: true, d: `a = ${a},\\ h = ${h},\\ k = ${k}` },
+        [['A1', `$a = ${a}$`], ['M1', `$${a}\\left(x^{2}${sg(b / a)}x\\right)${sg(c)}$ and completing the square`], ['A1', `$h = ${h}$`], ['A1', `$k = ${k}$`]],
+        [`$f(x) = ${a}\\left(x^{2}${sg(b / a)}x\\right)${sg(c)}$`, `$= ${a}\\left((x${sg(-h)})^{2} - ${h * h}\\right)${sg(c)}$`, `$= ${vtx(a, h, k)}$`], 'Take out the coefficient of x² first, then complete the square.'),
+      P('Write down', 'the coordinates of the vertex of the graph of $y = f(x)$.', 1, { t: [h, k], l: ['x', 'y'], d: `(${h}, ${k})` }, [['A1', `$(${h}, ${k})$`]], [`Vertex $(h, k) = (${h}, ${k})$`], 'Read it from the vertex form.'),
+      P('Find', `the vertex of the graph of $y = g(x)$, where the graph of $g$ is the graph of $f$ translated ${p} units right and ${q} units down.`, 2, { t: [h + p, k - q], l: ['x', 'y'], d: `(${h + p}, ${k - q})` },
+        [['M1', `adding ${p} to the $x$-coordinate and subtracting ${q} from the $y$-coordinate`], ['A1', `$(${h + p}, ${k - q})$`]], [`$(${h} + ${p},\\ ${k} - ${q}) = (${h + p}, ${k - q})$`], 'Move the vertex itself.')
+    ] };
+  });
+
+  // Q8 — equal roots: find k
+  reg('cr.sl3.q8', { skill: 'SL-3.6', title: 'Equal real roots: find k', paper: 1 }, R => {
+    const s = R.int(1, 4), m = R.pick([1, 2, 3, 4, 5].filter(v => v !== 2 * s)), n = s * s, k = fr(2 * s, m);
+    return { stem: `The equation $-x^{2} + ${m === 1 ? '' : m}kx - ${n} = 0$ has two equal real roots.`, paper: 1, parts: [
+      P('Find', 'the possible values of $k$.', 4, { list: [k, k.neg()], d: `k = \\pm ${k.tex()}` },
+        [['M1', 'using $b^{2} - 4ac = 0$'], ['A1', `$${m * m === 1 ? '' : m * m}k^{2} - ${4 * n} = 0$`], ['A1', `$k = ${k.tex()}$`], ['A1', `$k = -${k.tex()}$`]],
+        [`$a = -1,\\ b = ${m === 1 ? '' : m}k,\\ c = -${n}$`, `$(${m === 1 ? '' : m}k)^{2} - 4(-1)(-${n}) = 0$`, `$${m * m === 1 ? '' : m * m}k^{2} = ${4 * n}$, so $k = \\pm ${k.tex()}$`], 'Equal roots means the discriminant is zero.')
+    ] };
+  });
+
+  // Q9 — quadratic from intercepts
+  reg('cr.sl3.q9', { skill: 'SL-3.5', title: 'Quadratic from its x- and y-intercepts', paper: 1 }, R => {
+    const r1 = -R.int(1, 6), r2 = R.int(1, 6), a = R.pick([-3, -2, -1, 1, 2, 3]), b = -a * (r1 + r2), c = a * r1 * r2;
+    return { stem: `The graph of a quadratic function has $y$-intercept $(0, ${c})$ and $x$-intercepts $(${r1}, 0)$ and $(${r2}, 0)$.`, paper: 1, parts: [
+      P('Find', 'the equation of the function in the form $f(x) = ax^{2} + bx + c$.', 4, { t: [a, b, c], l: ['a', 'b', 'c'], d: `f(x) = ${quad(a, b, c)}` },
+        [['M1', `$f(x) = a(x${sg(-r1)})(x${sg(-r2)})$`], ['M1', `substituting $(0, ${c})$: $${r1 * r2}a = ${c}$`], ['A1', `$a = ${a}$`], ['A1', `$f(x) = ${quad(a, b, c)}$`]],
+        [`$f(x) = a(x${sg(-r1)})(x${sg(-r2)})$`, `$f(0) = a(${-r1})(${-r2}) = ${r1 * r2}a = ${c}$, so $a = ${a}$`, `$f(x) = ${a === 1 ? '' : a === -1 ? '-' : a}(x${sg(-r1)})(x${sg(-r2)}) = ${quad(a, b, c)}$`], 'Start from the factorised form using the x-intercepts.')
+    ] };
+  });
+
+  // Q10 (P2) — solve two quadratics to 3 s.f.
+  reg('cr.sl3.q10', { skill: 'SL-3.6', title: 'Solve quadratics to 3 significant figures', paper: 2 }, R => {
+    const a = R.pick([2, 3, 4]), b = -R.int(3, 9), c = -R.int(2, 9), D = b * b - 4 * a * c, x1 = (-b - Math.sqrt(D)) / (2 * a), x2 = (-b + Math.sqrt(D)) / (2 * a);
+    const p = R.int(2, 5), q = R.pick([0.5, 1.5, 2.5]), r = R.int(4, 9), B = p + q, D2 = B * B + 4 * r, y1 = (-B - Math.sqrt(D2)) / 2, y2 = (-B + Math.sqrt(D2)) / 2;   // −x² − px = qx − r → x² + (p+q)x − r = 0
+    return { stem: 'Solve each equation. Give your answers correct to 3 significant figures.', paper: 2, parts: [
+      P('Solve', `$${quad(a, b, c)} = 0$.`, 2, { list: [x1, x2], sf: 3, d: `x = ${num(sf(x1, 3))},\\ x = ${num(sf(x2, 3))}` }, [['M1', 'quadratic formula or GDC'], ['A1', `$x = ${num(sf(x1, 3))},\\ ${num(sf(x2, 3))}$`]],
+        [`$x = \\frac{${-b} \\pm \\sqrt{${D}}}{${2 * a}}$`, `$x = ${num(sf(x1, 3))}$ or $x = ${num(sf(x2, 3))}$`], 'Use the quadratic formula or the NumWorks Equations app.', { numworks: { app: 'Equations', lines: [[`${a}x^2${sg(b)}x${sg(c)}=0`, `x=${num(sf(x1, 4))}, x=${num(sf(x2, 4))}`]] } }),
+      P('Solve', `$-x^{2} - ${p}x = ${q}x - ${r}$.`, 3, { list: [y1, y2], sf: 3, d: `x = ${num(sf(y1, 3))},\\ x = ${num(sf(y2, 3))}` }, [['M1', `rearranging: $x^{2} + ${num(B)}x - ${r} = 0$`], ['A1', `$x = ${num(sf(y1, 3))}$`], ['A1', `$x = ${num(sf(y2, 3))}$`]],
+        [`$0 = x^{2} + ${p}x + ${q}x - ${r} = x^{2} + ${num(B)}x - ${r}$`, `$x = ${num(sf(y1, 3))}$ or $x = ${num(sf(y2, 3))}$`], 'Collect everything on one side first.')
+    ] };
+  });
+
+  // Q11 (P2) — projectile model h(t) = h0 + vt − 4.9t²
+  reg('cr.sl3.q11', { skill: 'SL-3.7', title: 'Projectile model: initial height, maximum, landing time, domain, time above a height', paper: 2 }, R => {
+    const ctx = R.pick([['a stone thrown from a bridge', 'the water'], ['a ball thrown from a cliff top', 'the beach'], ['a flare fired from a boat deck', 'the sea']]);
+    const h0 = R.int(12, 30), v = R.int(8, 16), tm = v / 9.8, hm = h0 + v * v / 19.6, T = (v + Math.sqrt(v * v + 19.6 * h0)) / 9.8;
+    const H = Math.round(h0 + (hm - h0) * R.pick([0.4, 0.5, 0.6])), d = Math.sqrt(v * v - 19.6 * (H - h0)) / 4.9;   // roots of 4.9t² − vt + (H − h0) = 0 are (v ± √…)/9.8, gap = 2√…/9.8
+    return { stem: `The height, $h$ metres, of ${ctx[0]} above ${ctx[1]} is modelled by $h(t) = ${h0} + ${v}t - 4.9t^{2}$, where $t$ is the time in seconds after it is released.`, paper: 2, parts: [
+      P('Find', 'the initial height.', 1, h0, [['A1', `$${h0}$ m`]], [`$h(0) = ${h0}$`], 'Initial means t = 0.'),
+      P('Find', 'the maximum height reached.', 2, { n: hm, sf: 3 }, [['M1', `$t = \\frac{${v}}{9.8}$ or GDC maximum`], ['A1', `$${num(sf(hm, 3))}$ m`]], [`Vertex at $t = \\frac{-b}{2a} = \\frac{${v}}{9.8} = ${num(sf(tm, 4))}$`, `$h = ${num(sf(hm, 4))}$ m`], 'The maximum is at the vertex.'),
+      P('Find', `the time it takes to reach ${ctx[1]}.`, 2, { n: T, sf: 3 }, [['M1', `$h(t) = 0$`], ['A1', `$t = ${num(sf(T, 3))}$ s`]], [`Solve $${h0} + ${v}t - 4.9t^{2} = 0$; reject the negative root.`, `$t = ${num(sf(T, 3))}$ s`], 'Solve h(t) = 0 and keep the positive root.'),
+      P('Write down', 'the domain of $h$ in this context.', 1, { open: `0 \\le t \\le ${num(sf(T, 3))}` }, [['A1', `$0 \\le t \\le ${num(sf(T, 3))}$`]], ['The model only applies from release until it lands.'], 'From when it is released to when it lands.'),
+      P('Find', `the length of time for which the height is greater than ${H} m.`, 3, { n: d, sf: 3 }, [['M1', `$h(t) = ${H}$`], ['A1', 'both times found'], ['A1', `$${num(sf(d, 3))}$ s`]],
+        [`$${h0} + ${v}t - 4.9t^{2} = ${H}$ gives $t = ${num(sf((v - Math.sqrt(v * v - 19.6 * (H - h0))) / 9.8, 4))}$ and $t = ${num(sf((v + Math.sqrt(v * v - 19.6 * (H - h0))) / 9.8, 4))}$`, `Difference $= ${num(sf(d, 3))}$ s`], 'Find both times it is at that height, then subtract.')
+    ] };
+  });
+
+  // Q12 — rectangle inscribed in an isosceles triangle
+  reg('cr.sl3.q12', { skill: 'SL-3.7', title: 'Rectangle inscribed in a triangle: maximum area', paper: 1 }, R => {
+    const w = R.pick([3, 4, 5, 6]), H = R.pick([6, 8, 10, 12]), m = fr(H, w), wA = w, hA = H / 2, area = w * H / 2;
+    const fig = plot({ x: [-w - 1, w + 1], y: [-1, H + 1], step: [1, 2], f: [{ f: x => H - H * Math.abs(x) / w, from: -w, to: w }, { f: () => H / 2, from: -w / 2, to: w / 2 }], pts: [[-w, 0, 'A', 'b'], [0, H, 'B'], [w, 0, 'C', 'b'], [w / 2, 0, '(p, 0)', 'b']], alt: 'triangle ABC with an inscribed rectangle' });
+    return { stem: `Isosceles triangle ABC has base AC on the $x$-axis, centred at the origin, and vertex B on the $y$-axis. The altitude from B to AC is ${H} cm and AC $= ${2 * w}$ cm. A rectangle is inscribed in the triangle with one side on AC; one of its vertices is $(p, 0)$, where $0 < p < ${w}$.`, fig, paper: 1, parts: [
+      P('Write down', 'the coordinates of A, B and C.', 2, { open: `A(${-w}, 0),\\ B(0, ${H}),\\ C(${w}, 0)` }, [['A1', `$A(${-w}, 0)$ and $C(${w}, 0)$`], ['A1', `$B(0, ${H})$`]], ['Half of AC either side of the origin; B is the height.'], 'The triangle is symmetrical about the y-axis.'),
+      P('Find', 'the equation of the line through B and C.', 2, { open: `y = -${m.tex()}x + ${H}` }, [['M1', `gradient $-\\frac{${H}}{${w}}$`], ['A1', `$y = -${m.tex()}x + ${H}$`]], [`$m = \\frac{0 - ${H}}{${w} - 0} = -${m.tex()}$, $c = ${H}$`], 'Use the two intercepts.'),
+      P('Find', 'the width and height of the rectangle in terms of $p$.', 2, { open: `\\text{width } 2p,\\ \\text{height } ${H} - ${m.tex()}p` }, [['A1', 'width $2p$'], ['A1', `height $${H} - ${m.tex()}p$`]], ['The top corner $(p, y)$ lies on BC.'], 'The top-right corner lies on line BC.'),
+      P('Write down', 'an expression for the area of the rectangle in terms of $p$.', 1, { open: `A = 2p\\left(${H} - ${m.tex()}p\\right)` }, [['A1', `$2p\\left(${H} - ${m.tex()}p\\right)$`]], [], 'Width × height.'),
+      P('Find', 'the width and height of the rectangle with the maximum possible area.', 3, { t: [2 * w / 2 * 1, hA], l: ['width', 'height'], d: `\\text{width } ${wA},\\ \\text{height } ${num(hA)}` },
+        [['M1', 'vertex of the quadratic in $p$ (or GDC)'], ['A1', `$p = ${num(w / 2)}$`], ['A1', `width $${wA}$, height $${num(hA)}$`]], [`$A = ${2 * H}p - ${fr(2 * H, w).tex()}p^{2}$, maximum at $p = \\frac{${2 * H}}{2 \\times ${fr(2 * H, w).tex()}} = ${num(w / 2)}$`, `width $= ${wA}$ cm, height $= ${num(hA)}$ cm`], 'The area is a quadratic in p: find its vertex.'),
+      P('Find', 'the maximum possible area.', 1, area, [['A1', `$${num(area)}$ cm²`]], [`$${wA} \\times ${num(hA)} = ${num(area)}$ cm²`], 'Half the area of the triangle.')
+    ] };
+  });
+
+  // Q13 (P2) — line in general form: gradient–intercept, axis intercepts, triangle area
+  reg('cr.sl3.q13', { skill: 'SL-3.1', title: 'Line in general form: y = mx + c, intercepts, triangle area', paper: 2 }, R => {
+    const [a, b] = R.pick([[5, 8], [3, 10], [7, 9], [4, 9], [5, 12], [7, 10]]), k = R.int(2, 4), c = a * b * k, m = fr(a, b), cy = -c / b, cx = c / a, area = Math.abs(cx * cy) / 2;
+    return { stem: `A line has equation $${a}x - ${b}y - ${c} = 0$.`, paper: 2, parts: [
+      P('Write down', 'the equation of the line in the form $y = mx + c$.', 2, { t: [m, cy], l: ['m', 'c'], d: `y = ${m.tex()}x - ${-cy}` }, [['M1', `$${b}y = ${a}x - ${c}$`], ['A1', `$y = ${m.tex()}x - ${-cy}$`]], [`$${b}y = ${a}x - ${c}$`, `$y = ${m.tex()}x - ${-cy}$`], 'Make y the subject.'),
+      P('Find', 'the coordinates of A, where the line meets the $x$-axis, and B, where it meets the $y$-axis.', 2, { t: [cx, cy], l: ['A: x =', 'B: y ='], d: `A(${cx}, 0),\\ B(0, ${cy})` }, [['A1', `$A(${cx}, 0)$`], ['A1', `$B(0, ${cy})$`]], [`$y = 0$: $${a}x = ${c}$, $x = ${cx}$`, `$x = 0$: $-${b}y = ${c}$, $y = ${cy}$`], 'Set y = 0, then x = 0.'),
+      P('Calculate', 'the area of triangle OAB.', 2, area, [['M1', `$\\frac{1}{2} \\times ${cx} \\times ${-cy}$`], ['A1', `$${num(area)}$`]], [`$\\frac{1}{2} \\times ${cx} \\times ${-cy} = ${num(area)}$`], 'Base and height are the distances to the intercepts.')
+    ] };
+  });
+
+  // Q14 (P2) — GDC sketch on a restricted domain: intercepts and range
+  reg('cr.sl3.q14', { skill: 'SL-3.4', title: 'GDC sketch on a restricted domain: intercepts and range', paper: 2 }, R => {
+    let p, q, r, rt, guard = 0;
+    do { p = R.pick([2.1, 2.4, 2.6, 2.9, 3.2]); q = R.pick([3.1, 3.7, 4.1, 4.6]); r = R.pick([4.3, 5.2, 5.9, 6.4]); const D = q * q + 4 * p * r; rt = [(q - Math.sqrt(D)) / (2 * p), (q + Math.sqrt(D)) / (2 * p)].filter(x => x >= -1 && x <= 2); } while (rt.length !== 1 && guard++ < 50);
+    const f = x => p * x * x - q * x - r, xv = q / (2 * p), lo = f(xv), hi = Math.max(f(-1), f(2));
+    return { stem: `Consider the curve $y = ${num(p)}x^{2} - ${num(q)}x - ${num(r)}$ for $-1 \\le x \\le 2$.`, paper: 2, parts: [
+      P('Sketch', 'the curve for $-1 \\le x \\le 2$, using your GDC.', 2, 'open', [['A1', 'correct shape (parabola, concave up) with the minimum in the domain'], ['A1', 'drawn only for $-1 \\le x \\le 2$, end points shown']], ['Graph it on the NumWorks with the x-range −1 to 2.'], 'Set the window first.',
+        { kfig: plot({ x: [-1.5, 2.5], y: [Math.floor(lo) - 1, Math.ceil(hi) + 1], step: [0.5, 1], f: [{ f, from: -1, to: 2 }], alt: 'model sketch' }) }),
+      P('Write down', 'the coordinates of the points where the curve meets the axes.', 2, { t: [rt[0], -r], l: ['x-intercept', 'y-intercept'], sf: 3, d: `(${num(sf(rt[0], 3))}, 0),\\ (0, ${-r})` }, [['A1', `$(${num(sf(rt[0], 3))}, 0)$`], ['A1', `$(0, ${-r})$`]], ['Use the GDC zero and y-intercept tools; only one zero lies in the domain.'], 'Only points inside the domain count.'),
+      P('Write down', 'the range of $y$.', 2, { t: [lo, hi], l: ['least', 'greatest'], sf: 3, d: `${num(sf(lo, 3))} \\le y \\le ${num(sf(hi, 3))}` }, [['A1', `minimum $${num(sf(lo, 3))}$`], ['A1', `maximum $${num(sf(hi, 3))}$ (at $x = ${f(-1) >= f(2) ? -1 : 2}$)`]], [`Minimum at the vertex $x = ${num(sf(xv, 3))}$; maximum at an end point.`], 'Check the vertex and both end points.')
+    ] };
+  });
+
+  // Q15 — surd roots and a quadratic inequality (also HL Q10)
+  const surdRoots = R => {
+    const p = R.int(1, 5), q = R.int(2, 4), n = R.pick([2, 3, 5, 7, 11, 13]), c = p * p - q * q * n, lo = p - q * Math.sqrt(n), hi = p + q * Math.sqrt(n);
+    return { stem: `Consider the equation $x^{2} - ${2 * p}x${sg(c)} = 0$.`, paper: 1, parts: [
+      P('Show that', `the solutions may be written in the form $x = p \\pm q\\sqrt{${n}}$, where $p$ and $q$ are positive integers.`, 4, { open: `x = ${surd(p, q, n)}` },
+        [['M1', 'completing the square or quadratic formula'], ['A1', `$(x - ${p})^{2} = ${q * q * n}$`], ['A1', `$\\sqrt{${q * q * n}} = ${q}\\sqrt{${n}}$`], ['A1', `$x = ${surd(p, q, n)}$`]],
+        [`$(x - ${p})^{2} - ${p * p}${sg(c)} = 0$`, `$(x - ${p})^{2} = ${q * q * n}$`, `$x = ${p} \\pm \\sqrt{${q * q * n}} = ${surd(p, q, n)}$`], 'Complete the square, then simplify the surd.'),
+      P('Solve', `the inequality $x^{2} - ${2 * p}x${sg(c)} \\le 0$.`, 2, { t: [lo, hi], l: ['from', 'to'], sf: 3, d: `${p} - ${q}\\sqrt{${n}} \\le x \\le ${p} + ${q}\\sqrt{${n}}` },
+        [['M1', 'the curve is below the axis between the roots'], ['A1', `$${p} - ${q}\\sqrt{${n}} \\le x \\le ${p} + ${q}\\sqrt{${n}}$`]], ['A positive quadratic is ≤ 0 between its roots.'], 'Sketch the parabola through the two roots.')
+    ] };
+  };
+  reg('cr.sl3.q15', { skill: 'SL-3.5', title: 'Surd roots and a quadratic inequality', paper: 1 }, surdRoots);
+
+  // Q16 — expand vertex form, vertex, axis, range, translate by a vector
+  reg('cr.sl3.q16', { skill: 'SL-3.3', title: 'Vertex form: expand, vertex, axis, range, translate by a vector', paper: 1 }, R => {
+    const a = R.pick([2, 3, -2, -3]), h = R.nz(-4, 4), k = R.nz(-20, 20), u = R.nz(-4, 4), v = R.nz(-6, 6);
+    const b = -2 * a * h, c = a * h * h + k, H = h + u, K = k + v, B = -2 * a * H, Cc = a * H * H + K;
+    return { stem: `A function $f$ is defined by $f(x) = ${vtx(a, h, k)},\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Write', '$f(x)$ in the form $ax^{2} + bx + c$.', 2, { t: [a, b, c], l: ['a', 'b', 'c'], d: quad(a, b, c) }, [['M1', 'expanding the bracket'], ['A1', `$${quad(a, b, c)}$`]], [`$${a}(x^{2}${sg(-2 * h)}x + ${h * h})${sg(k)} = ${quad(a, b, c)}$`], 'Expand the square first.'),
+      P('Find', 'the coordinates of the vertex of the graph of $f$.', 1, { t: [h, k], l: ['x', 'y'], d: `(${h}, ${k})` }, [['A1', `$(${h}, ${k})$`]], [], 'Read it from the vertex form.'),
+      P('Find', 'the equation of the axis of symmetry of the graph of $f$.', 1, { open: `x = ${h}` }, [['A1', `$x = ${h}$`]], [], 'A vertical line through the vertex.'),
+      P('State', 'the range of $f$.', 2, { open: `f(x) ${a > 0 ? '\\ge' : '\\le'} ${k}` }, [['A1', `$${k}$`], ['A1', `$f(x) ${a > 0 ? '\\ge' : '\\le'} ${k}$ (correct inequality)`]], [`The parabola opens ${a > 0 ? 'up, so the vertex is a minimum' : 'down, so the vertex is a maximum'}.`], 'Is the vertex a minimum or a maximum?'),
+      P('Find', `$g(x)$ in the form $px^{2} + qx + r$, where the graph of $g$ is the graph of $f$ translated by the vector $\\begin{pmatrix} ${u} \\\\ ${v} \\end{pmatrix}$.`, 3, { t: [a, B, Cc], l: ['p', 'q', 'r'], d: `g(x) = ${quad(a, B, Cc)}` },
+        [['M1', `new vertex $(${H}, ${K})$ or $f(x${sg(-u)})${sg(v)}$`], ['M1', 'expanding'], ['A1', `$g(x) = ${quad(a, B, Cc)}$`]], [`$g(x) = ${vtx(a, H, K)}$`, `$= ${quad(a, B, Cc)}$`], 'Move the vertex, then expand.')
+    ] };
+  });
+
+  // Q17 — factorise, then no real solutions for f(x) = k (also HL Q11)
+  const factorK = R => {
+    let p, q, r, s; do { p = R.pick([2, 3, 4]); r = R.pick([1, 2, 3]); q = R.nz(-5, 5); s = R.nz(-5, 5); } while ((p * s + q * r) === 0 || Math.abs(q) % p === 0 && Math.abs(s) % r === 0);
+    const a = p * r, b = p * s + q * r, c = q * s, K = fr(4 * a * c - b * b, 4 * a);
+    return { stem: `Consider $${quad(a, b, c)}$.`, paper: 1, parts: [
+      P('Solve', `the equation $${quad(a, b, c)} = 0$ by factorization.`, 4, { list: [fr(-q, p), fr(-s, r)], d: `x = ${fr(-q, p).tex()},\\ x = ${fr(-s, r).tex()}` },
+        [['M1', 'attempt to factorise'], ['A1', `$(${lin(p, q)})(${lin(r, s)}) = 0$`], ['A1', `$x = ${fr(-q, p).tex()}$`], ['A1', `$x = ${fr(-s, r).tex()}$`]], [`$(${lin(p, q)})(${lin(r, s)}) = 0$`, `$x = ${fr(-q, p).tex()}$ or $x = ${fr(-s, r).tex()}$`], 'Look for two brackets whose product gives the quadratic.'),
+      P('Determine', `the range of values of $k$ for which $${quad(a, b, c)} = k$ has no real solutions.`, 3, { open: `k < ${K.tex()}` },
+        [['M1', `$${quad(a, b, 0)}${sgF(c)} - k = 0$ with $b^{2} - 4ac < 0$`], ['A1', `$${b * b} - ${4 * a}(${c} - k) < 0$`], ['A1', `$k < ${K.tex()}$`]], [`$${b * b} - ${4 * a}(${c} - k) < 0$`, `$${4 * a}k < ${4 * a * c - b * b}$, so $k < ${K.tex()}$`], 'No real solutions: discriminant < 0.')
+    ] };
+  };
+  const lin = (a, b) => poly([[a, 'x'], [b, '']]);
+  reg('cr.sl3.q17', { skill: 'SL-3.6', title: 'Factorise, then no real solutions for f(x) = k', paper: 1 }, factorK);
+
+  // Q18 — complete the square (a = 1)
+  reg('cr.sl3.q18', { skill: 'SL-3.4', title: 'Complete the square: vertex and line of symmetry', paper: 1 }, R => {
+    const h = R.nz(-6, 6), k = R.nz(-9, 9), b = -2 * h, c = h * h + k;
+    return { stem: `Consider the function $f(x) = ${quad(1, b, c)},\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Show that', 'the function $f$ can be expressed in the form $f(x) = a(x - h)^{2} + k$, where $a$, $h$ and $k$ are constants.', 3, { open: `f(x) = ${vtx(1, h, k)}` },
+        [['M1', `$(x${sg(-h)})^{2}$`], ['A1', `$- ${h * h}${sg(c)}$`], ['A1', `$${vtx(1, h, k)}$`]], [`$x^{2}${sg(b)}x${sg(c)} = (x${sg(-h)})^{2} - ${h * h}${sg(c)} = ${vtx(1, h, k)}$`], 'Halve the coefficient of x.'),
+      P('Hence', 'write down the coordinates of the vertex of the graph of $y = f(x)$.', 1, { t: [h, k], l: ['x', 'y'], d: `(${h}, ${k})` }, [['A1', `$(${h}, ${k})$`]], [], 'Read it off.'),
+      P('Hence', 'write down the equation of the line of symmetry of the graph of $y = f(x)$.', 1, { open: `x = ${h}` }, [['A1', `$x = ${h}$`]], [], 'Through the vertex.')
+    ] };
+  });
+
+  // Q19 — find b and c from a root and the line of symmetry
+  reg('cr.sl3.q19', { skill: 'SL-3.5', title: 'Find b and c from a root and the line of symmetry', paper: 1 }, R => {
+    const r1 = R.int(4, 12), m = R.pick([1, 3, 5, 7, -1, -3].filter(v => v !== 2 * r1)), r2 = m - r1, b = -(r1 + r2), c = r1 * r2;
+    return { stem: `The quadratic curve $y = x^{2} + bx + c$ meets the $x$-axis at $(${r1}, 0)$ and has line of symmetry $x = ${fr(m, 2).tex()}$.`, paper: 1, parts: [
+      P('Find', 'the values of $b$ and $c$.', 4, { t: [b, c], l: ['b', 'c'], d: `b = ${b},\\ c = ${c}` },
+        [['M1', `$-\\frac{b}{2} = ${fr(m, 2).tex()}$`], ['A1', `$b = ${b}$`], ['M1', `substituting $(${r1}, 0)$`], ['A1', `$c = ${c}$`]], [`$-\\frac{b}{2} = ${fr(m, 2).tex()} \\Rightarrow b = ${b}$`, `$0 = ${r1 * r1}${sg(b * r1)} + c \\Rightarrow c = ${c}$`], 'The axis of symmetry is x = −b/2a.'),
+      P('Hence', 'find the other two points where the curve meets the coordinate axes.', 2, { t: [r2, c], l: ['other x-intercept', 'y-intercept'], d: `(${r2}, 0),\\ (0, ${c})` },
+        [['A1', `$(${r2}, 0)$`], ['A1', `$(0, ${c})$`]], [`The roots are symmetric about $x = ${fr(m, 2).tex()}$: other root $${m} - ${r1} = ${r2}$`, `$y$-intercept $c = ${c}$`], 'Use symmetry for the other root.')
+    ] };
+  });
+
+  // Q20 — vertex form, then describe transformations from x²
+  reg('cr.sl3.q20', { skill: 'SL-3.3', title: 'Vertex form and the transformations from y = x²', paper: 1 }, R => {
+    const a = R.pick([-3, -2, 2, 3]), h = R.nz(-4, 4), k = R.nz(-12, 12), b = -2 * a * h, c = a * h * h + k;
+    return { stem: `Consider the function $f(x) = ${quad(a, b, c)},\\ x \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Show that', 'the function $f$ can be expressed in the form $f(x) = a(x - h)^{2} + k$, where $a$, $h$ and $k$ are constants.', 3, { t: [a, h, k], l: ['a', 'h', 'k'], d: `f(x) = ${vtx(a, h, k)}` },
+        [['M1', `$${a}\\left(x^{2}${sg(b / a)}x\\right)${sg(c)}$`], ['A1', `$${a}\\left((x${sg(-h)})^{2} - ${h * h}\\right)${sg(c)}$`], ['A1', `$${vtx(a, h, k)}$`]], [`$f(x) = ${vtx(a, h, k)}$`], 'Factor out a, then complete the square.'),
+      P('Describe', 'a sequence of transformations that maps the graph of $g(x) = x^{2}$ onto the graph of $f$.', 3, 'open',
+        [['A1', `horizontal translation ${Math.abs(h)} ${h > 0 ? 'right' : 'left'}`], ['A1', `vertical stretch, scale factor ${Math.abs(a)}${a < 0 ? ', and a reflection in the $x$-axis' : ''}`], ['A1', `vertical translation ${Math.abs(k)} ${k > 0 ? 'up' : 'down'} (after the stretch)`]],
+        [`$x^{2} \\to (x${sg(-h)})^{2} \\to ${a}(x${sg(-h)})^{2} \\to ${vtx(a, h, k)}$`], 'Work from inside the bracket outwards; the order matters for the stretch and the vertical shift.')
+    ] };
+  });
+
+  // Q21 — parameter k: equal roots, axis of symmetry, solve
+  reg('cr.sl3.q21', { skill: 'SL-3.6', title: 'Parameter k: equal roots, axis of symmetry, solve', paper: 1 }, R => {
+    const m = R.int(2, 5), t = R.pick([1, 2].filter(v => (m % v) === 0) .concat([1])), kk = R.pick([2, 3, 4].filter(v => v !== m)), D = m * m - kk * kk;   // f(x) = kx² − 2mx + k
+    const sol = D >= 0 ? { list: [(m - Math.sqrt(D)) / kk, (m + Math.sqrt(D)) / kk], sf: 3, d: `x = \\frac{${m} \\pm \\sqrt{${D}}}{${kk}}` } : null;
+    const kAxis = fr(-m, t);
+    return { stem: `Consider $f(x) = kx^{2} - ${2 * m}x + k,\\ x \\in \\mathbb{R}$, where $k \\ne 0$.`, paper: 1, parts: [
+      P('Find', 'the possible values of $k$ for which $f(x) = 0$ has two equal real roots.', 4, { list: [m, -m], d: `k = \\pm ${m}` },
+        [['M1', '$b^{2} - 4ac = 0$'], ['A1', `$${4 * m * m} - 4k^{2} = 0$`], ['A1', `$k = ${m}$`], ['A1', `$k = -${m}$`]], [`$(-${2 * m})^{2} - 4(k)(k) = 0 \\Rightarrow k^{2} = ${m * m}$`], 'Discriminant = 0.'),
+      P('Find', `the value of $k$ for which the line of symmetry of $y = f(x)$ is $x + ${t} = 0$.`, 2, kAxis, [['M1', `$\\frac{${2 * m}}{2k} = -${t}$`], ['A1', `$k = ${kAxis.tex()}$`]], [`$x = -\\frac{b}{2a} = \\frac{${m}}{k} = -${t}$, so $k = ${kAxis.tex()}$`], 'Axis of symmetry is x = −b/2a.'),
+      sol ? P('Solve', `$f(x) = 0$ when $k = ${kk}$.`, 3, sol, [['M1', `$${kk}x^{2} - ${2 * m}x + ${kk} = 0$`], ['M1', 'quadratic formula'], ['A1', `$x = \\frac{${m} \\pm \\sqrt{${D}}}{${kk}}$`]], [`$x = \\frac{${2 * m} \\pm \\sqrt{${4 * m * m} - ${4 * kk * kk}}}{${2 * kk}} = \\frac{${m} \\pm \\sqrt{${D}}}{${kk}}$`], 'Substitute k, then use the formula.')
+        : P('Show that', `$f(x) = 0$ has no real solutions when $k = ${kk}$.`, 3, 'open', [['M1', 'discriminant'], ['A1', `$${4 * m * m} - ${4 * kk * kk} = ${4 * D}$`], ['A1', '$< 0$, so no real solutions']], [`$b^{2} - 4ac = ${4 * m * m} - ${4 * kk * kk} = ${4 * D} < 0$`], 'Check the discriminant.')
+    ] };
+  });
+
+  // Q22 — transform four points
+  reg('cr.sl3.q22', { skill: 'SL-3.3', title: 'Transform points: horizontal stretch, then reflect and shift', paper: 1 }, R => {
+    const pts = [[-2 * R.int(2, 7), R.nz(-12, 12)], [0, R.nz(-18, 18)], [2 * R.int(1, 3), R.nz(-10, 10)], [2 * R.int(4, 8), R.nz(-12, 12)]], L = ['A', 'B', 'C', 'D'], v = R.int(2, 6);
+    const P1 = pts.map(([x, y]) => [x / 2, y]), P2 = pts.map(([x, y]) => [x, -y + v]), show = ps => ps.map(([x, y], i) => `${L[i]}'(${num(x)}, ${num(y)})`).join(',\\ ');
+    return { stem: `A curve $y = f(x)$ passes through the points ${pts.map(([x, y], i) => `${L[i]}$(${x}, ${y})$`).join(', ')}.`, paper: 1, parts: [
+      P('Write down', 'the coordinates of each point after the curve is transformed by $f(x) \\mapsto f(2x)$.', 4, { open: show(P1) }, P1.map(([x, y], i) => ['A1', `$${L[i]}'(${num(x)}, ${num(y)})$`]), ['Horizontal stretch, scale factor ½: halve every x-coordinate.'], 'Inside the bracket: do the opposite to x.'),
+      P('Write down', `the coordinates of each point after the curve is transformed by $f(x) \\mapsto -f(x) + ${v}$.`, 4, { open: show(P2) }, P2.map(([x, y], i) => ['A1', `$${L[i]}'(${x}, ${y})$`]), [`Reflect in the $x$-axis (change the sign of $y$), then add ${v}.`], 'Outside the bracket: change y as written.')
+    ] };
+  });
+
+  /* ======================= AA HL · Chapter 3 (Unit 3: Complex numbers and algebra) ======================= */
+
+  // Q3 (review) — 2×2 system with a parameter
+  reg('cr.hl3.q3', { skill: 'HL-3.6', title: 'System with a parameter: unique, none, infinitely many', paper: 1 }, R => {
+    const p = R.int(2, 7);   // ax + y = p, x + ay = −p
+    return { stem: `Consider the system of equations $\\begin{cases} ax + y = ${p} \\\\ x + ay = ${-p} \\end{cases}$, where $a \\in \\mathbb{R}$.`, paper: 1, parts: [
+      P('Find', 'the values of $a$ for which the system has a unique solution, and find that solution in terms of $a$.', 4, { open: `a \\ne \\pm 1;\\ x = \\frac{${p}}{a - 1},\\ y = -\\frac{${p}}{a - 1}` },
+        [['M1', 'eliminating one variable'], ['A1', '$(a^{2} - 1)x = ' + p + '(a + 1)$'], ['A1', '$a \\ne \\pm 1$'], ['A1', `$x = \\frac{${p}}{a - 1},\\ y = -\\frac{${p}}{a - 1}$`]],
+        [`$a(ax + y) - (x + ay) = ${p}a + ${p}$`, `$(a^{2} - 1)x = ${p}(a + 1)$, so $x = \\frac{${p}}{a - 1}$ when $a \\ne \\pm 1$`, `$y = ${p} - ax = -\\frac{${p}}{a - 1}$`], 'Eliminate y and look at the coefficient of x.'),
+      P('Find', 'the value of $a$ for which the system has no solution.', 1, 1, [['A1', '$a = 1$']], [`$a = 1$: $x + y = ${p}$ and $x + y = ${-p}$ — parallel lines.`], 'Which value makes the two lines parallel but different?'),
+      P('Find', 'the value of $a$ for which the system has infinitely many solutions, and write down the equation of the line.', 2, { open: `a = -1,\\ y = x${sg(p)}` }, [['A1', '$a = -1$'], ['A1', `$y = x${sg(p)}$`]], [`$a = -1$: $-x + y = ${p}$ and $x - y = ${-p}$ are the same line.`], 'Which value makes the equations multiples of each other?')
+    ] };
+  });
+
+  // Q6 (review, P2) — 3×3 system
+  reg('cr.hl3.q6', { skill: 'HL-3.6', title: 'Three equations in three unknowns', paper: 2 }, R => {
+    const s = [R.nz(-5, 5), R.nz(-5, 5), R.nz(-5, 5)]; let M, det, g = 0;
+    do { M = [0, 1, 2].map(() => [R.nz(-4, 4), R.nz(-4, 4), R.nz(-4, 4)]); det = M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]); } while (det === 0 && g++ < 50);
+    const rhs = M.map(r => r[0] * s[0] + r[1] * s[1] + r[2] * s[2]), eq = r => poly([[r[0], 'x'], [r[1], 'y'], [r[2], 'z']]);
+    return { stem: `Solve the simultaneous equations $\\begin{cases} ${M.map((r, i) => `${eq(r)} = ${rhs[i]}`).join(' \\\\ ')} \\end{cases}$`, paper: 2, parts: [
+      P('Solve', 'the system.', 4, { t: s, l: ['x', 'y', 'z'], each: true, d: `x = ${s[0]},\\ y = ${s[1]},\\ z = ${s[2]}` }, [['M1', 'GDC or elimination'], ['A1', `$x = ${s[0]}$`], ['A1', `$y = ${s[1]}$`], ['A1', `$z = ${s[2]}$`]],
+        [`Using the NumWorks Equations app (3 equations): $x = ${s[0]},\\ y = ${s[1]},\\ z = ${s[2]}$`], 'Use the simultaneous-equation solver.')
+    ] };
+  });
+
+  reg('cr.hl3.q10', { skill: 'HL-3.1', title: 'Surd roots and a quadratic inequality', paper: 1 }, surdRoots);
+  reg('cr.hl3.q11', { skill: 'HL-3.1', title: 'Factorise, then no real solutions for f(x) = k', paper: 1 }, factorK);
+
+  // Q12 — range of k for two real roots
+  reg('cr.hl3.q12', { skill: 'HL-3.1', title: 'Range of k for two distinct real roots', paper: 1 }, R => {
+    const s = R.int(1, 3), p = R.pick([2, 3, 4, 5, 6, 7].filter(v => v % (2 * s) !== 0)), q = s * s, K = fr(p, 2 * s);
+    return { stem: `The equation $kx^{2} + ${p}x + ${q === 1 ? '' : q}k = 0$ has two distinct real roots.`, paper: 1, parts: [
+      P('Find', 'the range of values of $k$.', 6, { open: `-${K.tex()} < k < ${K.tex()},\\ k \\ne 0` },
+        [['M1', '$b^{2} - 4ac > 0$'], ['A1', `$${p * p} - ${4 * q}k^{2} > 0$`], ['A1', `$k^{2} < ${fr(p * p, 4 * q).tex()}$`], ['A1', `critical values $\\pm ${K.tex()}$`], ['A1', `$-${K.tex()} < k < ${K.tex()}$`], ['R1', '$k \\ne 0$ (otherwise not a quadratic)']],
+        [`$${p * p} - 4(k)(${q === 1 ? '' : q}k) > 0$`, `$k^{2} < ${fr(p * p, 4 * q).tex()}$`, `$-${K.tex()} < k < ${K.tex()}$, $k \\ne 0$`], 'Discriminant > 0 — and remember k ≠ 0.')
+    ] };
+  });
+
+  // Q13 — two quadratic inequalities and their overlap
+  reg('cr.hl3.q13', { skill: 'HL-3.1', title: 'Quadratic inequalities and where both hold', paper: 1 }, R => {
+    let a, b, p, q, r, lo, hi, g = 0;
+    do { a = R.int(2, 6); b = R.int(2, 6); p = R.pick([2, 3]); r = R.int(1, 3); q = p * R.int(2, 4) + R.int(1, p - 1); lo = Math.max(-a, r); hi = Math.min(b, q / p); } while ((lo >= hi || q / p <= r) && g++ < 60);
+    const A = p, B = -(q + p * r), C = q * r, hiF = fr(q, p);
+    return { stem: 'Solve the following inequalities.', paper: 1, parts: [
+      P('Solve', `$(x + ${a})(${b} - x) > 0$.`, 3, { open: `-${a} < x < ${b}` }, [['M1', `critical values $-${a}$ and $${b}$`], ['M1', 'the curve opens downwards'], ['A1', `$-${a} < x < ${b}$`]], [`Roots $x = -${a}$, $x = ${b}$; negative $x^{2}$ coefficient, so positive between the roots.`], 'Sketch it: which way does it open?'),
+      P('Solve', `$${quad(A, B, C)} < 0$.`, 4, { open: `${r} < x < ${hiF.tex()}` }, [['M1', 'factorising'], ['A1', `$(${lin(p, -q)})(x - ${r})$`], ['A1', `critical values $${r}$, $${hiF.tex()}$`], ['A1', `$${r} < x < ${hiF.tex()}$`]], [`$(${lin(p, -q)})(x - ${r}) < 0$`, `$${r} < x < ${hiF.tex()}$`], 'Factorise first.'),
+      P('Hence', 'find the range of values of $x$ that satisfy both inequalities.', 1, { open: `${T(lo === r ? r : -a)} < x < ${hi === b ? b : hiF.tex()}` }, [['A1', `$${lo} < x < ${hi === b ? b : hiF.tex()}$`]], ['Take the overlap of the two intervals.'], 'Draw both intervals on one number line.')
+    ] };
+  });
+
+  // Q14 — square roots of a complex number
+  reg('cr.hl3.q14', { skill: 'HL-3.2', title: 'Square roots of a complex number', paper: 1 }, R => {
+    let m, n; do { m = R.int(3, 9); n = R.nz(-6, 6); } while (Math.abs(n) === m);
+    const A = m * m - n * n, B = 2 * m * n, w = `${m}${n < 0 ? ' - ' : ' + '}${Math.abs(n) === 1 ? '' : Math.abs(n)}\\mathrm{i}`;
+    return { stem: `Find the possible values of $w \\in \\mathbb{C}$ which satisfy $w^{2} = ${A}${B < 0 ? ' - ' : ' + '}${Math.abs(B)}\\mathrm{i}$.`, paper: 1, parts: [
+      P('Find', 'both values of $w$.', 9, { open: `w = \\pm(${w})` },
+        [['M1', 'letting $w = a + b\\mathrm{i}$'], ['A1', '$a^{2} - b^{2} + 2ab\\mathrm{i}$'], ['M1', 'equating real and imaginary parts'], ['A1', `$a^{2} - b^{2} = ${A}$`], ['A1', `$2ab = ${B}$`], ['M1', `substituting $b = \\frac{${B / 2}}{a}$`], ['A1', `$a^{4} ${A < 0 ? '+' : '-'} ${Math.abs(A)}a^{2} - ${(B / 2) ** 2} = 0$`], ['A1', `$a = \\pm ${m}$`], ['A1', `$w = \\pm(${w})$`]],
+        [`$(a + b\\mathrm{i})^{2} = a^{2} - b^{2} + 2ab\\mathrm{i}$`, `$a^{2} - b^{2} = ${A}$, $ab = ${B / 2}$`, `$a^{4} ${A < 0 ? '+' : '-'} ${Math.abs(A)}a^{2} - ${(B / 2) ** 2} = 0 \\Rightarrow a^{2} = ${m * m}$`, `$a = ${m},\\ b = ${n}$ or $a = -${m},\\ b = ${-n}$`], 'Set w = a + bi and compare real and imaginary parts.')
+    ] };
+  });
+
+  // Q15 — factor and remainder theorems: find a and b
+  reg('cr.hl3.q15', { skill: 'HL-3.3', title: 'Factor and remainder theorems: find a and b', paper: 1 }, R => {
+    const c3 = R.pick([1, 2, 3]), c1 = R.nz(-12, 12), r = R.pick([1, 2, -1]), s = R.pick([1, 2, 3].filter(v => v !== -r)), a = R.nz(-6, 6), b = -(c3 * r ** 3 + a * r * r + c1 * r);
+    const rem = c3 * (-s) ** 3 + a * s * s + c1 * (-s) + b;
+    const pol = poly([[c3, 'x^{3}'], [1, 'ax^{2}'], [c1, 'x']]).replace('ax^{2}', 'ax^{2}') + ' + b';
+    return { stem: `The polynomial $${pol}$ has a factor $(x${sg(-r)})$ and leaves a remainder of $${rem}$ when divided by $(x + ${s})$. Find the values of $a$ and $b$, where $a, b \\in \\mathbb{Z}$.`, paper: 1, parts: [
+      P('Find', '$a$ and $b$.', 7, { t: [a, b], l: ['a', 'b'], d: `a = ${a},\\ b = ${b}` },
+        [['M1', `substituting $x = ${r}$`], ['A1', `$${r * r === 1 ? '' : r * r}a + b = ${-(c3 * r ** 3 + c1 * r)}$`], ['M1', `substituting $x = -${s}$`], ['A1', `$${s * s}a + b = ${rem - (c3 * (-s) ** 3 + c1 * (-s))}$`], ['M1', 'solving simultaneously'], ['A1', `$a = ${a}$`], ['A1', `$b = ${b}$`]],
+        [`$p(${r}) = 0$: $${r * r}a + b = ${-(c3 * r ** 3 + c1 * r)}$`, `$p(-${s}) = ${rem}$: $${s * s}a + b = ${rem - (c3 * (-s) ** 3 + c1 * (-s))}$`, `Subtract: $a = ${a}$, then $b = ${b}$`], 'Factor theorem gives p(r) = 0; remainder theorem gives p(−s) = remainder.')
+    ] };
+  });
+
+  // Q16 — remaining zeros of a quartic given one complex zero
+  reg('cr.hl3.q16', { skill: 'HL-3.4', title: 'Remaining zeros of a quartic given a complex zero', paper: 1 }, R => {
+    let p, q, u, v; do { p = R.int(1, 4); q = R.int(1, 3); u = R.nz(-3, 3); v = R.int(2, 5); } while (p === u && q === v);
+    const A = [1, -2 * p, p * p + q * q], B = [1, -2 * u, u * u + v * v];   // (z² − 2pz + p² + q²)(z² − 2uz + u² + v²)
+    const c = [A[0] * B[0], A[0] * B[1] + A[1] * B[0], A[0] * B[2] + A[1] * B[1] + A[2] * B[0], A[1] * B[2] + A[2] * B[1], A[2] * B[2]];
+    const z = (re, im) => `${re}${im < 0 ? ' - ' : ' + '}${Math.abs(im) === 1 ? '' : Math.abs(im)}\\mathrm{i}`;
+    return { stem: `$f(z) = ${poly([[c[0], 'z^{4}'], [c[1], 'z^{3}'], [c[2], 'z^{2}'], [c[3], 'z'], [c[4], '']])},\\ z \\in \\mathbb{C}$. Given that $${z(p, -q)}$ is a zero of $f$, find the remaining zeros.`, paper: 1, parts: [
+      P('Find', 'the remaining zeros of $f$.', 9, { open: `${z(p, q)},\\ ${z(u, v)},\\ ${z(u, -v)}` },
+        [['A1', `$${z(p, q)}$ is a zero (conjugate root theorem)`], ['M1', 'forming the quadratic factor'], ['A1', `$z^{2} - ${2 * p}z + ${p * p + q * q}$`], ['M1', 'dividing $f(z)$ by the quadratic'], ['A1', `$z^{2}${sg(-2 * u)}z + ${u * u + v * v}$`], ['M1', 'solving the second quadratic'], ['A1', `$z = ${u} \\pm ${v}\\mathrm{i}$`], ['A1', `$${z(u, v)}$`], ['A1', `$${z(u, -v)}$`]],
+        [`Conjugate: $${z(p, q)}$`, `$(z - (${z(p, -q)}))(z - (${z(p, q)})) = z^{2} - ${2 * p}z + ${p * p + q * q}$`, `$f(z) \\div (z^{2} - ${2 * p}z + ${p * p + q * q}) = z^{2}${sg(-2 * u)}z + ${u * u + v * v}$`, `$z = \\frac{${2 * u} \\pm \\sqrt{${4 * u * u} - ${4 * (u * u + v * v)}}}{2} = ${u} \\pm ${v}\\mathrm{i}$`], 'Real coefficients: complex zeros come in conjugate pairs.')
+    ] };
+  });
+
+  // Q17 — sum and product of roots
+  reg('cr.hl3.q17', { skill: 'HL-3.4', title: 'Sum and product of roots of two polynomials', paper: 1 }, R => {
+    const f = [R.int(2, 6), R.nz(-7, 7), R.nz(-7, 7), R.nz(-7, 7), R.nz(-9, 9)], g = [R.int(2, 6), R.nz(-7, 7), R.nz(-7, 7), R.nz(-7, 7), R.nz(-9, 9), R.nz(-12, 12)];
+    const pw = (cs, n) => poly(cs.map((c, i) => [c, n - i === 0 ? '' : n - i === 1 ? 'x' : `x^{${n - i}}`]));
+    const sf4 = fr(-f[1], f[0]), pf4 = fr(f[4], f[0]), sg5 = fr(-g[1], g[0]), pg5 = fr(-g[5], g[0]);
+    return { stem: 'Find the sum and the product of the roots of each polynomial equation.', paper: 1, parts: [
+      P('Find', `the sum and product of the roots of $${pw(f, 4)} = 0$.`, 4, { t: [sf4, pf4], l: ['sum', 'product'], each: true, d: `${sf4.tex()},\\ ${pf4.tex()}` }, [['M1', 'sum $= -\\frac{a_{n-1}}{a_{n}}$'], ['A1', `$${sf4.tex()}$`], ['M1', 'product $= \\frac{(-1)^{n}a_{0}}{a_{n}}$'], ['A1', `$${pf4.tex()}$`]], [`Sum $= -\\frac{${f[1]}}{${f[0]}} = ${sf4.tex()}$`, `Product $= \\frac{(-1)^{4}(${f[4]})}{${f[0]}} = ${pf4.tex()}$`], 'Formula booklet: sum and product of roots.'),
+      P('Find', `the sum and product of the roots of $${pw(g, 5)} = 0$.`, 4, { t: [sg5, pg5], l: ['sum', 'product'], each: true, d: `${sg5.tex()},\\ ${pg5.tex()}` }, [['M1', 'sum formula'], ['A1', `$${sg5.tex()}$`], ['M1', 'product with $(-1)^{5}$'], ['A1', `$${pg5.tex()}$`]], [`Sum $= -\\frac{${g[1]}}{${g[0]}} = ${sg5.tex()}$`, `Product $= \\frac{(-1)^{5}(${g[5]})}{${g[0]}} = ${pg5.tex()}$`], 'For odd degree the product has a minus sign.', { errors: [{ value: fr(g[5], g[0]).val(), tag: 'sign', fb: 'For degree 5, multiply by $(-1)^{5} = -1$.' }] })
+    ] };
+  });
+
+  // Q18 — proof with conjugates
+  reg('cr.hl3.q18', { skill: 'HL-3.2', title: 'Proof with complex conjugates', paper: 1 }, R => {
+    const im = R.bool();
+    return { stem: `Let $z, w \\in \\mathbb{C}$.`, paper: 1, parts: [
+      P('Prove', im ? 'that $zw^{*} - z^{*}w$ is purely imaginary (or zero).' : 'that $zw^{*} + z^{*}w$ is real.', 5, 'open',
+        [['M1', 'letting $z = a + b\\mathrm{i}$, $w = c + d\\mathrm{i}$'], ['A1', '$zw^{*} = (ac + bd) + (bc - ad)\\mathrm{i}$'], ['A1', '$z^{*}w = (ac + bd) - (bc - ad)\\mathrm{i}$'], ['M1', im ? 'subtracting' : 'adding'], ['R1', im ? '$= 2(bc - ad)\\mathrm{i}$, which has no real part' : '$= 2(ac + bd)$, which has no imaginary part']],
+        ['$z = a + b\\mathrm{i}$, $w = c + d\\mathrm{i}$', '$zw^{*} = (a + b\\mathrm{i})(c - d\\mathrm{i}) = (ac + bd) + (bc - ad)\\mathrm{i}$', '$z^{*}w = (a - b\\mathrm{i})(c + d\\mathrm{i}) = (ac + bd) - (bc - ad)\\mathrm{i}$', im ? '$zw^{*} - z^{*}w = 2(bc - ad)\\mathrm{i}$' : '$zw^{*} + z^{*}w = 2(ac + bd) \\in \\mathbb{R}$'], 'Write both numbers in Cartesian form and expand.')
+    ] };
+  });
+
+  // Q19 (P2) — quadratic through three points
+  reg('cr.hl3.q19', { skill: 'HL-3.6', title: 'Quadratic through three points', paper: 2 }, R => {
+    const a = R.nz(-3, 3), b = R.nz(-8, 8), c = R.nz(-10, 10), xs = R.distinct(3, -4, 10).sort((u, v) => u - v), pts = xs.map(x => [x, a * x * x + b * x + c]);
+    return { stem: `Find the equation of the quadratic function $f(x) = ax^{2} + bx + c$ whose graph passes through ${pts.map(([x, y]) => `$(${x}, ${y})$`).join(', ')}.`, paper: 2, parts: [
+      P('Find', '$a$, $b$ and $c$.', 7, { t: [a, b, c], l: ['a', 'b', 'c'], each: true, d: `f(x) = ${quad(a, b, c)}` },
+        [['M1', 'substituting a point'], ['A1', 'first equation'], ['A1', 'second equation'], ['A1', 'third equation'], ['M1', 'solving with the GDC'], ['A1', `$a = ${a}$, $b = ${b}$`], ['A1', `$c = ${c}$`]],
+        pts.map(([x, y]) => `$${x * x}a${sg(x)}b + c = ${y}$`).concat([`Solve: $a = ${a},\\ b = ${b},\\ c = ${c}$`]), 'Each point gives one equation in a, b and c.')
+    ] };
+  });
+
   /* ---------- the blueprints: book order, with the default selection for a one-hour unit test ---------- */
   const BP = {
     'SL-2': { course: 'SL', unit: 2, chapter: 'Oxford AA SL Chapter 2 · Exam-style questions', ids: ['q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16', 'q17', 'q18', 'q19', 'q20', 'q21', 'q22', 'q23', 'q24', 'q25', 'q26'].map(q => 'cr.sl2.' + q), def: ['q10', 'q12', 'q18', 'q25', 'q11', 'q14'].map(q => 'cr.sl2.' + q), book: n => 'Q' + n.split('.q')[1] },
     'HL-2': { course: 'HL', unit: 2, chapter: 'Oxford AA HL Chapter 2 · Exam-style questions', ids: ['q9', 'q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16'].map(q => 'cr.hl2.' + q), book: n => 'Q' + n.split('.q')[1] }
   };
   BP['HL-2'].def = BP['HL-2'].ids.slice();
+  BP['SL-3'] = { course: 'SL', unit: 3, chapter: 'Oxford AA SL Chapter 3 · Chapter review and exam-style questions', ids: ['q6', 'q8', 'q9', 'q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16', 'q17', 'q18', 'q19', 'q20', 'q21', 'q22'].map(q => 'cr.sl3.' + q), def: ['q13', 'q15', 'q16', 'q17', 'q19', 'q11'].map(q => 'cr.sl3.' + q), book: n => 'Q' + n.split('.q')[1] };
+  BP['HL-3'] = { course: 'HL', unit: 3, chapter: 'Oxford AA HL Chapter 3 · Chapter review and exam-style questions', ids: ['q3', 'q6', 'q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16', 'q17', 'q18', 'q19'].map(q => 'cr.hl3.' + q), def: ['q10', 'q12', 'q13', 'q14', 'q15', 'q16', 'q19'].map(q => 'cr.hl3.' + q), book: n => 'Q' + n.split('.q')[1] };
   Hub.unitBP = BP;
 })(window.Hub = window.Hub || {});
 
@@ -11031,27 +11355,36 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const rows = studs.map(s => { const cells = cols.map(c => c.cell(s.id)), by = {};
       all.forEach(c => { const v = c.cell(s.id); if (v.pct !== null) (by[c.kind] = by[c.kind] || []).push(v.pct); });
       const shown = cells.filter(v => v.pct !== null).map(v => v.pct);
-      return { s, cells, avg: mean(shown), byKind: Object.fromEntries(KINDS.slice(1).map(([k]) => [k, mean(by[k] || [])])), missing: cells.filter(v => v.txt === 'missing').length }; });
+      const pr = Hub.datacycle ? Hub.datacycle.predicted(s, Hub.mastery.asOf()) : null;
+      return { s, cells, ib: pr && pr.grade !== null ? pr.grade : null, ibPct: pr ? pr.pct : null, ibN: pr ? pr.n : 0, avg: mean(shown), byKind: Object.fromEntries(KINDS.slice(1).map(([k]) => [k, mean(by[k] || [])])), missing: cells.filter(v => v.txt === 'missing').length }; });
     const colAvg = cols.map((c, i) => mean(rows.map(r => r.cells[i].pct).filter(p => p !== null)));
-    return { studs, cols, rows, colAvg };
+    const course = g.slice(0, 2), withIB = rows.filter(r => r.ib !== null), dist = [7, 6, 5, 4, 3, 2, 1].map(k => [k, withIB.filter(r => r.ib === k).length]);
+    const cut = Hub.datacycle ? +((S().settings.dataCycle || {}).grade || 4) : 4;
+    return { studs, cols, rows, colAvg, course, dist, cut, ibOK: !!(Hub.datacycle && Hub.datacycle.boundsOK(course)), atCut: withIB.filter(r => r.ib >= cut).length, nIB: withIB.length };
   }
+  /** IB grade a % on one counted task would get with this course's boundaries (null when boundaries aren't set). */
+  const gradeOf = (pct, course) => pct === null || !Hub.datacycle || !Hub.datacycle.boundsOK(course) ? null : Hub.datacycle.toGrade(pct, course);
+  const ibTone = (k, cut) => k === null ? '' : k >= cut + 1 ? 'hm-g' : k >= cut ? 'hm-a' : 'hm-r';
   function csv(g, kind) {
     const { cols, rows, colAvg } = build(g, kind), q = v => { const t = String(v === null || v === undefined ? '' : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-    const head = ['Student', 'Email', ...cols.map(c => `${KIND_SHORT[c.kind]}: ${c.title} (${c.due || ''})`), 'Average %', ...KINDS.slice(1).map(([k, l]) => `${l} average %`), 'Missing'];
-    const lines = [head, ...rows.map(r => [r.s.name, r.s.email || '', ...r.cells.map(v => v.na ? 'n/a' : v.pct !== null ? v.pct : v.txt), r.avg ?? '', ...KINDS.slice(1).map(([k]) => r.byKind[k] ?? ''), r.missing]),
-      ['Class average', '', ...colAvg.map(v => v ?? ''), mean(rows.map(r => r.avg).filter(v => v !== null)) ?? '']];
+    const head = ['Student', 'Email', 'Working IB grade', 'Weighted % (IB grade)', ...cols.map(c => `${KIND_SHORT[c.kind]}: ${c.title} (${c.due || ''})`), 'Average %', ...KINDS.slice(1).map(([k, l]) => `${l} average %`), 'Missing'];
+    const lines = [head, ...rows.map(r => [r.s.name, r.s.email || '', r.ib ?? '', r.ibPct ?? '', ...r.cells.map(v => v.na ? 'n/a' : v.pct !== null ? v.pct : v.txt), r.avg ?? '', ...KINDS.slice(1).map(([k]) => r.byKind[k] ?? ''), r.missing]),
+      ['Class average', '', '', mean(rows.map(r => r.ibPct).filter(v => v !== null)) ?? '', ...colAvg.map(v => v ?? ''), mean(rows.map(r => r.avg).filter(v => v !== null)) ?? '']];
     return lines.map(l => l.map(q).join(',')).join('\n');
   }
   function view(main, params) {
     const g = C().GROUPS[params.g] ? params.g : (localStorage.getItem('hub-pref-gb') || 'SL-A'), kind = KINDS.some(k => k[0] === params.kind) ? params.kind : 'all';
     try { localStorage.setItem('hub-pref-gb', g); } catch (e) {}
-    const { cols, rows, colAvg } = build(g, kind), link = o => '#/gradebook?' + new URLSearchParams(Object.assign({ g, kind }, o)).toString();
+    const B = build(g, kind), { cols, rows, colAvg } = B, link = o => '#/gradebook?' + new URLSearchParams(Object.assign({ g, kind }, o)).toString();
     main.innerHTML = U.heading('MARKS', 'Gradebook', 'Every Exit Ticket, homework, quiz, test and retest for one class, with averages. Percentages are the latest released mark; “to mark” is waiting for you; “missing” is past its due date.', `<button class="btn primary" id="gb-csv" type="button">⬇ Export CSV</button>`) +
       `<div class="tabs">${Object.values(C().GROUPS).map(x => `<a class="tab ${x.id === g ? 'on' : ''}" href="${link({ g: x.id })}">${esc(x.label)}</a>`).join('')}</div>
       <div class="tabs">${KINDS.map(([k, l]) => `<a class="tab small ${k === kind ? 'on' : ''}" href="${link({ kind: k })}">${l}</a>`).join('')}</div>
-      <section class="card">${!rows.length ? U.empty('No students in this class yet.') : !cols.length ? U.empty('Nothing has been set for this class yet.') : `<div class="scroll gb-wrap"><table class="gb-tbl"><thead><tr><th class="gb-name">Student</th><th>Avg</th>${cols.map(c => `<th title="${esc(c.title)}"><span class="gb-k ${c.kind}">${KIND_SHORT[c.kind]}</span><span class="gb-t">${esc(c.title.slice(0, 38))}</span><span class="tiny muted">${c.due ? fmtDate(c.due) : ''}</span></th>`).join('')}</tr></thead>
-        <tbody>${rows.map(r => `<tr><th class="gb-name"><a href="#/student/${encodeURIComponent(r.s.id)}">${esc(r.s.name)}</a>${r.missing ? ` <span class="pill red">${r.missing} missing</span>` : ''}</th><td class="${tone(r.avg)}"><b>${r.avg ?? ''}</b></td>${r.cells.map((v, i) => `<td class="${v.na ? 'gb-na' : v.pct !== null ? tone(v.pct) : v.txt === 'missing' ? 'gb-miss' : v.txt === 'to mark' ? 'gb-mark' : ''}">${v.na ? '—' : v.pct !== null ? v.pct : v.txt === 'to mark' ? `<a href="#/marking">${v.txt}</a>` : esc(v.txt)}</td>`).join('')}</tr>`).join('')}
-        <tr class="gb-avg"><th class="gb-name">Class average</th><td><b>${mean(rows.map(r => r.avg).filter(v => v !== null)) ?? ''}</b></td>${colAvg.map(v => `<td class="${tone(v)}"><b>${v ?? ''}</b></td>`).join('')}</tr></tbody></table></div>
+      ${B.ibOK ? `<section class="card gb-ibsum"><h2 class="bar-head green">Working IB grades · ${esc(C().GROUPS[g].label)}</h2><div class="gb-dist">${B.dist.map(([k, n]) => `<div class="gb-d ${ibTone(k, B.cut)}"><b>${n}</b><span>grade ${k}</span></div>`).join('')}</div>
+        <p class="small"><b>${B.atCut}/${B.nIB}</b> students${B.nIB ? ` (${Math.round(100 * B.atCut / B.nIB)}%)` : ''} are working at a ${B.cut} or above.${B.studs.length - B.nIB ? ` ${B.studs.length - B.nIB} have no counted work yet.` : ''} <a href="#/datacycle">Data cycle →</a></p>
+        <p class="tiny muted">Same rule as the Data cycle: Tests, Quizzes, Retests and Exit Tickets weighted, best retest counts, converted with your ${B.course} boundaries. Homework is not counted. In the table, each Test, Quiz and Retest also shows its own IB grade.</p></section>` : `<section class="card warn-card"><p class="small">Set your ${B.course} grade boundaries on the <a href="#/datacycle">Data cycle</a> page to see working IB grades here.</p></section>`}
+      <section class="card">${!rows.length ? U.empty('No students in this class yet.') : !cols.length ? U.empty('Nothing has been set for this class yet.') : `<div class="scroll gb-wrap"><table class="gb-tbl"><thead><tr><th class="gb-name">Student</th><th title="Working IB grade: weighted Tests, Quizzes, Retests and Exit Tickets, converted with your ${B.course} grade boundaries">IB</th><th>Avg</th>${cols.map(c => `<th title="${esc(c.title)}"><span class="gb-k ${c.kind}">${KIND_SHORT[c.kind]}</span><span class="gb-t">${esc(c.title.slice(0, 38))}</span><span class="tiny muted">${c.due ? fmtDate(c.due) : ''}</span></th>`).join('')}</tr></thead>
+        <tbody>${rows.map(r => `<tr><th class="gb-name"><a href="#/student/${encodeURIComponent(r.s.id)}">${esc(r.s.name)}</a>${r.missing ? ` <span class="pill red">${r.missing} missing</span>` : ''}</th><td class="gb-ib ${ibTone(r.ib, B.cut)}" title="${r.ibPct !== null ? `Weighted ${r.ibPct}% from ${r.ibN} counted task${r.ibN === 1 ? '' : 's'}` : 'No counted work yet'}"><b>${r.ib ?? (r.ibPct !== null ? '?' : '')}</b></td><td class="${tone(r.avg)}"><b>${r.avg ?? ''}</b></td>${r.cells.map((v, i) => `<td class="${v.na ? 'gb-na' : v.pct !== null ? tone(v.pct) : v.txt === 'missing' ? 'gb-miss' : v.txt === 'to mark' ? 'gb-mark' : ''}">${v.na ? '—' : v.pct !== null ? v.pct + (['test', 'quiz', 'retake'].includes(cols[i].kind) && gradeOf(v.pct, B.course) !== null ? `<sup class="gb-g">${gradeOf(v.pct, B.course)}</sup>` : '') : v.txt === 'to mark' ? `<a href="#/marking">${v.txt}</a>` : esc(v.txt)}</td>`).join('')}</tr>`).join('')}
+        <tr class="gb-avg"><th class="gb-name">Class average</th><td></td><td><b>${mean(rows.map(r => r.avg).filter(v => v !== null)) ?? ''}</b></td>${colAvg.map(v => `<td class="${tone(v)}"><b>${v ?? ''}</b></td>`).join('')}</tr></tbody></table></div>
         <p class="tiny muted">Scores are percentages. “—” means a retest or retake that wasn’t set for that student. The CSV also has each student’s average for Exit Tickets, homework, quizzes, tests and retests.</p>`}</section>`;
     $('#gb-csv').onclick = () => { const blob = new Blob([csv(g, kind)], { type: 'text/csv' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${C().GROUPS[g].label.replace(/[^\w]+/g, '_')}_gradebook${kind === 'all' ? '' : '_' + kind}_${Hub.core.todayISO()}.csv`; document.body.appendChild(a); a.click(); a.remove(); toast('Gradebook downloaded.'); };
   }
