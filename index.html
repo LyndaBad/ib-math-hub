@@ -180,6 +180,7 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 .xp-card fieldset { border: 1px solid var(--line, #ddd); border-radius: 10px; padding: 10px 14px; } .xp-card .inline-check { display: block; margin: 6px 0; }
 .mp-row { display: flex; gap: 16px; align-items: flex-start; } .mp-grade { min-width: 96px; padding: 12px; border-radius: 14px; text-align: center; border: 1px solid var(--line, #ddd); }
 .mp-grade b { display: block; font-size: 2.6rem; line-height: 1; } .mp-grade span { font-size: .75rem; }
+.p-lead { display: block; margin: 10px 0 6px; padding-top: 8px; border-top: 1px dashed var(--line, #ccc); }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -4931,6 +4932,80 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     ] };
   });
 
+
+  /* ======================= AA HL · Paper 3 (extended problem solving, calculator) =======================
+     Each question is a guided investigation of about 25 marks: compute small cases, spot the pattern, prove it,
+     then generalise and apply — the shape of IB Paper 3. Wording and numbers are the Hub's own. */
+  const P3 = (id, skill, title, gen) => reg(id, { skill, title, paper: 3, p3: true }, gen);
+  const C3 = (n, r) => { let c = 1; for (let i = 1; i <= r; i++) c = c * (n - r + i) / i; return Math.round(c); };
+
+  P3('p3.hl.consec', 'HL-1.3b', 'Sums of products of consecutive integers', R => {
+    const N = R.int(20, 40), a = R.int(5, 12), b = a + R.int(8, 15), Sn = n => n * (n + 1) * (n + 2) / 3, Un = n => n * (n + 1) * (n + 2) * (n + 3) / 4;
+    return { stem: 'This question investigates sums of products of consecutive integers. Let $S_{n} = \\sum_{r=1}^{n} r(r + 1)$.', paper: 3, parts: [
+      P('Find', 'the values of $S_{1}$, $S_{2}$, $S_{3}$ and $S_{4}$.', 2, { t: [2, 8, 20, 40], l: ['S₁', 'S₂', 'S₃', 'S₄'], d: '2,\\ 8,\\ 20,\\ 40' }, [['A1', 'two correct'], ['A1', 'all four correct']], ['$S_{1} = 2$, $S_{2} = 2 + 6 = 8$, $S_{3} = 8 + 12 = 20$, $S_{4} = 20 + 20 = 40$'], 'Add one term at a time.'),
+      P('Show that', 'your values satisfy $S_{n} = \\frac{n(n + 1)(n + 2)}{3}$ for $1 \\le n \\le 4$.', 2, 'open', [['M1', 'substituting at least two values of $n$'], ['A1', 'all four checked']], ['$\\frac{1 \\cdot 2 \\cdot 3}{3} = 2$, $\\frac{2 \\cdot 3 \\cdot 4}{3} = 8$, $\\frac{3 \\cdot 4 \\cdot 5}{3} = 20$, $\\frac{4 \\cdot 5 \\cdot 6}{3} = 40$'], 'Substitute each n.'),
+      P('Prove', 'by mathematical induction that $S_{n} = \\frac{n(n + 1)(n + 2)}{3}$ for all $n \\in \\mathbb{Z}^{+}$.', 6, 'open',
+        [['A1', 'true for $n = 1$'], ['M1', 'assume true for $n = k$'], ['M1', 'adding the $(k + 1)$th term $(k + 1)(k + 2)$'], ['A1', '$\\frac{k(k + 1)(k + 2)}{3} + (k + 1)(k + 2) = \\frac{(k + 1)(k + 2)(k + 3)}{3}$'], ['A1', 'clear factorising step'], ['R1', 'conclusion: true for $n = 1$ and true for $k$ ⇒ true for $k + 1$, so true for all $n \\in \\mathbb{Z}^{+}$']],
+        ['$n = 1$: $S_{1} = 2 = \\frac{1 \\cdot 2 \\cdot 3}{3}$', 'Assume $S_{k} = \\frac{k(k + 1)(k + 2)}{3}$', '$S_{k+1} = \\frac{k(k + 1)(k + 2)}{3} + (k + 1)(k + 2) = \\frac{(k + 1)(k + 2)(k + 3)}{3}$', 'So the statement is true for all positive integers.'], 'Four steps: base case, assumption, inductive step, conclusion.'),
+      P('Find', `$\\sum_{r=1}^{${N}} r(r + 1)$.`, 2, Sn(N), [['M1', `$\\frac{${N} \\cdot ${N + 1} \\cdot ${N + 2}}{3}$`], ['A1', `$${Sn(N)}$`]], [`$\\frac{${N}(${N + 1})(${N + 2})}{3} = ${Sn(N)}$`], 'Use the result you proved.'),
+      P('Find', 'the values of $U_{1}$, $U_{2}$ and $U_{3}$, where $U_{n} = \\sum_{r=1}^{n} r(r + 1)(r + 2)$.', 2, { t: [6, 30, 90], l: ['U₁', 'U₂', 'U₃'], d: '6,\\ 30,\\ 90' }, [['A1', 'two correct'], ['A1', 'all three correct']], ['$6$, $6 + 24 = 30$, $30 + 60 = 90$'], 'Same idea with three factors.'),
+      P('Suggest', 'an expression for $U_{n}$, by comparison with $S_{n}$.', 2, { open: 'U_{n} = \\frac{n(n + 1)(n + 2)(n + 3)}{4}' }, [['M1', 'four consecutive factors'], ['A1', '$\\frac{n(n + 1)(n + 2)(n + 3)}{4}$']], ['Check: $\\frac{1 \\cdot 2 \\cdot 3 \\cdot 4}{4} = 6$, $\\frac{2 \\cdot 3 \\cdot 4 \\cdot 5}{4} = 30$'], 'S has three factors over 3. What might U have?'),
+      P('Write down', 'a conjecture for $\\sum_{r=1}^{n} r(r + 1)(r + 2) \\cdots (r + m - 1)$, a product of $m$ consecutive integers.', 3, { open: '\\frac{n(n + 1) \\cdots (n + m)}{m + 1}' }, [['A1', '$m + 1$ consecutive factors starting at $n$'], ['A1', 'divided by $m + 1$'], ['A1', 'fully correct']], ['$m = 2$ gives $S_{n}$, $m = 3$ gives $U_{n}$.'], 'Spot the pattern in the number of factors and the divisor.'),
+      P('Find', `$\\sum_{r=${a}}^{${b}} r(r + 1)(r + 2)$.`, 3, Un(b) - Un(a - 1), [['M1', `$U_{${b}} - U_{${a - 1}}$`], ['A1', `$${Un(b)} - ${Un(a - 1)}$`], ['A1', `$${Un(b) - Un(a - 1)}$`]], [`$U_{${b}} - U_{${a - 1}} = ${Un(b)} - ${Un(a - 1)} = ${Un(b) - Un(a - 1)}$`], 'Subtract the sum you do not want.'),
+      P('Show that', 'by writing $r^{2} = r(r + 1) - r$, $\\sum_{r=1}^{n} r^{2} = \\frac{n(n + 1)(2n + 1)}{6}$.', 4, 'open', [['M1', '$\\sum r^{2} = S_{n} - \\sum r$'], ['A1', '$\\frac{n(n + 1)(n + 2)}{3} - \\frac{n(n + 1)}{2}$'], ['M1', 'common factor $\\frac{n(n + 1)}{6}$'], ['A1', '$\\frac{n(n + 1)}{6}(2(n + 2) - 3) = \\frac{n(n + 1)(2n + 1)}{6}$']],
+        ['$\\sum r^{2} = \\sum r(r + 1) - \\sum r = \\frac{n(n + 1)(n + 2)}{3} - \\frac{n(n + 1)}{2}$', '$= \\frac{n(n + 1)}{6}\\left(2n + 4 - 3\\right) = \\frac{n(n + 1)(2n + 1)}{6}$'], 'Split the sum, then take out the common factor.')
+    ] };
+  });
+
+  P3('p3.hl.selfinv', 'HL-2.4b', 'Self-inverse functions and repeated composition', R => {
+    const a = R.int(1, 4), c = R.pick([1, 2]), b = R.int(2, 9), k = R.int(2, 5), m = R.pick([2, 3, 5]);
+    const roots = [(a - Math.sqrt(a * a + b * c)) / c, (a + Math.sqrt(a * a + b * c)) / c];   // (ax + b)/(cx − a) = x  ⇔  cx² − 2ax − b = 0
+    return { stem: 'This question investigates functions of the form $f(x) = \\frac{ax + b}{cx + d}$, where $a, b, c, d \\in \\mathbb{R}$, $c \\ne 0$ and $ad - bc \\ne 0$.', paper: 3, parts: [
+      P('Show that', '$f^{-1}(x) = \\frac{dx - b}{a - cx}$.', 4, 'open', [['M1', 'interchanging $x$ and $y$'], ['M1', '$x(cy + d) = ay + b$'], ['A1', '$y(cx - a) = b - dx$'], ['A1', '$f^{-1}(x) = \\frac{dx - b}{a - cx}$']], ['$x = \\frac{ay + b}{cy + d}$', '$cxy + dx = ay + b$', '$y(cx - a) = b - dx$, so $y = \\frac{dx - b}{a - cx}$'], 'Swap x and y, then collect the y terms.'),
+      P('Hence', 'show that $f$ is self-inverse when $d = -a$.', 2, 'open', [['M1', 'substituting $d = -a$'], ['A1', '$f^{-1}(x) = \\frac{-ax - b}{a - cx} = \\frac{ax + b}{cx - a} = f(x)$']], ['Multiply top and bottom by −1.'], 'Substitute d = −a into your inverse.'),
+      P('Write down', 'the equation of the line in which the graph of a self-inverse function is symmetrical.', 1, { open: 'y = x' }, [['A1', '$y = x$']], [], 'Inverse graphs are reflections in which line?'),
+      P('Find', `the value of $p$ for which $h(x) = \\frac{px + ${m}}{${c === 1 ? '' : c}x - ${k}}$ is self-inverse.`, 2, k, [['M1', '$d = -a$'], ['A1', `$p = ${k}$`]], [`$d = -${k}$, so $a = p = ${k}$`], 'Use the condition from (b).'),
+      P('Show that', 'when $d = -a$, the asymptotes of the graph of $f$ meet on the line $y = x$.', 3, 'open', [['A1', 'vertical asymptote $x = \\frac{a}{c}$'], ['A1', 'horizontal asymptote $y = \\frac{a}{c}$'], ['R1', 'they meet at $\\left(\\frac{a}{c}, \\frac{a}{c}\\right)$, which is on $y = x$']], ['Vertical: $cx - a = 0$. Horizontal: $y \\to \\frac{a}{c}$ as $x \\to \\pm\\infty$.'], 'Find both asymptotes.'),
+      P('Find', `the $x$-coordinates of the points where the graph of $g(x) = \\frac{${a}x + ${b}}{${c === 1 ? '' : c}x - ${a}}$ meets the line $y = x$.`, 4, { list: roots, sf: 3, d: roots.map(v => num(sf(v, 3))).join(',\\ ') }, [['M1', `$\\frac{${a}x + ${b}}{${c === 1 ? '' : c}x - ${a}} = x$`], ['A1', `$${c === 1 ? '' : c}x^{2} - ${2 * a}x - ${b} = 0$`], ['A1', `$x = ${num(sf(roots[0], 3))}$`], ['A1', `$x = ${num(sf(roots[1], 3))}$`]],
+        [`$${a}x + ${b} = x(${c === 1 ? '' : c}x - ${a})$`, `$${c === 1 ? '' : c}x^{2} - ${2 * a}x - ${b} = 0$`, `$x = ${num(sf(roots[0], 3))}$ or $${num(sf(roots[1], 3))}$`], 'Set g(x) = x and rearrange to a quadratic.'),
+      P('Write down', 'an expression for $(f \\circ f \\circ f)(x)$ when $f$ is self-inverse, and hence for $f$ composed with itself 2027 times.', 2, { open: 'f(x)\\ \\text{in both cases}' }, [['A1', '$(f \\circ f \\circ f)(x) = f(x)$'], ['A1', '$f(x)$ (2027 is odd)']], ['$f \\circ f = x$, so an odd number of compositions gives $f$.'], 'What is f ∘ f for a self-inverse function?'),
+      P('Find', 'an expression for $(q \\circ q)(x)$, where $q(x) = \\frac{x + 1}{1 - x}$, $x \\ne 1$, in its simplest form.', 3, { open: '(q \\circ q)(x) = -\\frac{1}{x}' }, [['M1', 'substituting $q(x)$ into $q$'], ['A1', '$\\frac{\\frac{2}{1 - x}}{\\frac{-2x}{1 - x}}$'], ['A1', '$-\\frac{1}{x}$']], ['$q(q(x)) = \\frac{\\frac{x + 1}{1 - x} + 1}{1 - \\frac{x + 1}{1 - x}} = \\frac{2}{-2x} = -\\frac{1}{x}$'], 'Simplify the numerator and denominator separately.'),
+      P('Hence', 'show that $q$ composed with itself four times gives $x$, and state whether $q$ is self-inverse.', 3, 'open', [['M1', '$(q \\circ q)\\left(-\\frac{1}{x}\\right)$'], ['A1', '$= -\\frac{1}{-\\frac{1}{x}} = x$'], ['A1', '$q$ is not self-inverse, since $q \\circ q \\ne x$']], ['$q^{4}(x) = (q \\circ q)((q \\circ q)(x)) = -\\frac{1}{-1/x} = x$', 'But $q(q(x)) = -\\frac{1}{x} \\ne x$.'], 'Apply your answer to (h) twice.')
+    ] };
+  });
+
+  P3('p3.hl.powersums', 'HL-3.4', 'Power sums of the roots of a cubic', R => {
+    let m, u, v, g = 0; do { m = R.nz(-3, 3); u = R.nz(-2, 2); v = R.int(2, 4); } while ((m * m + 2 * u * u - 2 * v * v >= 0 || m + 2 * u === 0 || 2 * u * m + u * u + v * v === 0) && g++ < 80);
+    const p = -(m + 2 * u), q = 2 * u * m + u * u + v * v, r = -m * (u * u + v * v), S1 = -p, S2 = S1 * S1 - 2 * q, S3 = -p * S2 - q * S1 - 3 * r, S4 = -p * S3 - q * S2 - r * S1;
+    const cub = poly([[1, 'x^{3}'], [p, 'x^{2}'], [q, 'x'], [r, '']]), z = (re, im) => `${re}${im < 0 ? ' - ' : ' + '}${Math.abs(im) === 1 ? '' : Math.abs(im)}\\mathrm{i}`;
+    return { stem: `Let $\\alpha$, $\\beta$ and $\\gamma$ be the roots of $${cub} = 0$, and let $S_{n} = \\alpha^{n} + \\beta^{n} + \\gamma^{n}$.`, paper: 3, parts: [
+      P('Write down', 'the values of $\\alpha + \\beta + \\gamma$, $\\alpha\\beta + \\beta\\gamma + \\gamma\\alpha$ and $\\alpha\\beta\\gamma$.', 3, { t: [S1, q, -r], l: ['sum', 'pairs', 'product'], each: true, d: `${S1},\\ ${q},\\ ${-r}` }, [['A1', `$${S1}$`], ['A1', `$${q}$`], ['A1', `$${-r}$`]], ['Sum $= -\\frac{a_{2}}{a_{3}}$, pairs $= \\frac{a_{1}}{a_{3}}$, product $= -\\frac{a_{0}}{a_{3}}$'], 'Formula booklet, and Vieta for the pairs.'),
+      P('Show that', '$S_{2} = (\\alpha + \\beta + \\gamma)^{2} - 2(\\alpha\\beta + \\beta\\gamma + \\gamma\\alpha)$.', 2, 'open', [['M1', 'expanding $(\\alpha + \\beta + \\gamma)^{2}$'], ['A1', 'correct rearrangement']], ['$(\\alpha + \\beta + \\gamma)^{2} = \\alpha^{2} + \\beta^{2} + \\gamma^{2} + 2(\\alpha\\beta + \\beta\\gamma + \\gamma\\alpha)$'], 'Expand the square of the sum.'),
+      P('Hence', 'find $S_{2}$.', 2, S2, [['M1', `$${S1}^{2} - 2(${q})$`], ['A1', `$${S2}$`]], [`$(${S1})^{2} - 2(${q}) = ${S2}$`], 'Substitute your values.'),
+      P('Explain', 'why the equation cannot have three real roots.', 2, 'open', [['R1', `$S_{2} = ${S2} < 0$`], ['R1', 'the sum of squares of three real numbers cannot be negative']], [], 'Can a sum of real squares be negative?'),
+      P('Find', `all three roots, given that $x = ${m}$ is a root.`, 4, { open: `${m},\\ ${z(u, v)},\\ ${z(u, -v)}` }, [['M1', `dividing by $(x${sg(-m)})$`], ['A1', `$x^{2}${sg(-2 * u)}x + ${u * u + v * v}$`], ['M1', 'solving the quadratic'], ['A1', `$${u} \\pm ${v}\\mathrm{i}$`]], [`$${cub} = (x${sg(-m)})(x^{2}${sg(-2 * u)}x + ${u * u + v * v})$`, `$x = \\frac{${2 * u} \\pm \\sqrt{${4 * u * u} - ${4 * (u * u + v * v)}}}{2} = ${u} \\pm ${v}\\mathrm{i}$`], 'Factor theorem, then the quadratic formula.'),
+      P('Show that', `$S_{3} = ${poly([[-p, 'S_{2}'], [-q, 'S_{1}'], [-3 * r, '']])}$, by first using the fact that each root satisfies the equation.`, 4, 'open', [['M1', `$\\alpha^{3} = ${poly([[-p, '\\alpha^{2}'], [-q, '\\alpha'], [-r, '']])}$`], ['A1', 'the same for $\\beta$ and $\\gamma$'], ['M1', 'adding the three equations'], ['A1', 'correct result, including the constant $3 \\times ' + (-r) + '$']], [`Each root: $x^{3} = ${poly([[-p, 'x^{2}'], [-q, 'x'], [-r, '']])}$`, `Add: $S_{3} = ${poly([[-p, 'S_{2}'], [-q, 'S_{1}'], [-3 * r, '']])}$`], 'Rearrange the cubic for x³, then add for all three roots.'),
+      P('Hence', 'find $S_{3}$.', 2, S3, [['M1', 'substituting'], ['A1', `$${S3}$`]], [`$S_{3} = ${-p}(${S2})${sg(-q)}(${S1})${sg(-3 * r)} = ${S3}$`], 'Use your S₁ and S₂.'),
+      P('Write down', 'a recurrence relation for $S_{n+3}$ in terms of $S_{n+2}$, $S_{n+1}$ and $S_{n}$.', 3, { open: `S_{n+3} = ${poly([[-p, 'S_{n+2}'], [-q, 'S_{n+1}'], [-r, 'S_{n}']])}` }, [['M1', 'multiplying the equation by $x^{n}$'], ['A1', 'correct coefficients'], ['A1', 'fully correct']], [`$x^{n+3} = ${poly([[-p, 'x^{n+2}'], [-q, 'x^{n+1}'], [-r, 'x^{n}']])}$; add over the roots.`], 'Multiply the equation by xⁿ first.'),
+      P('Find', '$S_{4}$.', 2, S4, [['M1', 'using the recurrence with $n = 1$'], ['A1', `$${S4}$`]], [`$S_{4} = ${-p}(${S3})${sg(-q)}(${S2})${sg(-r)}(${S1}) = ${S4}$`], 'n = 1 in your recurrence.')
+    ] };
+  });
+
+  P3('p3.hl.binom', 'HL-1.4b', 'Identities with binomial coefficients', R => {
+    const N = R.int(8, 12), team = R.int(6, 10);
+    return { stem: 'This question investigates sums of binomial coefficients. For $n \\in \\mathbb{Z}^{+}$, $(1 + x)^{n} = \\sum_{r=0}^{n} \\binom{n}{r} x^{r}$.', paper: 3, parts: [
+      P('Show that', '$\\sum_{r=0}^{n} \\binom{n}{r} = 2^{n}$.', 2, 'open', [['M1', 'substituting $x = 1$'], ['A1', '$2^{n} = \\sum \\binom{n}{r}$']], ['Put $x = 1$: $(1 + 1)^{n} = \\sum \\binom{n}{r}$'], 'Choose a value of x.'),
+      P('Show that', '$\\sum_{r=0}^{n} (-1)^{r}\\binom{n}{r} = 0$.', 2, 'open', [['M1', 'substituting $x = -1$'], ['A1', '$(1 - 1)^{n} = 0$']], [], 'Another value of x.'),
+      P('Hence', 'show that the sum of $\\binom{n}{r}$ over the even values of $r$ is $2^{n-1}$.', 3, 'open', [['M1', 'adding the two results'], ['A1', '$2\\sum_{r\\ \\text{even}} \\binom{n}{r} = 2^{n}$'], ['A1', '$2^{n-1}$']], ['Adding the two sums, the odd terms cancel and the even terms double.'], 'Add (a) and (b).'),
+      P('Show that', '$r\\binom{n}{r} = n\\binom{n - 1}{r - 1}$ for $1 \\le r \\le n$.', 4, 'open', [['M1', 'writing in factorials'], ['A1', '$\\frac{r \\cdot n!}{r!(n - r)!} = \\frac{n!}{(r - 1)!(n - r)!}$'], ['M1', 'taking out $n$'], ['A1', '$n \\cdot \\frac{(n - 1)!}{(r - 1)!((n - 1) - (r - 1))!} = n\\binom{n - 1}{r - 1}$']], [], 'Use the factorial formula and cancel r.'),
+      P('Hence', 'show that $\\sum_{r=0}^{n} r\\binom{n}{r} = n2^{n-1}$.', 3, 'open', [['M1', 'using (d) for each term'], ['A1', '$n\\sum_{r=1}^{n} \\binom{n - 1}{r - 1}$'], ['A1', '$= n2^{n-1}$ by (a)']], [], 'Rewrite each term, then use (a) with n − 1.'),
+      P('Find', `$\\sum_{r=0}^{${N}} r\\binom{${N}}{r}$.`, 2, N * 2 ** (N - 1), [['M1', `$${N} \\times 2^{${N - 1}}$`], ['A1', `$${N * 2 ** (N - 1)}$`]], [`$${N} \\times 2^{${N - 1}} = ${N * 2 ** (N - 1)}$`], 'Use (e).'),
+      P('Explain', `why the number of ways to choose a committee of any size, with one chairperson, from ${team} people is $${team} \\times 2^{${team - 1}}$, and how this relates to (e).`, 3, 'open', [['R1', `committees of size $r$ with a chair: $r\\binom{${team}}{r}$, summed over $r$`], ['R1', `or choose the chair first (${team} ways), then any subset of the other ${team - 1} people ($2^{${team - 1}}$ ways)`], ['R1', 'counting the same thing two ways gives the identity in (e)']], [], 'Count the same committees in two different ways.'),
+      P('Find', 'the values of $T_{n} = \\sum_{r=0}^{n} r^{2}\\binom{n}{r}$ for $n = 1, 2, 3, 4$.', 2, { t: [1, 6, 24, 80], l: ['T₁', 'T₂', 'T₃', 'T₄'], d: '1,\\ 6,\\ 24,\\ 80' }, [['A1', 'two correct'], ['A1', 'all correct']], ['$T_{3} = 1 \\cdot 3 + 4 \\cdot 3 + 9 \\cdot 1 = 24$'], 'List the terms carefully.'),
+      P('Show that', 'your values fit $T_{n} = n(n + 1)2^{n-2}$.', 3, 'open', [['M1', 'substituting'], ['A1', 'at least three values checked'], ['A1', 'all four']], ['$1 \\cdot 2 \\cdot 2^{-1} = 1$, $2 \\cdot 3 \\cdot 1 = 6$, $3 \\cdot 4 \\cdot 2 = 24$, $4 \\cdot 5 \\cdot 4 = 80$'], 'Substitute n = 1 to 4.')
+    ] };
+  });
+
   /* ---------- the blueprints: book order, with the default selection for a one-hour unit test ---------- */
   const BP = {
     'SL-2': { course: 'SL', unit: 2, chapter: 'Oxford AA SL Chapter 2 · Exam-style questions', ids: ['q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16', 'q17', 'q18', 'q19', 'q20', 'q21', 'q22', 'q23', 'q24', 'q25', 'q26'].map(q => 'cr.sl2.' + q), def: ['q10', 'q12', 'q18', 'q25', 'q11', 'q14'].map(q => 'cr.sl2.' + q), book: n => 'Q' + n.split('.q')[1] },
@@ -5883,7 +5958,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const stem = (q.stem ? `<div class="q-stem">${M(q.stem)}</div>` : '') + (q.fig ? `<div class="q-fig">${q.fig}</div>` : '');
     const parts = q.parts.map(p => {
       const r = results[q.id + '|' + p.id], fin = opts.final ? opts.final[q.id + '|' + p.id] : undefined;
-      let body = `<div class="part" data-part="${p.id}"><div class="part-q"><span class="part-l">${plab(p.label)}</span><div class="part-text">${cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="part-m">[${p.marks}]</span></div>`;
+      let body = `<div class="part" data-part="${p.id}"><div class="part-q"><span class="part-l">${plab(p.label)}</span><div class="part-text">${p.lead ? `<span class="p-lead">${M(p.lead)}</span>` : ''}${cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="part-m">[${p.marks}]</span></div>`;
       if (mode === 'answer') body += inputFor(q, p, responses[p.id], opts) + (opts.hints && p.hint ? `<details class="hint" data-hint="${q.id}|${p.id}"><summary>💡 Need a hint?</summary><p>${M(p.hint)}</p>${numworks(p.numworks)}</details>` : '');
       if (mode === 'teacher') body += teacherKey(p);
       if (mode === 'feedback') body += feedback(q, p, responses[p.id], r, fin, opts);
@@ -6262,7 +6337,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     main.innerHTML = `<a class="back" href="#/marking">← Marking queue</a>` + U.heading(`${esc(a ? a.title : t.type)}`, esc(s ? s.name : t.sid), `${s ? C().GROUPS[s.group].label : ''} · submitted ${fmtDateTime(t.at)} · ${t.status === 'released' ? 'released ' + fmtDateTime(t.releasedAt) : 'waiting for you'}`, `<div class="actions">${idx > 0 ? `<a class="btn small ghost" href="#/mark/${queue[idx - 1].id}">← Previous</a>` : ''}${idx >= 0 && idx < queue.length - 1 ? `<a class="btn small ghost" href="#/mark/${queue[idx + 1].id}">Next →</a>` : ''}</div>`) +
       `<div class="mark-grid"><section class="card work-pane"><h2 class="bar-head amber">Uploaded working</h2><div id="uploads">${t.uploads.length ? '<p class="tiny muted">Loading…</p>' : '<p>No working uploaded.</p>'}</div>${t.reflection ? `<div class="sticky"><b>Student reflection:</b> ${esc(t.reflection)}</div>` : ''}${t.proof ? '<p class="tiny">✓ Confirmed proof of studying</p>' : ''}</section>
       <section class="card mark-pane"><h2 class="bar-head green">Marks</h2>${qs.map((q, i) => `<div class="mq"><div class="mq-head"><b>Q${i + 1}</b> ${U.skillChip(q.skill)}</div>${q.stem ? `<div class="q-stem small">${M(q.stem)}</div>` : ''}${q.parts.map(p => { const k = q.id + '|' + p.id, r = t.auto.parts[k];
-        return `<div class="mp"><div class="mp-q"><b>(${p.label})</b> ${U.cmd(p.command)} ${M(p.prompt)}</div><div class="fb-row"><span class="key-lab">Answer given</span><span>${U.respText(p, (t.responses[q.id] || {})[p.id])}</span></div><div class="fb-row"><span class="key-lab">Key</span><span>${U.answerDisplay(p)}</span></div>
+        return `<div class="mp"><div class="mp-q"><b>(${p.label})</b> ${p.lead ? `<span class="p-lead">${M(p.lead)}</span>` : ''}${U.cmd(p.command)} ${M(p.prompt)}</div><div class="fb-row"><span class="key-lab">Answer given</span><span>${U.respText(p, (t.responses[q.id] || {})[p.id])}</span></div><div class="fb-row"><span class="key-lab">Key</span><span>${U.answerDisplay(p)}</span></div>
           <div class="auto">Auto: <span class="verdict ${r.verdict === 'correct' ? 'ok' : r.verdict === 'teacher' ? 'wait' : r.verdict === 'partial' || r.verdict === 'inexact' ? 'part' : 'no'}">${r.verdict}</span> ${r.earned}/${p.marks}${r.tag ? ` · <span class="pill pink tiny">${esc(Hub.mastery.tagText(r.tag))}</span>` : ''}</div>
           <div class="ms-ticks">${p.ms.map(([m, txt], j) => `<label class="ms-tick"><input type="checkbox" data-k="${k}" data-v="${U.msValue(m)}" data-j="${j}"${t.final && t.final.ticks && (t.final.ticks[k] || []).includes(j) ? ' checked' : ''}><b>${esc(m)}</b> ${M(txt)}</label>`).join('')}</div>
           <div class="stepper"><button class="btn small ghost" data-dec="${k}" aria-label="One mark fewer">−</button><output data-out="${k}">${marks[k]}</output><span>/ ${p.marks}</span><button class="btn small ghost" data-inc="${k}" data-max="${p.marks}" aria-label="One mark more">+</button></div></div>`; }).join('')}</div>`).join('')}
@@ -7526,10 +7601,10 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const secOf = (a, q) => a.mock ? (q.section || 'A') : ((q.paper || 1) >= 2 ? 'B' : 'A');
   function ibCover(a, o, secs) {
     const course = a.course === 'HL' ? 'Higher level' : 'Standard level', marks = total(o.qs), papers = [...new Set(o.qs.map(q => q.paper || 1))];
-    const paperName = a.mock ? `Paper ${a.mock === 'P2' ? 2 : 1}` : a.type === 'Retest' ? 'Retest' : 'Unit test', mins = a.minutes || 60;
+    const paperName = a.mock ? `Paper ${a.mock === 'P3' ? 3 : a.mock === 'P2' ? 2 : 1}` : a.type === 'Retest' ? 'Retest' : 'Unit test', mins = a.minutes || 60;
     const calc = papers.length === 1 ? (papers[0] === 1 ? 'You are not permitted access to any calculator for this paper.' : 'A graphic display calculator (NumWorks) is required for this paper.') : 'Section A: you are not permitted access to any calculator. Section B: a graphic display calculator (NumWorks) is required.';
     const ins = ['Write your name in the box above.', 'Do not open this examination paper until instructed to do so.', calc,
-      'Section A: answer all questions. Answers must be written within the answer boxes provided.', secs.length > 1 ? 'Section B: answer all questions in the spaces provided.' : '',
+      a.mock === 'P3' ? 'Answer <b>all</b> questions in the spaces provided. Each question is an extended investigation.' : 'Section A: answer all questions. Answers must be written within the answer boxes provided.', secs.length > 1 ? 'Section B: answer all questions in the spaces provided.' : '',
       'Unless otherwise stated in the question, all numerical answers should be given exactly or correct to three significant figures.',
       'A clean copy of the <b>mathematics: analysis and approaches formula booklet</b> is required for this paper.', `The maximum mark for this examination paper is <b>[${marks} marks]</b>.`,
       a.type === 'Retest' ? `This is a retest: your recorded score is capped at ${a.cap || 80}%.` : ''].filter(Boolean);
@@ -7544,7 +7619,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const lines = Math.min(sec === 'A' ? 16 : 10, Math.max(sec === 'A' ? 6 : 4, Math.round(q.marks * (sec === 'A' ? 1.6 : 1.3))));
     return `<article class="pq ib-q${o.key ? ' pq-key' : ''}"><div class="ib-qh"><b>${n}.</b> <span>[Maximum mark: ${q.marks}]</span></div>
       ${q.stem ? `<div class="pq-stem">${M(q.stem)}</div>` : ''}${q.fig ? `<div class="q-fig">${q.fig}</div>` : ''}
-      ${q.parts.map(p => `<div class="pp"><div class="pp-q">${q.parts.length > 1 || p.label !== 'a' ? `<span class="pp-l">(${esc(p.label)})</span>` : ''}<div class="pp-t">${U.cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="pp-m">[${p.marks}]</span></div>
+      ${q.parts.map(p => `<div class="pp"><div class="pp-q">${q.parts.length > 1 || p.label !== 'a' ? `<span class="pp-l">(${esc(p.label)})</span>` : ''}<div class="pp-t">${p.lead ? `<span class="p-lead">${M(p.lead)}</span>` : ''}${U.cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="pp-m">[${p.marks}]</span></div>
         ${o.key ? ibKey(p) : sec === 'B' ? ruled(Math.min(12, 3 + 2 * p.marks)) : ''}</div>`).join('')}
       ${!o.key && sec === 'A' ? ruled(lines, true) : ''}${o.key ? `<p class="ib-tot">Total [${q.marks} marks]</p>` : ''}</article>`;
   }
@@ -7556,7 +7631,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const secs = ['A', 'B'].filter(k => by[k]).map(k => [k, by[k]]); o.qs = secs.flatMap(([, l]) => l);
     let n = 0;
     return ibCover(a, o, secs) + secs.map(([k, list]) => `<section class="sheet ib-sheet"><div class="ib-run"><span>${esc(a.title)}</span><span>${o.key ? 'Markscheme' : 'Name: ____________________'}</span></div>
-      <h2 class="ib-sec">Section ${k}</h2>${o.key ? '' : `<p class="ib-sec-i">${SECT_IB[k]}</p>${k === 'A' ? `<p class="ib-sec-n">${SECT_NOTE}</p>` : ''}`}
+      ${a.mock === 'P3' ? '' : `<h2 class="ib-sec">Section ${k}</h2>`}${o.key ? '' : `<p class="ib-sec-i">${SECT_IB[k]}</p>${k === 'A' ? `<p class="ib-sec-n">${SECT_NOTE}</p>` : ''}`}
       ${list.map(q => ibQuestion(q, ++n, o, k)).join('')}<p class="ib-end">${k === secs[secs.length - 1][0] ? '— End of paper —' : 'Turn over'}</p></section>`).join('');
   }
 
@@ -7623,7 +7698,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function question(q, n, o, inSection) {
     return `<article class="pq${o.key ? ' pq-key' : ''}"><div class="pq-head"><span class="pq-n">${n}</span>${inSection ? '' : paperTag(q)}${q.bookRef ? `<span class="pq-book">${esc(q.bookRef)}</span>` : ''}<span class="pq-marks">[${q.marks} mark${q.marks === 1 ? '' : 's'}]</span></div>
       ${q.stem ? `<div class="pq-stem">${M(q.stem)}</div>` : ''}${q.fig ? `<div class="q-fig">${q.fig}</div>` : ''}
-      ${q.parts.map(p => `<div class="pp"><div class="pp-q">${q.parts.length > 1 || p.label !== 'a' ? `<span class="pp-l">${esc(/^\w+\(\w+\)$/.test(p.label) ? '(' + p.label.replace('(', ')(') : '(' + p.label + ')')}</span>` : ''}<div class="pp-t">${U.cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="pp-m">[${p.marks}]</span></div>
+      ${q.parts.map(p => `<div class="pp"><div class="pp-q">${q.parts.length > 1 || p.label !== 'a' ? `<span class="pp-l">${esc(/^\w+\(\w+\)$/.test(p.label) ? '(' + p.label.replace('(', ')(') : '(' + p.label + ')')}</span>` : ''}<div class="pp-t">${p.lead ? `<span class="p-lead">${M(p.lead)}</span>` : ''}${U.cmd(p.command)} ${M(p.prompt)}${p.fig ? `<div class="q-fig">${p.fig}</div>` : ''}</div><span class="pp-m">[${p.marks}]</span></div>
         ${showOptions(p, o) ? options(p) : ''}${o.key ? keyBlock(p, o) : workBox(p, o)}</div>`).join('')}</article>`;
   }
   /** Group questions into Sections A/B/C by paper (tests always; quizzes when they mix papers). */
@@ -10915,8 +10990,22 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     Object.assign(r.assessment, { title: `${course} · Topic check · ${oxs.slice().sort((a, b) => parseFloat(a) - parseFloat(b)).join(', ')}`, topicCheck: oxs.slice(), minutes: 20, groups: Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id) });
     Hub.store.save(true); return r;
   }
-  const MOCK = { SL: { 1: [80, 90], 2: [80, 90] }, HL: { 1: [110, 120], 2: [110, 120] } };
+  const MOCK = { SL: { 1: [80, 90], 2: [80, 90] }, HL: { 1: [110, 120], 2: [110, 120], 3: [55, 60] } };
+  /** A Section B question at IB length (about 12–16 marks): one long exam question, topped up with the parts of a second
+      question on the same unit when it is short. The second question's context is introduced in its first part. */
+  function longQ(pool, used) {
+    const mk = g => { try { return Hub.qcore.build(g, 3).marks; } catch (e) { return 0; } }, unit = g => (C().SKILL[Hub.qcore.registry[g].skill] || {}).unit;
+    const bag = pool.filter(g => !used.has(g)); if (!bag.length) return null;
+    const g1 = bag.slice().sort((x, y) => mk(y) - mk(x) + (Math.random() - 0.5) * 8)[0]; used.add(g1);
+    const q = Hub.assess.buildQ(g1, true, false, false); if (q.marks >= 12) return q;
+    const g2 = bag.filter(g => g !== g1 && unit(g) === unit(g1) && mk(g) <= 16 - q.marks && mk(g) >= 3).sort(() => Math.random() - 0.5)[0]; if (!g2) return q;
+    used.add(g2); const q2 = Hub.assess.buildQ(g2, true, false, false);
+    const add = q2.parts.map((pt, i) => Object.assign({}, pt, i === 0 && q2.stem ? { lead: q2.stem, fig: q2.fig || pt.fig } : {}));
+    q.parts = q.parts.concat(add).map((pt, i) => Object.assign(pt, { label: String.fromCharCode(97 + i), id: String.fromCharCode(97 + i) }));
+    q.marks = q.parts.reduce((n, pt) => n + pt.marks, 0); q.title = (q.title || '') + ' (extended)'; return q;
+  }
   function makeMock(course, paper, half, skills) {
+    if (paper === 3) return makeP3(course, half, skills);
     const full = MOCK[course][paper], target = half ? Math.round(full[0] / 2) : full[0], minutes = half ? Math.round(full[1] / 2) : full[1];
     const P = paper === 1 ? 'P1' : 'P2';
     const gens = [...new Set(skills.flatMap(id => C().SKILL[id].gens))].filter(g => { const r = Hub.qcore.registry[g]; return r && !r.book && r.paper === paper; });
@@ -10924,15 +11013,31 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const r = Hub.assess.createDraft({ course, type: 'Unit test', skills, paper: P, style: 'mixed', count: 1 }); if (!r.ok) return r;
     const a = r.assessment, mk = g => { try { return Hub.qcore.build(g, 3).marks; } catch (e) { return 0; } };
     // Like the IB papers: Section A = short questions (about half the marks); Section B = long, multi-part exam questions at the harder end.
-    const shortG = gens.filter(g => mk(g) <= 7), longG = gens.filter(g => mk(g) >= 8 && Hub.qcore.registry[g].exam);
+    // chapter-review mirrors (cr.*) on these skills are long exam questions too
+    const crG = Object.keys(Hub.qcore.registry).filter(g => { const r = Hub.qcore.registry[g]; return r.cr && r.paper === paper && skills.includes(r.skill); });
+    const shortG = gens.filter(g => mk(g) <= 7), longG = gens.filter(g => mk(g) >= 8 && Hub.qcore.registry[g].exam).concat(crG.filter(g => mk(g) >= 6));
     const fill = (pool, goal, sec, hard) => { const out = []; let m = 0, bag = []; for (let n = 0; m < goal - 2 && n < 40 && pool.length; n++) {
       if (!bag.length) bag = pool.map(g => [Math.random(), g]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
       const q = Hub.assess.buildQ(bag.pop(), hard, false, false); if (m + q.marks > goal + 4 && m > 0) continue; q.section = sec; out.push(q); m += q.marks; } return out; };
     const A = fill(shortG.length ? shortG : gens, Math.round(target / 2), 'A', false);
     const marksA = A.reduce((n, q) => n + q.marks, 0);
-    const B = fill(longG.length ? longG : gens, target - marksA, 'B', true);
+    const B = [], usedB = new Set(), goalB = target - marksA; let mB = 0;
+    for (let n = 0; mB < goalB - 4 && n < 12; n++) { const q = longQ(longG.length ? longG : gens, usedB); if (!q) break; if (mB + q.marks > goalB + 6 && B.length) continue; q.section = 'B'; B.push(q); mB += q.marks; }
     const qs = A.sort((x, y) => x.marks - y.marks).concat(B.sort((x, y) => x.marks - y.marks)), marks = qs.reduce((n, q) => n + q.marks, 0);
     Object.assign(a, { questions: qs, reviewed: {}, title: `${course} · Mock Paper ${paper}${half ? ' (half paper)' : ''} · ${paper === 1 ? 'no calculator' : 'calculator'}`, minutes, mock: P, paper: P, uploadRequired: true, release: 'hold', groups: Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id) });
+    Hub.store.save(true); return { ok: true, assessment: a, marks };
+  }
+
+  /** HL Paper 3: two extended problem-solving investigations (one for a half paper), calculator allowed, 1 hour. */
+  function makeP3(course, half, skills) {
+    if (course !== 'HL') return { ok: false, error: 'Paper 3 is HL only.' };
+    const units = new Set(skills.map(id => (C().SKILL[id] || {}).unit));
+    const gens = Object.keys(Hub.qcore.registry).filter(g => { const r = Hub.qcore.registry[g]; return r.p3 && units.has((C().SKILL[r.skill] || {}).unit); });
+    if (gens.length < (half ? 1 : 2)) return { ok: false, error: 'Not enough Paper 3 investigations for those units yet — tick skills from at least two of Units 1–3.' };
+    const r = Hub.assess.createDraft({ course, type: 'Unit test', skills, paper: 'P2', style: 'mixed', count: 1 }); if (!r.ok) return r;
+    const a = r.assessment, pick = gens.sort(() => Math.random() - 0.5).slice(0, half ? 1 : 2);
+    const qs = pick.map(g => Object.assign(Hub.assess.buildQ(g, false, false, false), { section: 'B' })), marks = qs.reduce((n, q) => n + q.marks, 0);
+    Object.assign(a, { questions: qs, reviewed: {}, title: `HL · Mock Paper 3${half ? ' (half paper)' : ''} · problem solving`, minutes: half ? 30 : 60, mock: 'P3', paper: 'P3', uploadRequired: true, release: 'hold', groups: Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id) });
     Hub.store.save(true); return { ok: true, assessment: a, marks };
   }
 
@@ -11005,9 +11110,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
               <div class="tc-menu">${units.map(u => `<p class="tc-unit">Unit ${u} · ${esc((C().UNITS[course].find(x => x[0] === u) || [0, ''])[1])}</p>${tps.filter(x => x.unit === u).map(row).join('')}`).join('')}</div></details>`; })() + `
             <div class="actions"><button class="btn primary" id="tc-make" type="button">Make topic check</button></div>` : '<p class="tiny muted">No topics finished yet.</p>'}</section>
         <section class="card"><h2 class="bar-head amber">📝 Mock exams</h2><p class="tiny muted">A mock paper from the skills taught so far, shortest questions first like the real paper. ${course} Paper 1 and Paper 2 are ${MOCK[course][1][0]} marks in ${MOCK[course][1][1]} minutes. It is held for you to mark and counts as a Test in the data cycle.</p>
-          <div class="mk-opts"><label>Paper <select id="mk-paper"><option value="1">Paper 1 — no calculator</option><option value="2">Paper 2 — calculator</option></select></label><label>Length <select id="mk-len"><option value="full">Full paper</option><option value="half">Half paper (${Math.round(MOCK[course][1][0] / 2)} marks)</option></select></label></div>
+          <div class="mk-opts"><label>Paper <select id="mk-paper"><option value="1">Paper 1 — no calculator</option><option value="2">Paper 2 — calculator</option>${course === 'HL' ? '<option value="3">Paper 3 — problem solving (55 marks, 1 hour)</option>' : ''}</select></label><label>Length <select id="mk-len"><option value="full">Full paper</option><option value="half">Half paper (${Math.round(MOCK[course][1][0] / 2)} marks)</option></select></label></div>
           <details><summary class="small">Skills included (${taught.length} taught)</summary><div class="mk-skills">${taught.map(k => `<label class="inline-check tiny"><input type="checkbox" class="mk-sk" value="${k.id}" checked> ${esc(k.ox || '')} ${esc(k.name)}</label>`).join('')}</div></details>
-          ${course === 'HL' ? '<p class="tiny muted">Paper 3 (HL problem solving) isn’t available yet — it needs longer investigation questions.</p>' : ''}
+          ${course === 'HL' ? '<p class="tiny muted">Paper 3 is two extended investigations (about 25 marks each) on the units you tick — compute small cases, spot the pattern, prove it, generalise. Section B of Papers 1 and 2 now uses IB-length questions (about 12–16 marks).</p>' : '<p class="tiny muted">Section B uses IB-length questions (about 12–16 marks each).</p>'}
           <div class="actions"><button class="btn primary" id="mk-make" type="button">Make mock paper</button></div>
           ${mocks.length ? `<p class="small"><b>Your mocks</b></p>${mocks.slice(0, 6).map(a => `<div class="row-between small"><a href="#/edit/${encodeURIComponent(a.id)}">${esc(a.title)}</a><span class="tiny muted">${a.status} · ${a.questions.reduce((n, q) => n + q.marks, 0)} marks</span></div>`).join('')}` : ''}</section></div>
       <section class="card"><h2 class="bar-head green">Command term drill</h2><p class="small">Students find it on their Practice page and in every study guide: 10 quick questions using real IB-style question parts with the command term blanked out. Nothing is saved.</p><a class="btn" href="#/terms">Try the drill</a></section>`;
