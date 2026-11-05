@@ -431,6 +431,7 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
 .sg-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .sg-plan li { margin: 0 0 8px; }
 .ex-tabs { margin: 0 0 14px; }
+.nd-warn { background: #FFF4D6; border: 1.5px solid #E8A400; border-radius: 10px; padding: 6px 10px; } .nd-banner { border-color: var(--pink, #FF96D4); } .nd-btn { margin-top: 6px; } .nd-who { display: flex; flex-wrap: wrap; gap: 4px 14px; max-height: 220px; overflow: auto; }
 .tm-strip { background: #FDECEA; border: 2px solid #D93025; border-radius: 12px; padding: 8px 14px; margin: 0 0 12px; font-family: var(--f-ui); }
 .tm-card.tm-on { border-color: #D93025; }
 .tm-home { border-color: #D93025; } .tm-h { font-family: var(--f-head); font-size: clamp(1.5rem, 4vw, 2.1rem); margin: 0 0 6px; }
@@ -5722,7 +5723,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const stats = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null).sort((a, b) => a.pct - b.pct);
     const ia = C().iaSchedule(s.group).find(x => x.date && x.date >= asOf), hour = new Date().getHours();
     main.innerHTML = `${Hub.announce ? Hub.announce.bannerHTML(s) : ''}<section class="hero slim"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div></section>
-      ${Hub.lessons && Hub.lessons.catchUpCardHTML ? Hub.lessons.catchUpCardHTML(s) : ''}${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
+      ${Hub.nudge ? Hub.nudge.bannerHTML(s) : ''}${Hub.lessons && Hub.lessons.catchUpCardHTML ? Hub.lessons.catchUpCardHTML(s) : ''}${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
         <section class="card act"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b>${Hub.attendance && Hub.attendance.absentAccess(a, s.id) ? '<div class="absent-note">You were absent — catch up on the lesson and complete this.</div>' : ''}<div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
         ${(L => L ? `<section class="card"><h2 class="bar-head blue">▣ Lesson notebook</h2><p><b>${esc(L.title)}</b></p><a class="btn primary" href="#/notebook/${encodeURIComponent(L.id)}">Open today’s notebook →</a></section>` : '')(Hub.lessons && Hub.lessons.latestFor(s))}
         ${dn ? `<section class="card donow-card"><h2 class="bar-head amber">☀ ${dn ? (dn.kind !== 'Do Now' ? 'Your personalised ' + esc(dn.kind) : 'Today’s Do Now') : 'Just for me'}</h2>${dn ? (dn.done ? `<p>Done — <b>${Hub.assess.score(dn.done).earned}/${dn.done.max}</b>.</p><a class="btn small" href="#/result/${dn.done.id}">See feedback</a>` : `<p>${dn.items.filter(it => it.question).length} questions picked just for you${dn.kind === 'Do Now' ? ' for ' + fmtDate(dn.rec.lessonDate, true) : ''}.</p><a class="btn primary" href="#/donow">Start my ${esc(dn.kind === 'Do Now' ? 'Do Now' : dn.kind)} →</a>`) : '<p>Your personalised Do Now, Exit Ticket or quiz appears here once Miss Badmus publishes it.</p>'}</section>` : ''}
@@ -5752,6 +5753,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       </div>`;
     if (Hub.announce) { Hub.announce.bindBanner(main, s); if (!Hub.announce.unread(s).length) main.insertAdjacentHTML('beforeend', Hub.announce.earlierHTML(s)); }
     if (Hub.exam) Hub.exam.decorate(main);
+    if (Hub.nudge) Hub.nudge.bindBanner(main, s);
   }
 
   /* ---------- taking work ---------- */
@@ -8168,7 +8170,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <div class="rd-stats"><div><b>${did.length}/${studs.length}</b><span>done</span></div><div><b>${avg === null ? '—' : avg + '%'}</b><span>class average</span></div><div><b>${not.length}</b><span>not done</span></div></div>
         ${toMark ? `<p class="tiny"><span class="pill amber">${toMark} to mark</span> <a href="#/marking">Marking</a></p>` : ''}
         ${type === 'Exit Ticket' && x.a.status === 'published' && Hub.attendance ? (ko => `<div class="keep-open ${ko ? 'on' : ''}"><label class="inline-check"><input type="checkbox" data-keepopen="${x.a.id}"${ko ? ' checked' : ''}> <b>Keep open for ${esc(G.label)}</b> — don’t close it after the lesson</label><span class="tiny muted">${ko ? `Open for everyone in ${esc(G.label)} until you close it in the Assessment studio. Other classes close as normal unless you tick it on their dashboard.` : `Closes for ${esc(G.label)} at ${Hub.attendance.closeLabel(g)} on its due day (absent students keep it).`}</span></div>`)(Hub.attendance.keptOpen(x.a, g)) : ''}
-        <details class="rd-list" open><summary><b>Not done (${not.length})</b></summary>${not.length ? `<p class="miss-names">${not.map(r => `<a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent</span>' : ''}`).join(', ')}</p>` : '<p class="tiny gc-ok">✓ Everyone has done it</p>'}</details>
+        <details class="rd-list" open><summary><b>Not done (${not.length})</b></summary>${not.length ? `<p class="miss-names">${not.map(r => `<a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent</span>' : ''}`).join(', ')}</p>${Hub.nudge ? Hub.nudge.buttonHTML(x.a.id, g, not.length) : ''}` : '<p class="tiny gc-ok">✓ Everyone has done it</p>'}</details>
         <details class="rd-list"><summary><b>Done (${did.length})</b></summary>${did.length ? `<table class="tbl rd-tbl"><tbody>${did.sort((p, q) => (q.sc.pct ?? -1) - (p.sc.pct ?? -1)).map(r => `<tr><td><a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent · done later</span>' : ''}</td><td>${r.sc.pct === null || r.sc.pct === undefined ? '—' : r.sc.pct + '%'}</td><td>${r.t.status === 'submitted' ? '<span class="pill amber">to mark</span>' : r.t.status === 'released' ? '<span class="tiny muted">released</span>' : ''}</td><td><a class="tiny" href="#/mark/${r.t.id}">open</a></td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">Nobody yet.</p>'}</details></section>`; };
     const pvStudent = Hub.roster.inGroup(g, true).find(x => x.test) || studs[0];
     main.innerHTML = `<div class="row-between"><a class="back" href="#/home">← Dashboard</a>${pvStudent ? `<button class="btn small" id="cd-preview" type="button">👁 See this class’s student view</button>` : ''}</div>` + U.heading(`${G.block.toUpperCase()} · ${studs.length} STUDENTS`, esc(G.label), nl ? `Next lesson ${fmtDate(nl.date, true)} · ${esc(nl.activity)}` : '', tabs) +
@@ -8180,7 +8182,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         ${nl ? `<p class="tiny gc-next">Next lesson: ${nb ? `<b>${esc(nb.title)}</b> · ${Hub.lessons.visibleTo(nb, g) ? 'released' : 'not released yet'}` : 'no notebook yet'} ${lid ? `<a class="btn small" href="#/lesson/${encodeURIComponent(lid)}">${nb ? 'Open notebook' : '+ Create notebook'}</a>` : ''}</p>` : ''}</section>
       <section class="card"><h2 class="bar-head blue">Due next</h2>${up.length ? up.map(x => `<div class="row-between small"><span><span class="pill">${esc(x.a.type)}</span> <a href="#/edit/${x.a.id}">${esc(x.a.title)}</a></span><span class="tiny muted">${x.due ? 'due ' + fmtDate(x.due) : 'no due date'} · ${x.done}/${x.total} done</span></div>`).join('') : '<p class="tiny muted">Nothing open right now.</p>'}
         <div class="actions"><a class="btn small" href="#/studio?group=${g}">✎ Build an Exit Ticket or homework</a></div>
-        ${miss.some(x => x.missing.length) ? `<details class="rd-list"><summary><b>All missing work, last 3 weeks</b></summary>${miss.filter(x => x.missing.length).map(x => `<div class="miss-item"><span class="pill ${x.a.type === 'Homework' ? 'amber' : 'pink'}">${x.a.type === 'Homework' ? 'HW' : 'ET'}</span> <a href="#/edit/${x.a.id}">${esc(x.a.title)}</a> <span class="tiny muted">due ${fmtDate(x.due)}</span><p class="miss-names">${x.missing.map(s => esc(s.name)).join(', ')}</p></div>`).join('')}<button class="btn small ghost" id="copy-missing" type="button">Copy list</button></details>` : ''}</section></div>
+        ${miss.some(x => x.missing.length) ? `<details class="rd-list"><summary><b>All missing work, last 3 weeks</b></summary>${miss.filter(x => x.missing.length).map(x => `<div class="miss-item"><span class="pill ${x.a.type === 'Homework' ? 'amber' : 'pink'}">${x.a.type === 'Homework' ? 'HW' : 'ET'}</span> <a href="#/edit/${x.a.id}">${esc(x.a.title)}</a> <span class="tiny muted">due ${fmtDate(x.due)}</span><p class="miss-names">${x.missing.map(s => esc(s.name)).join(', ')}</p>${Hub.nudge ? Hub.nudge.buttonHTML(x.a.id, g, x.missing.length) : ''}</div>`).join('')}<button class="btn small ghost" id="copy-missing" type="button">Copy list</button></details>` : ''}</section></div>
       <section class="card scroll"><h2 class="bar-head blue">Students</h2><table class="tbl"><thead><tr><th>Student</th><th>Missing (3 weeks)</th><th>Overall mastery</th><th>Latest notebook</th></tr></thead><tbody>${studs.map(s => { const m = missBy[s.id] || [], p = recentNb && S().progress[s.id + '|nb:' + recentNb.id], r = p && (p.responses || {}).rag;
         return `<tr><td><a href="#/student/${encodeURIComponent(s.id)}">${esc(s.name)}</a></td><td>${m.length ? `<span class="pill red">${m.length}</span> <span class="tiny">${m.map(x => esc(x.a.type === 'Homework' ? 'HW' : 'ET') + ' ' + fmtDate(x.due)).join(', ')}</span>` : '<span class="tiny muted">—</span>'}</td><td>${Hub.mastery.overall(s.id) ?? '—'}${Hub.mastery.overall(s.id) !== null ? '%' : ''}</td><td>${recentNb ? (p ? (r ? `<span class="rag-chip ${r}">${{ red: 'Stuck', amber: 'Getting there', green: 'Got it' }[r]}</span>` : 'opened') + ` <a class="tiny" href="#/lesson/${encodeURIComponent(recentNb.id)}?view=responses&sid=${encodeURIComponent(s.id)}">open</a>` : '<span class="tiny muted">not opened</span>') : ''}</td></tr>`; }).join('') || '<tr><td colspan="4">No students in this class yet.</td></tr>'}</tbody></table></section>
       <details class="card more-card"><summary><h2 class="bar-head amber">Personalised quizzes · skills · IA</h2><span class="tiny muted">optional — open when you want personalised tasks</span></summary>
@@ -10456,6 +10458,70 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.testMode = { on, forStudent, cfg, set, cardHTML, bind, stripHTML, allowed, homeHTML, followQuestions };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/nudge.js ---- */
+/* Reminders to just the students who have not done a piece of work. Each reminder is a "<student id>|nudge:<id>" progress
+   record, so only that student's browser ever receives it (no other student sees who was reminded). Students see it as a
+   banner on My day with a button straight to the work; it disappears when they press "Got it" or hand the work in. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast, fmtDate } = Hub.core;
+  const U = Hub.ui, S = () => Hub.store.state, C = () => Hub.curriculum;
+  const P = 'nudge:';
+  const done = (aid, sid) => Hub.assess.attemptsFor(aid, sid).length > 0;
+  const defaultText = (a, due) => `Reminder: you haven’t completed “${String(a.title || '').replace(/^(SL|HL) · /, '')}” yet${due ? ` — it was due ${fmtDate(due, true)}` : ''}. Please complete it today. If you’re stuck, come and see me.`;
+  /** Students in these classes who have not handed in this assessment. */
+  function notDone(a, groups) { return (groups || a.groups || []).flatMap(g => Hub.roster.inGroup(g)).filter(s => (!a.targets || a.targets.includes(s.id)) && !done(a.id, s.id)); }
+  function send(a, sids, text) {
+    const id = 'n' + Date.now().toString(36), at = new Date().toISOString();
+    sids.forEach(sid => { S().progress[sid + '|' + P + id] = { responses: { text: String(text).slice(0, 400), aid: a.id, at }, createdAt: at, updatedAt: at }; });
+    const st = S(); st.settings.nudges = (st.settings.nudges || []).concat([{ id, aid: a.id, n: sids.length, at }]).slice(-80);
+    Hub.store.log(`Reminded ${sids.length} student${sids.length === 1 ? '' : 's'} about “${a.title}”`); Hub.store.save(true);
+  }
+  /** Teacher: open the reminder box for one assessment (optionally one class). */
+  function open(aid, group) {
+    const a = Hub.assess.byId(aid); if (!a) return;
+    const groups = group ? [group] : (a.groups || []), who = notDone(a, groups), due = group ? Hub.assess.dueFor(a, group) : (groups.map(g => Hub.assess.dueFor(a, g)).filter(Boolean).sort()[0] || null);
+    const last = (S().settings.nudges || []).filter(n => n.aid === aid).pop();
+    if (!who.length) { toast('Everyone has done it — nobody to remind.'); return; }
+    const closed = who.filter(s => Hub.attendance && Hub.attendance.lockedFor(a, s.id));
+    const mdl = U.modal(`<h2 class="modal-title">🔔 Remind students who haven’t done it</h2><p class="small"><b>${esc(a.title)}</b>${last ? ` <span class="tiny muted">· last reminder ${fmtDate(last.at.slice(0, 10), true)}</span>` : ''}</p>
+      <fieldset class="nd-who"><legend class="small"><b>${who.length} not done</b> — untick anyone you don’t want to remind</legend>${who.map(s => `<label class="inline-check"><input type="checkbox" class="nd-s" value="${esc(s.id)}" checked> ${esc(s.name)}${groups.length > 1 ? ` <span class="tiny muted">${esc(C().GROUPS[s.group].label)}</span>` : ''}</label>`).join('')}</fieldset>
+      ${closed.length ? `<p class="small nd-warn">⚠ This ${esc(a.type)} has closed for ${closed.length} of them (they were in the lesson), so they can’t open it. Tick <b>Keep open</b> on the class dashboard first, or they will be reminded about something they can’t do.</p>` : ''}
+      <label>Message<textarea id="nd-text" rows="3" maxlength="400">${esc(defaultText(a, due))}</textarea></label>
+      <p class="tiny muted">Only the ticked students see it — on My day, with a button straight to the work. It disappears when they hand it in. For an alert on their phones too, copy the names for a Canvas message.</p>
+      <div class="actions"><button class="btn primary" id="nd-send" type="button">Send reminder</button><button class="btn ghost" id="nd-copy" type="button">Copy names for Canvas</button></div>`);
+    const root = mdl.el;
+    $('#nd-send', root).onclick = async () => {
+      const sids = $$('.nd-s', root).filter(i => i.checked).map(i => i.value), text = $('#nd-text', root).value.trim();
+      if (!sids.length) return toast('Tick at least one student.', 'error'); if (!text) return toast('Write a message.', 'error');
+      send(a, sids, text); try { await Hub.store.flush(); toast(`Reminder sent to ${sids.length} student${sids.length === 1 ? '' : 's'}.`); } catch (e) { toast(e.message, 'error'); }
+      mdl.close(); Hub.app.render();
+    };
+    $('#nd-copy', root).onclick = async () => { const names = $$('.nd-s', root).filter(i => i.checked).map(i => (Hub.roster.byId(i.value) || {}).name).join(', '); try { await navigator.clipboard.writeText(names); toast('Names copied.'); } catch (e) { toast(names); } };
+  }
+  /** Button for any "not done" list. */
+  const buttonHTML = (aid, group, n) => n ? `<button class="btn small nd-btn" type="button" data-nudge="${esc(aid)}"${group ? ` data-ng="${esc(group)}"` : ''}>🔔 Remind ${n === 1 ? 'this student' : `these ${n}`}</button>` : '';
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-nudge]'); if (b) { e.preventDefault(); open(b.dataset.nudge, b.dataset.ng || null); } });
+  /* ---------- student ---------- */
+  function mine(s) {
+    return Object.entries(S().progress).filter(([k]) => k.startsWith(s.id + '|' + P)).map(([k, v]) => Object.assign({ key: k }, v.responses || {}))
+      .filter(r => r.text && !r.read && r.aid && !done(r.aid, s.id) && Hub.assess.forStudent(s.id).some(a => a.id === r.aid)).sort((x, y) => String(y.at).localeCompare(String(x.at)));
+  }
+  function bannerHTML(s) {
+    const list = mine(s); if (!list.length) return '';
+    return `<section class="card act nd-banner" aria-live="polite"><h2 class="bar-head pink">🔔 Reminder from Miss Badmus</h2>${list.map(r => { const a = Hub.assess.byId(r.aid);
+      return `<div class="ann-item"><div><p>${esc(r.text)}</p><span class="tiny muted">${fmtDate(String(r.at).slice(0, 10), true)}</span></div><div class="actions"><a class="btn small primary" href="#/task/${encodeURIComponent(a.id)}">Do it now →</a><button class="btn small ghost" type="button" data-ndread="${esc(r.key)}">Got it</button></div></div>`; }).join('')}</section>`;
+  }
+  function bindBanner(root, s) {
+    $$('[data-ndread]', root).forEach(b => (b.onclick = async () => {
+      if (Hub.auth.isPreview()) { b.closest('.ann-item').remove(); return; }
+      const rec = S().progress[b.dataset.ndread]; if (rec) { rec.responses = Object.assign({}, rec.responses, { read: true }); rec.updatedAt = new Date().toISOString(); Hub.store.save(true); }
+      try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); } Hub.app.render();
+    }));
+  }
+  Hub.nudge = { open, send, notDone, buttonHTML, bannerHTML, bindBanner, mine };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/app.js ---- */
 /* App shell: sign-in, navigation, routing (#/page/param?query), preview banner, re-rendering. */
 (function (Hub) {
@@ -10480,7 +10546,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const navItems = role === 'teacher' ? TEACHER_NAV : (Hub.testMode && Hub.testMode.forStudent() ? [['home', '🔒', 'Test mode']] : STUDENT_NAV), q = role === 'teacher' ? Hub.assess.queue().length : 0;
     const name = role === 'student' ? (st ? st.name : '') : sess.name, sub = role === 'student' ? (st ? C().GROUPS[st.group].label : '') : 'Teacher · IB AA SL & HL';
     $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><a class="brand" href="#/home"><img src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"><span class="brand-text"><small>Miss Badmus’</small><b>IB Math Hub</b></span></a><p class="slogan">Inquirers. Thinkers. Reflective Learners.</p>
-      <nav aria-label="Main">${navItems.map(it => typeof it === 'string' ? `<p class="side-h">${it}</p>` : it).map(it => typeof it === 'string' ? it : (([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && Hub.announce && st && Hub.announce.unread(st).length ? `<span class="badge">${Hub.announce.unread(st).length}</span>` : ''}</a>`)(it)).join('')}</nav>
+      <nav aria-label="Main">${navItems.map(it => typeof it === 'string' ? `<p class="side-h">${it}</p>` : it).map(it => typeof it === 'string' ? it : (([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && st && ((n => n ? `<span class="badge">${n}</span>` : '')((Hub.announce ? Hub.announce.unread(st).length : 0) + (Hub.nudge ? Hub.nudge.mine(st).length : 0))) || ''}${false ? `<span class="badge">${0}</span>` : ''}</a>`)(it)).join('')}</nav>
       <button class="calc-launch" type="button" data-calc aria-controls="calc-panel"><span class="ic" aria-hidden="true">▦</span>NumWorks calculator</button>
       <button class="calc-launch fb-launch" type="button" data-booklet><span class="ic" aria-hidden="true">📘</span>Formula booklet</button>
       ${role === 'teacher' ? pickerHTML() : ''}
