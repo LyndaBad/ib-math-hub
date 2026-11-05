@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.95.3';
 import {createEngine} from './engine.js';
-import {identity,studentState,mergeTeacher,mergeStudent,allowedFile,safeQuestion,prepareJoin,commitJoin,loginOf,removeStudent,safeUrl,pageMeta} from './policy.js';
+import {identity,studentState,mergeTeacher,mergeStudent,allowedFile,safeQuestion,prepareJoin,commitJoin,loginOf,removeStudent,safeUrl,pageMeta,submitGuard,labelPersonal} from './policy.js';
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const headers={'Content-Type':'application/json','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
 const response=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -61,6 +61,7 @@ const H=createEngine(state,sess);let a=H.assess.byId(body.aid),opts:any={};
  if(body.kind==='donow'){const d=H.donow.forStudent(sess.sid);if(!d)err('No Do Now is open.');if(d.done)return {state,attempt:d.done};a=d.assessment;opts.assessment=a;}
  else if(body.kind==='practice'){a=state.progress[sess.sid+'|'+body.aid]?._serverAssessment;if(!a)err('Practice session expired. Start a new one.');opts.assessment=a;}
  if(!a)err('Assessment not available.');
+ {const me=H.roster.byId(sess.sid),why=submitGuard(state,sess.sid,a,{kind:body.kind,block:(H.curriculum.GROUPS[me.group]||{}).block,due:(body.kind==='donow'||body.kind==='practice')?null:((a.dueBy&&a.dueBy[me.group])||a.due||null)});if(why)err(why);}
  if(a.type==='Retest'&&!H.assess.forStudent(sess.sid).some((x:any)=>x.id===a.id))err('Retest not available.');
  // Client supplies only responses and work, never marks, a role, or an answer key.
  const input={token:sess.sid+'|'+d.token,responses:d.responses||{},uploads:[],reflection:String(d.reflection||'').slice(0,20000),proof:d.proof===true,hints:d.hints||{}};
@@ -71,7 +72,7 @@ const H=createEngine(state,sess);let a=H.assess.byId(body.aid),opts:any={};
  (input.uploads as any[]).push({id:f.id,name:String(f.name).slice(0,200),type:f.type,size:f.size});
  }
  const r=H.assess.submit(a.id,sess.sid,input,opts);if(!r.ok)err(r.error);
- if(body.kind==='donow')r.attempt.donowKey=H.roster.byId(sess.sid).group+'|'+H.donow.forStudent(sess.sid).rec.lessonDate;
+ if(body.kind==='donow'){const rec=H.donow.forStudent(sess.sid).rec;r.attempt.donowKey=H.roster.byId(sess.sid).group+'|'+rec.lessonDate;labelPersonal(r.attempt,rec);}
  return {state,attempt:r.attempt};
  });const safe=filter(result.state);return response({state:safe,attempt:safe.attempts.find((t:any)=>t.id===result.attempt.id)});
  }

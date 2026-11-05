@@ -107,7 +107,7 @@ export function studentState(state,sess){
  const im=out.settings['iamark:'+sid];if(im&&!im.release)delete im.marks;
  out.attempts=state.attempts.filter(t=>t.sid===sid).map(t=>{let x=clone(t);if(t.status!=='released'){x.auto={earned:0,max:t.max,parts:{}};x.final=null;x.comment='';}if(x.inline)x.inline.questions=x.inline.questions.map(q=>safeQuestion(q,t.status==='released'));return x});
  const released=new Set(out.attempts.filter(t=>t.status==='released').map(t=>t.aid));
- out.assessments=state.assessments.filter(a=>['published','closed','archived'].includes(a.status)&&a.groups.includes(st.group)).map(a=>{let x=clone(a);x.questions=x.questions.map(q=>safeQuestion(q,released.has(a.id)));delete x.history;delete x.reviewed;return x});
+ out.assessments=state.assessments.filter(a=>['published','closed','archived'].includes(a.status)&&a.groups.includes(st.group)&&(!Array.isArray(a.targets)||a.targets.includes(sid))).map(a=>{let x=clone(a);x.questions=x.questions.map(q=>safeQuestion(q,released.has(a.id)));delete x.history;delete x.reviewed;delete x.targets;return x});
  out.evidence=state.evidence.filter(e=>e.sid===sid);
  out.progress=Object.fromEntries(Object.entries(state.progress).filter(([k])=>k.startsWith(sid+'|')).map(([k,v])=>{const x=clone(v);delete x._serverAssessment;return [k,x]}));
  out.ia=own(state.ia,sid)?{[sid]:iaStrip(state.ia[sid],acc)}:{};out.donow={};
@@ -274,4 +274,24 @@ export function pageMeta(html,url=''){
  const d=dRaw.match(/^(\d{4})(?:[-\/.](\d{1,2})(?:[-\/.](\d{1,2}))?)?/);const published=d?[d[1],d[2]&&String(d[2]).padStart(2,'0'),d[3]&&String(d[3]).padStart(2,'0')].filter(Boolean).join('-'):'';
  const doiM=(first('citation_doi','dc.identifier','prism.doi')||'').match(/10\.\d{4,9}\/\S+/);
  return {url,title:title.slice(0,500),authors,site:site.slice(0,200),published,doi:doiM?doiM[0]:''};
+}
+
+// ---------- added 4 Nov 2026: submission guards ----------
+const BLOCK_END={'Block 1':'12:00','Block 4':'14:30'};const ET_GRACE_MIN=60;
+function nyNow(now){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now||new Date()).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,hm:`${p.hour}:${p.minute}`};}
+/** "HH:MM" New York time when Exit Tickets close for a block (one hour after it ends). */
+export function etCloseTime(block){const [h,m]=(BLOCK_END[block]||'15:00').split(':').map(Number),t=h*60+m+ET_GRACE_MIN;return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
+/** Why this student may not submit this assessment now, or null. a = the assessment, due = its due date for their class. */
+export function submitGuard(state,sid,a,{kind,block,due,now}={}){
+ if(Array.isArray(a.targets)&&!a.targets.includes(sid))return 'This retake is not set for you.';
+ if(kind!=='donow'&&kind!=='practice'&&a.type==='Exit Ticket'&&due){
+  const n=nyNow(now),closed=n.date>due||(n.date===due&&n.hm>=etCloseTime(block));
+  if(closed&&!state.progress[sid+'|att:'+due])return 'This Exit Ticket closed after the lesson. If you were absent, speak to Miss Badmus.';
+ }
+ return null;
+}
+/** Personalised Exit Tickets and Quizzes are delivered through the Do Now slot; record them under their own name. */
+export function labelPersonal(attempt,rec){
+ const k=rec&&(rec.kind==='Exit Ticket'||rec.kind==='Quiz')?rec.kind:null;if(!k||!attempt||!attempt.inline)return attempt;
+ attempt.inline.type=k;attempt.inline.title=String(attempt.inline.title||'').replace(/^Do Now/,'Personalised '+k);attempt.personal=k;return attempt;
 }
