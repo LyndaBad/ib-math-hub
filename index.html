@@ -506,6 +506,18 @@ a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85re
   .ann-item p { font-size: .95rem; }
 }
 
+
+/* notebooks: live lesson, catch-up, unit notes */
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.lv-tile { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border-radius: 12px; border: 2px solid var(--line); background: var(--white); color: var(--ink); text-decoration: none; font-family: var(--f-ui); min-height: 74px; }
+.lv-tile.red { background: #FDECEA; border-color: #D93025; } .lv-tile.amber { background: #FFF4D6; border-color: #E8A400; } .lv-tile.green { background: #E6F4EA; border-color: #2E7D32; }
+.lv-tile.open { background: #EEF4FB; border-color: #9FC5E8; } .lv-tile.none { opacity: .65; border-style: dashed; } .lv-tile.absent { opacity: .5; background: #F3F3F6; }
+.lv-rag { font-size: .78rem; font-weight: 800; } .lv-q { position: absolute; top: 6px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: .8rem; }
+.lv-time { margin-top: auto; } .lv-key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin: 0 3px 0 10px; vertical-align: -1px; border: 1.5px solid var(--line); }
+.lv-key.red { background: #FDECEA; border-color: #D93025; } .lv-key.amber { background: #FFF4D6; border-color: #E8A400; } .lv-key.green { background: #E6F4EA; border-color: #2E7D32; } .lv-key.open { background: #EEF4FB; border-color: #9FC5E8; } .lv-key.none { border-style: dashed; }
+.cu-card { border-color: var(--pink, #FF96D4); } .cu-t { border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+.un-l { break-inside: avoid; } .un-h { font-family: var(--f-head); font-size: 1.15rem; margin: 0; } .un-mine { border-top: 1px dashed var(--line); padding-top: 6px; }
+
 /* ================= Lesson notebooks ================= */
 .ls { display: flex; flex-direction: column; }
 .ls-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 4px; border-top: 1px dashed var(--line); }
@@ -5301,7 +5313,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const ia = C().iaSchedule(g.id).find(s => s.date && s.date >= asOf);
       return `<section class="card group-card ${g.course.toLowerCase()}"><div class="gc-head"><h3><a href="#/class/${g.id}">${g.label}</a></h3><span class="tiny muted">${g.block} · ${Hub.roster.inGroup(g.id).length} students</span></div>
         ${nl ? `<p class="gc-date">${fmtDate(nl.date, true)}</p><p class="gc-lesson">${esc(nl.activity)}</p><div class="chips">${nl.skills.map(s => U.skillChip(s)).join('')}</div>` : '<p>No more lessons in the calendar.</p>'}
-        <div class="gc-actions">${nl && Hub.lessons.idFor(g.id, nl.date) ? `<a class="btn small ghost" href="#/lesson/${encodeURIComponent(Hub.lessons.idFor(g.id, nl.date))}">▣ Notebook</a>` : ''}<a class="btn small" href="#/studio?group=${g.id}">✎ Exit Ticket</a><a class="btn small ${dnCur && dn.status === 'published' ? 'ghost' : 'pink'}" href="#/donow?group=${g.id}">${dnCur ? (dn.status === 'published' ? '✓ Do Now published' : 'Approve Do Now') : '☀ Plan Do Now'}</a></div>
+        <div class="gc-actions">${nl && Hub.lessons.idFor(g.id, nl.date) ? `<a class="btn small ghost" href="#/lesson/${encodeURIComponent(Hub.lessons.idFor(g.id, nl.date))}">▣ Notebook</a>${Hub.lessons.get(Hub.lessons.idFor(g.id, nl.date)) ? `<a class="btn small ghost" href="#/lesson/${encodeURIComponent(Hub.lessons.idFor(g.id, nl.date))}?view=live&g=${g.id}">● Live</a>` : ''}` : ''}<a class="btn small" href="#/studio?group=${g.id}">✎ Exit Ticket</a><a class="btn small ${dnCur && dn.status === 'published' ? 'ghost' : 'pink'}" href="#/donow?group=${g.id}">${dnCur ? (dn.status === 'published' ? '✓ Do Now published' : 'Approve Do Now') : '☀ Plan Do Now'}</a></div>
         ${Hub.ia ? Hub.ia.cardLine(g.id) : ia ? `<p class="tiny gc-ia">IA · ${esc(ia.short)} due ${fmtDate(ia.date)}</p>` : ''}
         ${Hub.classdash ? Hub.classdash.cardSnippet(g.id) : ''}<a class="btn small primary gc-open" href="#/class/${g.id}">Class dashboard →</a></section>`;
     }).join('');
@@ -5706,7 +5718,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const stats = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null).sort((a, b) => a.pct - b.pct);
     const ia = C().iaSchedule(s.group).find(x => x.date && x.date >= asOf), hour = new Date().getHours();
     main.innerHTML = `${Hub.announce ? Hub.announce.bannerHTML(s) : ''}<section class="hero slim"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div></section>
-      ${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
+      ${Hub.lessons && Hub.lessons.catchUpCardHTML ? Hub.lessons.catchUpCardHTML(s) : ''}${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
         <section class="card act"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b>${Hub.attendance && Hub.attendance.absentAccess(a, s.id) ? '<div class="absent-note">You were absent — catch up on the lesson and complete this.</div>' : ''}<div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
         ${(L => L ? `<section class="card"><h2 class="bar-head blue">▣ Lesson notebook</h2><p><b>${esc(L.title)}</b></p><a class="btn primary" href="#/notebook/${encodeURIComponent(L.id)}">Open today’s notebook →</a></section>` : '')(Hub.lessons && Hub.lessons.latestFor(s))}
         ${dn ? `<section class="card donow-card"><h2 class="bar-head amber">☀ ${dn ? (dn.kind !== 'Do Now' ? 'Your personalised ' + esc(dn.kind) : 'Today’s Do Now') : 'Just for me'}</h2>${dn ? (dn.done ? `<p>Done — <b>${Hub.assess.score(dn.done).earned}/${dn.done.max}</b>.</p><a class="btn small" href="#/result/${dn.done.id}">See feedback</a>` : `<p>${dn.items.filter(it => it.question).length} questions picked just for you${dn.kind === 'Do Now' ? ' for ' + fmtDate(dn.rec.lessonDate, true) : ''}.</p><a class="btn primary" href="#/donow">Start my ${esc(dn.kind === 'Do Now' ? 'Do Now' : dn.kind)} →</a>`) : '<p>Your personalised Do Now, Exit Ticket or quiz appears here once Miss Badmus publishes it.</p>'}</section>` : ''}
@@ -6536,7 +6548,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     return `<section class="card reg-card"><div class="row-between"><h2 class="bar-head green">Register</h2><label class="reg-date"><span class="sr-only">Lesson</span><select id="reg-date">${ls.map(l => `<option value="${l.date}"${l.date === date ? ' selected' : ''}>${fmtDate(l.date, true)}${l.date === nyNow().date ? ' (today)' : ''}</option>`).join('')}</select></label></div>
       <p class="tiny muted">Everyone is present unless you tick them absent. Absent students keep the Exit Ticket for that lesson after it closes for everyone else at ${closeLabel(groupId)}, until you close it.</p>
       ${studs.length ? `<div class="reg-list">${studs.map(s => `<label class="reg-row${isAbsent(s.id, date) ? ' is-absent' : ''}"><input type="checkbox" class="reg-abs" value="${esc(s.id)}"${isAbsent(s.id, date) ? ' checked' : ''}><span>${esc(s.name)}</span><span class="reg-tag">absent</span></label>`).join('')}</div>
-      <div class="actions"><button class="btn small primary" id="reg-save" type="button">Save register</button><span class="tiny muted" id="reg-sum">${abs.length ? `${abs.length} absent: ${abs.map(s => esc(s.name)).join(', ')}` : 'Everyone present'}</span></div>` : '<p class="tiny muted">No students in this class yet.</p>'}</section>`;
+      <div class="actions"><button class="btn small primary" id="reg-save" type="button">Save register</button><span class="tiny muted" id="reg-sum">${abs.length ? `${abs.length} absent: ${abs.map(s => esc(s.name)).join(', ')}` : 'Everyone present'}</span></div>` : '<p class="tiny muted">No students in this class yet.</p>'}${Hub.lessons && Hub.lessons.catchUpTeacherHTML ? Hub.lessons.catchUpTeacherHTML(groupId) : ''}</section>`;
   }
   function bindRegister(root, groupId) {
     const sel = $('#reg-date', root); if (sel) sel.onchange = () => { chosen[groupId] = sel.value; Hub.app.render(); };
@@ -7309,6 +7321,133 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 ## Complex roots of quadratics
 - When $\Delta < 0$, the roots are complex and come in [[conjugate pairs|conjugate pair|conjugates]].
 - $x^{2} + 2x + 5 = 0$ gives $x = \frac{-2 \pm \sqrt{-16}}{2} = -1 \pm$ [[2i]].`;
+  /* ---- added: earlier Unit 1 lessons, HL proof lessons, and January lessons (original wording) ---- */
+  N['SL-2026-08-31'] = String.raw`## Number systems
+- $\mathbb{N}$ is the natural numbers $\{0, 1, 2, 3, \ldots\}$ and $\mathbb{Z}$ is the [[integers]].
+- $\mathbb{Q}$ is the [[rational|rational numbers]] numbers: any number that can be written as a fraction $\frac{p}{q}$.
+- $\sqrt{2}$ and $\pi$ cannot be written as fractions: they are [[irrational]].
+## Rounding
+- $3.14159$ to 2 decimal places is [[3.14]].
+- $0.004586$ to 3 significant figures is [[0.00459]]: zeros at the front are [[not significant|not counted]].
+- In IB exams, give answers exactly or to [[3]] significant figures unless told otherwise.`;
+  N['SL-2026-09-02'] = String.raw`## Standard form
+- A number in standard form is $a \times 10^{k}$ where $1 \le a <$ [[10]] and $k$ is an integer.
+- $45\,600 =$ [[4.56 x 10^4|4.56×10^4|4.56*10^4]].
+- $0.00072 = 7.2 \times 10^{k}$ where $k =$ [[-4]].
+## Percentage error
+- Percentage error $= \left|\frac{v_A - v_E}{v_E}\right| \times 100\%$, where $v_E$ is the [[exact|exact value]] value.
+- Using $3.1$ for $\pi$ gives a percentage error of about [[1.32|1.32%]] %.`;
+  N['SL-2026-09-04'] = String.raw`## Number patterns
+- A sequence is a list of numbers in a given [[order]]. Each number is a [[term]].
+- $u_n$ means the [[nth term|n-th term|nth]] of the sequence.
+- In $3, 7, 11, 15, \ldots$ the next term is [[19]].
+## Sigma notation
+- $\sum_{r=1}^{4} r^{2}$ means $1^{2} + 2^{2} + 3^{2} + 4^{2} =$ [[30]].
+- The number under the $\Sigma$ is where you [[start]]; the number on top is where you [[stop|finish|end]].`;
+  N['SL-2026-09-09'] = String.raw`## Writing sums in sigma notation
+- $2 + 4 + 6 + \ldots + 20 = \sum_{r=1}^{10}$ [[2r]].
+- $\sum_{r=1}^{n} 5$ adds $5$ a total of $n$ times, so it equals [[5n]].
+## Counting terms
+- $\sum_{r=3}^{10} u_r$ has [[8]] terms (top minus bottom, plus one).
+- On the NumWorks, use the [[sum|Σ|sigma]] template in Calculation to check a sum.`;
+  N['SL-2026-09-11'] = String.raw`## Two kinds of sequence
+- If you [[add|add the same number]] the same number each time, the sequence is arithmetic.
+- If you [[multiply|multiply by the same number]] by the same number each time, the sequence is geometric.
+- $5, 10, 20, 40$ is [[geometric]]; $5, 10, 15, 20$ is [[arithmetic]].`;
+  N['SL-2026-09-15'] = String.raw`## Arithmetic sequences
+- The common difference is $d = u_2 -$ [[u1|u_1]].
+- The $n$th term is $u_n = u_1 + (n - 1)d$ (formula booklet): there are [[n-1|n - 1]] steps of $d$ from $u_1$ to $u_n$.
+- For $7, 11, 15, \ldots$: $u_{20} = 7 + 19 \times 4 =$ [[83]].
+## Geometric sequences
+- The common ratio is $r = \frac{u_2}{u_1}$.
+- The $n$th term is $u_n = u_1 r^{n-1}$ (formula booklet): the power is [[n-1|n - 1]], not $n$.
+- For $3, 6, 12, \ldots$: $u_{8} = 3 \times 2^{7} =$ [[384]].`;
+  N['SL-2026-09-17'] = String.raw`## Finding unknowns
+- If $u_3 = 11$ and $u_8 = 31$ in an arithmetic sequence, then $5d = 20$, so $d =$ [[4]].
+- Two equations in $u_1$ and $d$: solve them [[simultaneously]].
+- To find which term equals a value, set $u_n$ equal to it and solve for $n$; $n$ must be a positive [[integer|whole number]].
+## Geometric with unknowns
+- If $u_2 = 6$ and $u_5 = 162$, then $r^{3} = 27$, so $r =$ [[3]].`;
+  N['SL-2026-09-22'] = String.raw`## Arithmetic series
+- A series is the [[sum]] of the terms of a sequence.
+- $S_n = \frac{n}{2}\left(2u_1 + (n - 1)d\right)$ or $S_n = \frac{n}{2}(u_1 +$ [[un|u_n]]$)$.
+- $1 + 2 + 3 + \ldots + 100 =$ [[5050]].
+## Using $S_n$
+- To find how many terms give a total, set $S_n$ equal to it: you usually get a [[quadratic]] in $n$.`;
+  N['SL-2026-09-24'] = String.raw`## Geometric series
+- $S_n = \frac{u_1(r^{n} - 1)}{r - 1}$ (or $\frac{u_1(1 - r^{n})}{1 - r}$), for $r \ne$ [[1]].
+- $2 + 6 + 18 + \ldots$ to 5 terms $= \frac{2(3^{5} - 1)}{2} =$ [[242]].
+## Choosing the formula
+- $u_n$ gives one [[term]]; $S_n$ gives the [[sum|total]] of the first $n$ terms.`;
+  N['SL-2026-09-28'] = String.raw`## Sum to infinity
+- A geometric series has a sum to infinity only when $|r| <$ [[1]].
+- $S_\infty = \frac{u_1}{1 - r}$: you need the first term and the common [[ratio]].
+- $8 + 4 + 2 + \ldots$ has $S_\infty =$ [[16]].
+## Why it works
+- When $|r| < 1$, $r^{n} \to$ [[0]] as $n$ gets large, so $S_n$ gets closer and closer to $S_\infty$.`;
+  N['SL-2026-10-05'] = String.raw`## Compound interest
+- $FV = PV \times \left(1 + \frac{r}{100k}\right)^{kn}$, where $k$ is the number of compounding periods per [[year]].
+- Monthly compounding means $k =$ [[12]]; quarterly means $k =$ [[4]].
+- $\$1000$ at $5\%$ compounded yearly for $2$ years gives [[1102.50|1102.5]] dollars.
+## Finance solver
+- On the NumWorks, use the [[Finance|finance solver]] app: money you pay in is negative, money you receive is positive.`;
+  N['SL-2026-10-07'] = String.raw`## Depreciation
+- Losing $p\%$ a year means keeping $(100 - p)\%$, so the multiplier is $1 - \frac{p}{100}$.
+- A $\$20\,000$ car losing $15\%$ a year is worth $20\,000 \times 0.85^{3} \approx$ [[12282.50|12282.5|12283]] dollars after 3 years.
+## Interpreting answers
+- "How many complete years" questions: solve, then [[round up|round up to the next whole year]] if the value must have passed the target.
+- Inflation adjusts a value by the [[real|real interest]] rate: interest rate minus inflation rate.`;
+  N['SL-2026-10-19'] = String.raw`## Unit 1 summary
+- Arithmetic: add $d$; $u_n = u_1 + (n - 1)d$. Geometric: multiply by [[r]]; $u_n = u_1 r^{n-1}$.
+- Series: $S_n$ is the sum of the first $n$ terms; $S_\infty$ exists only when $|r| <$ [[1]].
+- Compound interest and depreciation are [[geometric]] sequences.
+- Always check: is the question asking for a term or a [[sum|total]]?`;
+  N['SL-2026-10-21'] = String.raw`## Pascal's triangle
+- Each number is the [[sum]] of the two numbers above it.
+- Row 4 is $1, 4, 6, 4, 1$; row 5 is $1, 5, 10, 10, 5,$ [[1]].
+## Binomial coefficients
+- $\binom{n}{r} = {}^{n}C_{r} = \frac{n!}{r!(n - r)!}$.
+- $\binom{5}{2} =$ [[10]].
+- $(a + b)^{4} = a^{4} + 4a^{3}b + 6a^{2}b^{2} + 4ab^{3} +$ [[b^4]].`;
+  N['SL-2026-10-23'] = String.raw`## The general term
+- The general term of $(a + b)^{n}$ is $\binom{n}{r}a^{n - r}b^{r}$: the two powers always add up to [[n]].
+- In $(2 + x)^{6}$, the term in $x^{2}$ is $\binom{6}{2}2^{4}x^{2} =$ [[240x^2|240x²]].
+- Keep negative signs inside the bracket: in $(1 - 3x)^{5}$, use $b =$ [[-3x]].`;
+  N['SL-2026-10-26'] = N['SL-2026-10-23'];
+  N['SL-2027-01-05'] = String.raw`## Modelling with quadratics
+- The maximum or minimum of a model is at the [[vertex|turning point]].
+- The axis of symmetry is $x = -\frac{b}{2a}$; for $y = x^{2} - 6x + 1$ it is $x =$ [[3]].
+- A ball's height $h = -5t^{2} + 20t + 1$ is greatest when $t =$ [[2]].
+## Interpreting answers
+- Reject solutions that make no sense in context, such as a negative [[time]].
+- Check the domain: a model only works for the values it was [[designed|made|built]] for.`;
+  N['HL-2026-10-09'] = String.raw`## Proof by contradiction
+- Assume the statement is [[false|not true]], then show this leads to something impossible.
+- To prove $\sqrt{2}$ is irrational, assume $\sqrt{2} = \frac{p}{q}$ in [[lowest terms|simplest form]].
+- Then $p^{2} = 2q^{2}$, so $p$ is [[even]], and then $q$ is even too — a contradiction.
+## Counterexamples
+- One counterexample is enough to show a statement is [[false]].
+- "$n^{2} + n + 41$ is always prime" is false: try $n =$ [[40]].`;
+  N['HL-2026-10-23'] = String.raw`## Proof by induction
+- Step 1: show the statement is true for $n =$ [[1]].
+- Step 2: [[assume]] it is true for $n = k$.
+- Step 3: show it is then true for $n =$ [[k+1|k + 1]].
+- Step 4: write the [[conclusion]]: true for $n = 1$, and true for $k$ implies true for $k + 1$, so true for all $n \in \mathbb{Z}^{+}$.
+## For a series
+- To go from $S_k$ to $S_{k+1}$, add the $(k + 1)$th [[term]].`;
+  N['HL-2027-01-05'] = String.raw`## Factor theorem
+- $(x - a)$ is a factor of $p(x)$ exactly when $p(a) =$ [[0]].
+- $(x - 2)$ is a factor of $x^{3} - 3x^{2} + 4$ because $8 - 12 + 4 =$ [[0]].
+## Remainder theorem
+- When $p(x)$ is divided by $(x - a)$, the remainder is [[p(a)]].
+- When $x^{3} + 2x - 5$ is divided by $(x - 1)$, the remainder is [[-2]].
+- When dividing by $(ax - b)$, the remainder is $p\left(\frac{b}{a}\right)$.`;
+  N['HL-2027-01-07'] = String.raw`## The fundamental theorem of algebra
+- A polynomial of degree $n$ has exactly [[n]] roots (counting repeats), some of which may be complex.
+- For real polynomials, complex roots come in [[conjugate pairs|conjugate pair|conjugates]].
+## Sum and product of roots
+- For $a_n x^{n} + a_{n-1}x^{n-1} + \ldots + a_0 = 0$: sum of roots $= -\frac{a_{n-1}}{a_n}$, product of roots $= \frac{(-1)^{n}a_0}{a_n}$ (formula booklet).
+- For $2x^{2} - 6x + 5 = 0$, the sum of the roots is [[3]] and the product is [[5/2|2.5]].`;
   Hub.guidedNotes = { text: id => N[id] || '', has: id => !!N[id], ids: () => Object.keys(N) };
 })(window.Hub = window.Hub || {});
 
@@ -7669,6 +7808,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const nb = blanksOf(L.keyIdeas).length;
       add('Key ideas', 'notes', `<div class="nb-notes" id="nb-notes">${notesHTML(L.keyIdeas, (r.blanks || {}), { dis, key: ctx.key })}</div>${nb && !ctx.key ? `<div class="actions"><button type="button" class="btn small" id="check-notes" ${dis}>Check my notes</button><button type="button" class="btn small ghost" id="show-notes" ${r.notesChecked || ctx.readOnly ? '' : 'hidden'}>Show the answers</button><span class="tiny muted" id="notes-score"></span></div>` : ''}`);
     }
+    if (Hub.exam && L.skills.length) { const vids = [...new Map(L.skills.flatMap(k => Hub.exam.videos(k)).map(v => [v.url, v])).values()];
+      add(`Watch &amp; formula booklet ${opt('Optional · revision')}`, 'watch', `<p class="tiny muted">Stuck, or revising later? Watch a short video on today’s topic, and find today’s formulas in the formula booklet you get in every exam.</p><div class="actions">${vids.map(v => `<a class="btn small" href="${v.url}" target="_blank" rel="noopener">▶ IB ${esc(v.code)} ${esc(v.title)}</a>`).join('')}<button type="button" class="btn small ghost" data-booklet>📘 Formula booklet</button></div>`); }
     const ex = examplesOf(L), mine = ownExamples(L);
     if (ex.length || mine.length) add(`Extra worked examples ${opt('Optional · extra support')}`, 'examples', `<p class="tiny muted">Optional — extra support if you want more examples. Try each one first, then reveal the solution one line at a time.</p>${mine.map((e, i) => myExampleHTML(e, i, ctx.key)).join('')}${ex.map((q, i) => exampleHTML(q, mine.length + i + 1, ctx.key)).join('')}`);
     const ts = tasksOf(L);
@@ -7798,8 +7939,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const view = params.view || 'edit', base = '#/lesson/' + encodeURIComponent(L.id);
     const nResp = groupsOf(L.course).reduce((n, g) => n + Hub.roster.inGroup(g, true).filter(s => S().progress[s.id + '|' + NB + L.id]).length, 0);
     const head = `<a class="back" href="#/lessons?course=${L.course}">← Lessons & notebooks</a>` + U.heading(`AA ${L.course} · ${['A', 'B'].filter(d => L.dates[d]).map(d => d + ' day ' + fmtDate(L.dates[d], true)).join(' · ')}`, esc(L.title), '',
-      `<div class="tabs">${[['edit', '✎ Build'], ['student', '👁 Student view'], ['responses', `Responses (${nResp})`]].map(([k, t]) => `<a class="tab ${k === view ? 'on' : ''}" href="${base}${k === 'edit' ? '' : '?view=' + k}">${t}</a>`).join('')}</div>`);
+      `<div class="tabs">${[['edit', '✎ Build'], ['student', '👁 Student view'], ['live', '● Live lesson'], ['responses', `Responses (${nResp})`]].map(([k, t]) => `<a class="tab ${k === view ? 'on' : ''}" href="${base}${k === 'edit' ? '' : '?view=' + k}">${t}</a>`).join('')}</div>`);
     const release = `<section class="card release-card"><h2 class="bar-head green">Release to students</h2>${groupsOf(L.course).map(g => { const [t, c] = relLabel(L, g), d = L.dates[g.slice(-1)]; return `<div class="rel-row"><b>${C().GROUPS[g].label}</b><span class="tiny muted">${d ? 'lesson ' + fmtDate(d, true) : 'not on this calendar'}</span><span class="pill ${c}">${t}</span><span class="actions"><button class="btn small primary" data-rel="${g}" data-act="now">Release now</button><button class="btn small ghost" data-rel="${g}" data-act="sched" ${d ? '' : 'disabled'}>Open on lesson day</button><button class="btn small ghost" data-rel="${g}" data-act="hide">Hide</button></span></div>`; }).join('')}<p class="tiny muted">“Open on lesson day” releases it at 7:00 that morning. Students never see a hidden notebook in their list.</p></section>`;
+    if (view === 'live') return live(main, L, params, head, base);
     if (view === 'student') {
       main.innerHTML = head + `<div class="notice preview">Student view — try it out. Nothing you type here is saved.</div><div id="nb-root" class="nb">${notebookHTML(L, { preview: true, teacher: true })}</div>`;
       bindNotebook($('#nb-root'), L, { preview: true }); return;
@@ -7882,13 +8024,69 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <table class="tbl"><thead><tr><th>Student</th><th>Confidence</th><th>Notes</th><th>Your turn</th><th>Own notes</th><th>One thing learned</th><th>Updated</th></tr></thead><tbody>${st.map(s => { const p = S().progress[s.id + '|' + NB + L.id], x = p && summary(L, p.responses); return `<tr><td>${x ? `<a href="${base}?view=responses&sid=${encodeURIComponent(s.id)}">${esc(s.name)}</a>` : esc(s.name)}</td><td>${x ? ragChip(x.rag) : '<span class="tiny muted">not opened</span>'}</td><td>${x ? x.notes : ''}</td><td>${x ? x.yt : ''}</td><td>${x ? x.own || '—' : ''}</td><td class="small">${x ? esc(x.learned) : ''}</td><td class="tiny">${p ? fmtDateTime(p.updatedAt) : ''}</td></tr>`; }).join('')}</tbody></table></section>`; }).join('');
   }
 
+  /** Live lesson: one tile per student — how far they are, their red/amber/green, and anyone stuck or asking a question. Refreshes itself. */
+  function live(main, L, params, head, base) {
+    const gs = groupsOf(L.course), today = Hub.core.todayISO(), g = gs.includes(params.g) ? params.g : (gs.find(x => L.dates[x.slice(-1)] === today) || gs[0]);
+    const bl = blanksOf(L.keyIdeas).length, studs = Hub.roster.inGroup(g), rows = studs.map(st => { const pr = S().progress[st.id + '|' + NB + L.id], x = pr && summary(L, pr.responses), absent = Hub.attendance && L.dates[g.slice(-1)] && Hub.attendance.isAbsent(st.id, L.dates[g.slice(-1)]);
+      const done = x ? [x.notes !== '—' && +x.notes.split('/')[0] > 0, x.yt !== '—', !!x.rag].filter(Boolean).length : 0; return { st, x, pr, absent, done }; });
+    const opened = rows.filter(r => r.x).length, stuck = rows.filter(r => r.x && r.x.rag === 'red'), asks = rows.filter(r => r.x && r.x.question.trim());
+    const tile = r => { const x = r.x, cls = r.absent ? 'absent' : !x ? 'none' : x.rag || 'open';
+      return `<a class="lv-tile ${cls}" href="${base}?view=responses&sid=${encodeURIComponent(r.st.id)}"><b>${esc(r.st.name)}</b><span class="tiny">${r.absent ? 'Absent' : !x ? 'Not opened' : `Notes ${x.notes} · Your turn ${x.yt}`}</span>${x && x.rag ? `<span class="lv-rag">${{ red: 'Stuck', amber: 'Getting there', green: 'Got it' }[x.rag]}</span>` : ''}${x && x.question.trim() ? '<span class="lv-q" title="Has a question">?</span>' : ''}<span class="lv-time tiny muted">${r.pr && r.pr.updatedAt ? new Date(r.pr.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span></a>`; };
+    main.innerHTML = head + `<div class="tabs">${gs.map(x => `<a class="tab ${x === g ? 'on' : ''}" href="${base}?view=live&g=${x}">${C().GROUPS[x].label}</a>`).join('')}</div>
+      <section class="card act"><div class="row-between"><h2 class="bar-head green">● Live · ${esc(C().GROUPS[g].label)}</h2><span class="small"><b>${opened}/${studs.length}</b> opened${bl ? ` · ${bl} blanks in the notes` : ''} · updates every minute</span></div>
+        ${stuck.length || asks.length ? `<div class="sticky">${stuck.length ? `<p><b>Stuck:</b> ${stuck.map(r => esc(r.st.name)).join(', ')}</p>` : ''}${asks.map(r => `<p><b>${esc(r.st.name)} asks:</b> ${esc(r.x.question)}</p>`).join('')}</div>` : ''}
+        <div class="lv-grid">${rows.sort((a, b) => (a.x ? 1 : 0) - (b.x ? 1 : 0) || a.st.name.localeCompare(b.st.name)).map(tile).join('')}</div>
+        <p class="tiny muted"><span class="lv-key red"></span>Stuck <span class="lv-key amber"></span>Getting there <span class="lv-key green"></span>Got it <span class="lv-key open"></span>Working <span class="lv-key none"></span>Not opened. Tap a student to see their notebook.</p></section>`;
+  }
+
+  /* ================= catch-up after an absence ================= */
+  /** Released notebooks from the last two weeks for lessons a student was marked absent from: [{L, date, done}] */
+  function catchUp(st, days = 14) {
+    if (!Hub.attendance || !st) return [];
+    const day = st.group.slice(-1), since = Hub.core.addDays(Hub.mastery.asOf(), -days);
+    return all().filter(L => L.course === st.course && visibleTo(L, st.group) && L.dates[day] && L.dates[day] >= since && Hub.attendance.isAbsent(st.id, L.dates[day]))
+      .map(L => { const pr = S().progress[st.id + '|' + NB + L.id], r = pr && pr.responses; return { L, date: L.dates[day], done: !!(r && (r.notesChecked || r.rag)) }; }).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  function catchUpCardHTML(st) {
+    const list = catchUp(st).filter(x => !x.done); if (!list.length) return '';
+    return `<section class="card act cu-card"><h2 class="bar-head pink">You missed ${list.length === 1 ? 'a lesson' : list.length + ' lessons'} — catch up</h2><p class="small">Work through the notebook: fill in the key ideas, press <b>Check my notes</b>, try Your turn, then rate how confident you feel.</p>${list.map(x => `<div class="todo"><div><b>${esc(x.L.title)}</b><div class="tiny muted">${fmtDate(x.date, true)}</div></div><a class="btn small primary" href="#/notebook/${encodeURIComponent(x.L.id)}">Catch up →</a></div>`).join('')}</section>`;
+  }
+  /** Teacher: who has caught up after being absent (for the register card). */
+  function catchUpTeacherHTML(groupId) {
+    const rows = Hub.roster.inGroup(groupId).flatMap(st => catchUp(st).map(x => Object.assign({ st }, x))); if (!rows.length) return '';
+    return `<div class="cu-t"><p class="small"><b>Catch-up after absence</b> <span class="tiny muted">(last 2 weeks)</span></p>${rows.map(x => `<div class="row-between small"><span>${esc(x.st.name)} · <span class="tiny muted">${fmtDate(x.date)} · ${esc(x.L.title.slice(0, 50))}</span></span>${x.done ? '<span class="pill green">caught up ✓</span>' : '<span class="pill red">not yet</span>'}</div>`).join('')}</div>`;
+  }
+
+  /* ================= unit notes pack (revision) ================= */
+  /** All released notebooks for a unit, with the student's own blanks, notes and reflections — for revision and printing. */
+  function unitNotes(main, params) {
+    const role = Hub.auth.role(), st = role === 'student' ? me() : null, course = st ? st.course : (params.course === 'HL' ? 'HL' : 'SL'), unit = +params.u || 1, grp = st ? st.group : course + '-A', day = grp.slice(-1);
+    const units = C().UNITS[course], name = (units.find(x => x[0] === unit) || [0, ''])[1];
+    // every lesson of the unit taught so far: its released notebook if there is one, otherwise the ready-made guided notes (answers shown)
+    const today = Hub.mastery.asOf(), list = calendar(course).filter(row => row.skills.some(k => (C().SKILL[k] || {}).unit === unit) && (row.dates[day] || firstDate(row)) <= today).map(row => {
+      const L = get(row.id); if (L && (!st || visibleTo(L, st.group))) return L;
+      return Hub.guidedNotes && Hub.guidedNotes.has(row.id) ? { id: row.id, title: row.title, dates: row.dates, skills: row.skills, keyIdeas: Hub.guidedNotes.text(row.id), summaryOnly: true } : null; }).filter(Boolean);
+    const block = L => { const r = st && !L.summaryOnly ? ((S().progress[st.id + '|' + NB + L.id] || {}).responses || {}) : {};
+      return `<section class="card un-l"><h2 class="un-h">${esc(L.title)} <span class="tiny muted">· ${fmtDate(L.dates[day] || firstDate(L), true)}</span></h2>
+        ${(L.keyIdeas || '').trim() ? `<div class="nb-notes">${notesHTML(L.keyIdeas, r.blanks || {}, { dis: 'disabled', key: !st || L.summaryOnly })}</div>` : '<p class="tiny muted">No key ideas in this notebook.</p>'}
+        ${(r.mine || []).length ? `<div class="un-mine"><p class="small"><b>My own notes</b></p>${r.mine.map(b => `<article class="mine-blk">${mineView(b)}</article>`).join('')}</div>` : ''}
+        ${r.learned ? `<p class="small"><b>What I learned:</b> ${esc(r.learned)}</p>` : ''}${r.question ? `<p class="small"><b>My question:</b> ${esc(r.question)}</p>` : ''}
+        ${Hub.exam ? `<div class="actions no-print">${[...new Map(L.skills.flatMap(k => Hub.exam.videos(k)).map(v => [v.url, v])).values()].map(v => `<a class="btn small ghost" href="${v.url}" target="_blank" rel="noopener">▶ ${esc(v.title)}</a>`).join('')}</div>` : ''}</section>`; };
+    main.innerHTML = `<div class="row-between no-print"><a class="back" href="${st ? '#/notebook' : '#/lessons?course=' + course}">← ${st ? 'My notebook' : 'Lessons & notebooks'}</a><span class="actions">${units.filter(([u]) => C().skillsFor(course).some(k => k.unit === u)).map(([u]) => `<a class="btn small ${u === unit ? 'primary' : 'ghost'}" href="#/unitnotes?u=${u}${st ? '' : '&course=' + course}">Unit ${u}</a>`).join('')}<button class="btn small" type="button" id="un-print">🖨 Print</button></span></div>` +
+      U.heading(`${st ? 'MY ' : ''}UNIT ${unit} NOTES · AA ${course}`, esc(name), st ? 'Every lesson notebook from this unit in one place — your own answers, notes and reflections. Use it to revise for the test.' : 'Every notebook in this unit, with the answers filled in.') +
+      (list.length ? list.map(block).join('') : U.empty(st ? 'No notebooks from this unit have been released yet.' : 'No notebooks for this unit yet.'));
+    $('#un-print').onclick = () => window.print();
+    loadPhotos(main);
+  }
+
   /* ================= student ================= */
   const me = () => Hub.roster.byId(Hub.auth.sid());
   function student(main, params) {
     const s = me(); if (!s) { main.innerHTML = U.empty('Your account is not on a class roster.'); return; }
     if (params.id) return studentPage(main, s, params.id);
     const day = s.group.slice(-1), mine = all().filter(L => L.course === s.course && visibleTo(L, s.group)).sort((a, b) => String(b.dates[day] || firstDate(b)).localeCompare(String(a.dates[day] || firstDate(a))));
-    main.innerHTML = U.heading('MY NOTEBOOK', 'Lesson notebooks', 'Slides, notes, worked examples and practice for every lesson. Your answers save as you type.') +
+    main.innerHTML = U.heading('MY NOTEBOOK', 'Lesson notebooks', 'Slides, notes, worked examples and practice for every lesson. Your answers save as you type.') + catchUpCardHTML(s) +
+      `<section class="card"><h2 class="bar-head amber">My unit notes for revision</h2><p class="small">All of a unit’s notebooks in one place, with your answers — ready to revise from or print.</p><div class="actions">${C().UNITS[s.course].filter(([u]) => mine.some(L => L.skills.some(k => (C().SKILL[k] || {}).unit === u))).map(([u, nm]) => `<a class="btn small" href="#/unitnotes?u=${u}">Unit ${u} · ${esc(nm)}</a>`).join('') || '<span class="tiny muted">Appears once notebooks are released.</span>'}</div></section>` +
       (mine.length ? `<section class="card"><div class="ls">${mine.map(L => { const p = Hub.assess.getProgress(s.id, NB + L.id), x = p && summary(L, p.responses); return `<div class="ls-row has"><div class="ls-dates"><span class="ls-day">${fmtDate(L.dates[day] || firstDate(L), true)}</span></div><div class="ls-main"><b>${esc(L.title)}</b>${L.eq ? `<div class="tiny muted">${M(L.eq)}</div>` : ''}</div><div class="ls-status">${x ? ragChip(x.rag) : '<span class="pill">New</span>'}</div><div class="ls-act"><a class="btn small ${x ? 'ghost' : 'primary'}" href="#/notebook/${encodeURIComponent(L.id)}">${x ? 'Open' : 'Start'}</a></div></div>`; }).join('')}</div></section>` : U.empty('No notebooks yet. They appear here when Miss Badmus releases each lesson.'));
   }
   function studentPage(main, s, id) {
@@ -7902,7 +8100,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /** Latest released notebook for a student (for My day). */
   function latestFor(s) { const day = s.group.slice(-1); return all().filter(L => L.course === s.course && visibleTo(L, s.group)).sort((a, b) => String(b.dates[day] || '').localeCompare(String(a.dates[day] || '')))[0] || null; }
 
-  Hub.lessons = { list, edit, student, calendar, idFor, all, get, create, setRelease, visibleTo, deckFrom, notesHTML, blanksOf, blankOK, summary, latestFor, notebookHTML };
+  Hub.lessons = { unitNotes, catchUp, catchUpCardHTML, catchUpTeacherHTML, list, edit, student, calendar, idFor, all, get, create, setRelease, visibleTo, deckFrom, notesHTML, blanksOf, blankOK, summary, latestFor, notebookHTML };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/classdash.js ---- */
@@ -9804,6 +10002,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       (t.note ? `<div class="sticky big"><b>Miss Badmus:</b> ${esc(t.note)}</div>` : '') +
       `<div class="grid g2"><section class="card"><h2 class="bar-head pink">What is on the test</h2><p class="tiny muted">${s ? 'Your weakest skills are first. Tick each one off when you can do it without notes.' : 'Students see these in order of their own weakest skill first, with their mastery.'}</p>${order.map(row).join('')}</section>
         <div><section class="card"><h2 class="bar-head amber">Your ${days}-day plan</h2><ol class="sg-plan">${plan.map(p => `<li><b>${p.d === 0 ? 'Today' : 'Day ' + (p.d + 1)}:</b> ${p.sk.map(id => esc(C().SKILL[id].name)).join(' · ')} — watch the video if you are unsure, then do two practice questions on each.</li>`).join('')}<li><b>${days === 1 ? 'Tonight' : 'Day before the test'}:</b> mixed practice under timed conditions, then check your answers against the formula booklet and the command terms below.</li></ol></section>
+        ${t.unit ? `<section class="card"><h2 class="bar-head amber">${s ? 'My' : 'The'} Unit ${t.unit} notes</h2><p class="small">Every lesson notebook from this unit in one place${s ? ', with your own answers and notes' : ''} — revise from it or print it.</p><a class="btn" href="#/unitnotes?u=${t.unit}${s ? '' : '&course=' + C().GROUPS[groupId].course}">Open unit notes →</a></section>` : ''}
         <section class="card"><h2 class="bar-head green">Formula booklet</h2><p class="small">You get the IB formula booklet in the test. Find each formula you need for this unit in it now, so you are not searching on the day.</p><button class="btn" type="button" data-booklet>📘 Open the formula booklet</button></section>
         <section class="card"><h2 class="bar-head blue">Command terms</h2>${terms.map(([k, v]) => `<p class="small"><b>${esc(k)}</b> — ${esc(v)}</p>`).join('')}${s ? '<a class="btn small" href="#/terms">Command term drill →</a>' : ''}</section>
         <section class="card"><h2 class="bar-head pink">On the day</h2><ul class="small"><li>Show your method: method marks (M) are given even when the final answer is wrong.</li><li>Give answers exact or to 3 significant figures unless the question says otherwise.</li><li>“Hence” means use the part before. “Show that” means the working is the point — every step.</li><li>Charge your NumWorks and bring a pencil and ruler.</li></ul></section></div></div>
@@ -10188,8 +10387,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
-    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m) }
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p) }
   };
   function shell() {
     const sess = Hub.auth.current(), role = Hub.auth.role(), st = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null;
@@ -10289,7 +10488,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
      Every 2 minutes while the hub is on screen (students: 5), and when you come back to the tab, quietly load the latest.
      Only redraw when something changed, only on pages that just show data, never while typing, in a dialog,
      or mid-task — and keep the scroll position and any opened sections. */
-  const AUTO_OK = { teacher: /^#\/(home)?$|^#\/(class|datacycle|marking$|marking\?|announce|mastery|student\/|ia$|ia\?)/, student: /^#\/(home)?$|^#\/(progress|calendar)/ };
+  const AUTO_OK = { teacher: /^#\/(home)?$|^#\/lesson\/[^?]+\?view=live|^#\/(class|datacycle|marking$|marking\?|announce|mastery|student\/|ia$|ia\?)/, student: /^#\/(home)?$|^#\/(progress|calendar)/ };
   let lastAuto = 0, autoBusy = false;
   const stamp = st => !st ? '' : [st.attempts.length, st.attempts.filter(t => t.status === 'released').length, st.attempts.reduce((n, t) => n + (t.final ? 1 : 0), 0), st.evidence.length, Object.keys(st.progress || {}).length, Object.values(st.progress || {}).reduce((n, v) => n + String(v && v.updatedAt || '').length, 0), st.assessments.map(a => a.id + a.status + (a.keepOpen ? 1 : 0)).join(), JSON.stringify(st.donow || {}).length, JSON.stringify((st.settings || {}).announce || []).length].join('|');
   async function autoRefresh(force) {
