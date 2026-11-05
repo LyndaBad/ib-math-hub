@@ -706,6 +706,7 @@ body.mp-on { padding-bottom: 76px; }
 .today-step span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--white); border: 2px solid currentColor; font-size: .75rem; flex: none; }
 .today-step.todo { border-color: #F6B26B; background: #FFF4E5; } .today-step.ok { border-color: #6AA84F; background: #EEF7E9; } .today-step.none { opacity: .6; }
 @media (max-width: 760px) { .today-row { grid-template-columns: 1fr 1fr; } .today-class { grid-column: 1 / -1; } }
+.keep-open { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; padding: 8px 10px; border: 2px dashed var(--line); border-radius: 10px; } .keep-open.on { border-color: #6AA84F; background: #EEF7E9; } .keep-open label { margin: 0; }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -4885,7 +4886,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const toMark = Hub.assess.queue().filter(t => ids.has(t.sid)).length;
       return `<div class="today-row"><a class="today-class" href="#/class/${g.id}"><b>${esc(g.label)}</b><span class="tiny muted">${esc(g.block)} · ${esc((L.activity || '').slice(0, 48))}</span></a>
         <a class="today-step ${reg ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>1</span>${reg ? `Register ✓${reg.absent ? ` · ${reg.absent} absent` : ''}` : 'Take the register'}</a>
-        <a class="today-step ${!ets.length ? 'none' : etDone >= etTotal ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>2</span>${ets.length ? `Exit Ticket ${etDone}/${etTotal} done` : 'No Exit Ticket due'}</a>
+        <a class="today-step ${!ets.length ? 'none' : etDone >= etTotal ? 'ok' : 'todo'}" href="#/class/${g.id}"><span>2</span>${ets.length ? `Exit Ticket ${etDone}/${etTotal} done${ets.some(a => a.keepOpen) ? ' · kept open' : ''}` : 'No Exit Ticket due'}</a>
         <a class="today-step ${toMark ? 'todo' : 'ok'}" href="#/marking"><span>3</span>${toMark ? `${toMark} to mark` : 'Marking ✓'}</a></div>`; }).filter(Boolean);
     const todayHTML = `<section class="card today"><h2 class="bar-head green">Today · ${fmtDate(asOf, true)}</h2>${todayRows.length ? todayRows.join('') : '<p class="tiny muted">No lessons today.</p>'}</section>`;
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
@@ -6016,7 +6017,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function closeTime(groupId) { const g = C().GROUPS[groupId] || {}, [h, m] = (BLOCK_END[g.block] || '15:00').split(':').map(Number), t = h * 60 + m + AFTER_MIN; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); }
   /** Has this Exit Ticket's in-class window passed for the student's class? */
   function windowOver(a, st) {
-    if (!a || a.type !== 'Exit Ticket' || !st) return false; const due = Hub.assess.dueFor(a, st.group); if (!due) return false;
+    if (!a || a.type !== 'Exit Ticket' || !st || a.keepOpen) return false; const due = Hub.assess.dueFor(a, st.group); if (!due) return false;
     try { const n = nyNow(); return n.date > due || (n.date === due && n.hm >= closeTime(st.group)); } catch (e) { return false; }
   }
   const submitted = (a, sid) => Hub.assess.attemptsFor(a.id, sid).length > 0;
@@ -7422,6 +7423,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         <p class="tiny muted">${x.due ? (x.past ? 'Was due ' : 'Due ') + fmtDate(x.due, true) : 'No due date'}${type === 'Exit Ticket' && Hub.attendance && Hub.attendance.windowOver(x.a, { group: g }) && x.a.status === 'published' ? ` · closed for the class at ${Hub.attendance.closeLabel(g)} — absent students can still do it until you close it` : x.past ? '' : ' · still open'}</p>
         <div class="rd-stats"><div><b>${did.length}/${studs.length}</b><span>done</span></div><div><b>${avg === null ? '—' : avg + '%'}</b><span>class average</span></div><div><b>${not.length}</b><span>not done</span></div></div>
         ${toMark ? `<p class="tiny"><span class="pill amber">${toMark} to mark</span> <a href="#/marking">Marking</a></p>` : ''}
+        ${type === 'Exit Ticket' && x.a.status === 'published' ? `<div class="keep-open ${x.a.keepOpen ? 'on' : ''}"><label class="inline-check"><input type="checkbox" data-keepopen="${x.a.id}"${x.a.keepOpen ? ' checked' : ''}> <b>Keep open</b> — don’t close it after the lesson</label><span class="tiny muted">${x.a.keepOpen ? 'Open for everyone until you close it in the Assessment studio.' : `Closes for the class at ${Hub.attendance ? Hub.attendance.closeLabel(g) : 'the end of the lesson'} on its due day (absent students keep it).`}</span></div>` : ''}
         <details class="rd-list" open><summary><b>Not done (${not.length})</b></summary>${not.length ? `<p class="miss-names">${not.map(r => `<a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent</span>' : ''}`).join(', ')}</p>` : '<p class="tiny gc-ok">✓ Everyone has done it</p>'}</details>
         <details class="rd-list"><summary><b>Done (${did.length})</b></summary>${did.length ? `<table class="tbl rd-tbl"><tbody>${did.sort((p, q) => (q.sc.pct ?? -1) - (p.sc.pct ?? -1)).map(r => `<tr><td><a href="#/student/${encodeURIComponent(r.st.id)}">${esc(r.st.name)}</a>${abs(r.st) ? ' <span class="pill">absent · done later</span>' : ''}</td><td>${r.sc.pct === null || r.sc.pct === undefined ? '—' : r.sc.pct + '%'}</td><td>${r.t.status === 'submitted' ? '<span class="pill amber">to mark</span>' : r.t.status === 'released' ? '<span class="tiny muted">released</span>' : ''}</td><td><a class="tiny" href="#/mark/${r.t.id}">open</a></td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">Nobody yet.</p>'}</details></section>`; };
     const pvStudent = Hub.roster.inGroup(g, true).find(x => x.test) || studs[0];
@@ -7447,6 +7449,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const cdp = $('#cd-preview'); if (cdp) cdp.onclick = () => Hub.app.previewAs(pvStudent.id);
     if (Hub.attendance) Hub.attendance.bindRegister(main, g);
     if (Hub.retake) Hub.retake.bind(main);
+    $$('[data-keepopen]', main).forEach(i => (i.onchange = async () => { const a = Hub.assess.byId(i.dataset.keepopen); if (!a) return; a.keepOpen = i.checked;
+      Hub.store.log(`${i.checked ? 'Kept open' : 'Normal closing for'} “${a.title}”`); Hub.store.save(true);
+      try { await Hub.store.flush(); toast(i.checked ? 'Kept open — it won’t close after the lesson.' : 'It will close an hour after the lesson as usual.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); }));
     const cp = $('#copy-missing'); if (cp) cp.onclick = async () => { const txt = miss.filter(x => x.missing.length).map(x => `${x.a.type} – ${x.a.title} (due ${fmtDate(x.due)}): ${x.missing.map(s => s.name).join(', ')}`).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Copied.'); } catch (e) { toast('Could not copy here.', 'error'); } };
   }
   Hub.classdash = { view, missing, upcoming, cardSnippet };

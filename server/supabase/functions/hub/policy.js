@@ -284,7 +284,7 @@ export function etCloseTime(block){const [h,m]=(BLOCK_END[block]||'15:00').split
 /** Why this student may not submit this assessment now, or null. a = the assessment, due = its due date for their class. */
 export function submitGuard(state,sid,a,{kind,block,due,now}={}){
  if(Array.isArray(a.targets)&&!a.targets.includes(sid))return 'This retake is not set for you.';
- if(kind!=='donow'&&kind!=='practice'&&a.type==='Exit Ticket'&&due){
+ if(kind!=='donow'&&kind!=='practice'&&a.type==='Exit Ticket'&&due&&!a.keepOpen){
   const n=nyNow(now),closed=n.date>due||(n.date===due&&n.hm>=etCloseTime(block));
   if(closed&&!state.progress[sid+'|att:'+due])return 'This Exit Ticket closed after the lesson. If you were absent, speak to Miss Badmus.';
  }
