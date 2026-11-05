@@ -802,7 +802,11 @@ body.mp-on { padding-bottom: 76px; }
 .reg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 12px; margin: 8px 0; }
 .reg-row { display: flex !important; flex-direction: row !important; align-items: center; gap: 8px; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; margin: 0; font-family: var(--f-body, inherit); font-weight: 400; }
 .reg-row .reg-tag { display: none; margin-left: auto; font-size: .75rem; font-weight: 700; color: #B03A2E; } .reg-row.is-absent { background: #FDECEC; border-color: #E06666; } .reg-row.is-absent .reg-tag { display: inline; }
-.reg-date select { min-width: 190px; } .absent-note { font-size: .85rem; font-weight: 700; color: #B03A2E; margin: 2px 0; }
+.reg-date select { min-width: 190px; }
+details.reg-card > summary.reg-sumline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; cursor: pointer; list-style: none; }
+details.reg-card > summary::-webkit-details-marker { display: none; }
+.reg-sumline .bar-head { margin: 0; } .reg-status { font-family: var(--f-ui); font-weight: 600; font-size: .9rem; color: #B03A2E; } .reg-status.ok { color: var(--ok, #2E7D32); }
+.reg-tog { margin-left: auto; } details.reg-card:not([open]) { padding-bottom: 12px; } .reg-top { margin-top: 8px; } .absent-note { font-size: .85rem; font-weight: 700; color: #B03A2E; margin: 2px 0; }
 .due-big { font-family: var(--f-ui); font-size: 1.15rem; margin: 6px 0 8px; } .due-big b { font-size: 1.8rem; } .due-row { border-top: 1px dashed var(--line); padding: 6px 0; gap: 10px; } .due-row span { flex: 1; text-align: right; }
 .wtw-skill { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px dashed var(--line); } .wtw-skill > div { display: flex; flex-direction: column; } .wtw-wait { margin-top: 10px; }
 .rel-all { border-color: #6AA84F; background: #EEF7E9; } .att-ready { font-weight: 700; color: #3B7A2A; }
@@ -6846,19 +6850,25 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function registerHTML(groupId) {
     const ls = lessonDates(groupId); if (!ls.length) return '';
     const date = chosen[groupId] && ls.some(l => l.date === chosen[groupId]) ? chosen[groupId] : ls[0].date, studs = Hub.roster.inGroup(groupId);
-    const abs = studs.filter(s => isAbsent(s.id, date));
-    return `<section class="card reg-card"><div class="row-between"><h2 class="bar-head green">Register</h2><label class="reg-date"><span class="sr-only">Lesson</span><select id="reg-date">${ls.map(l => `<option value="${l.date}"${l.date === date ? ' selected' : ''}>${fmtDate(l.date, true)}${l.date === nyNow().date ? ' (today)' : ''}</option>`).join('')}</select></label></div>
+    const abs = studs.filter(s => isAbsent(s.id, date)), taken = registerTaken(groupId, date);
+    // collapsed once the register is saved for that lesson (or if you closed it); your choice is remembered per class
+    let pref = null; try { pref = localStorage.getItem('reg-open|' + groupId); } catch (e) {}
+    const open = pref === '1' ? true : pref === '0' ? false : !taken;
+    const status = `${fmtDate(date, true)} · ${taken ? (abs.length ? `${abs.length} absent: ${abs.map(s => esc(s.name.split(' ')[0])).join(', ')}` : 'everyone present') + ' ✓' : 'not taken yet'}`;
+    return `<details class="card reg-card" data-reg="${groupId}"${open ? ' open' : ''}><summary class="reg-sumline"><span class="bar-head green">Register</span><span class="reg-status ${taken ? 'ok' : ''}">${status}</span><span class="reg-tog tiny muted">${open ? 'Hide ▲' : 'Show ▼'}</span></summary><div class="row-between reg-top"><span></span><label class="reg-date"><span class="sr-only">Lesson</span><select id="reg-date">${ls.map(l => `<option value="${l.date}"${l.date === date ? ' selected' : ''}>${fmtDate(l.date, true)}${l.date === nyNow().date ? ' (today)' : ''}</option>`).join('')}</select></label></div>
       <p class="tiny muted">Everyone is present unless you tick them absent. Absent students keep the Exit Ticket for that lesson after it closes for everyone else at ${closeLabel(groupId)}, until you close it.</p>
       ${studs.length ? `<div class="reg-list">${studs.map(s => `<label class="reg-row${isAbsent(s.id, date) ? ' is-absent' : ''}"><input type="checkbox" class="reg-abs" value="${esc(s.id)}"${isAbsent(s.id, date) ? ' checked' : ''}><span>${esc(s.name)}</span><span class="reg-tag">absent</span></label>`).join('')}</div>
-      <div class="actions"><button class="btn small primary" id="reg-save" type="button">Save register</button><span class="tiny muted" id="reg-sum">${abs.length ? `${abs.length} absent: ${abs.map(s => esc(s.name)).join(', ')}` : 'Everyone present'}</span></div>` : '<p class="tiny muted">No students in this class yet.</p>'}${Hub.lessons && Hub.lessons.catchUpTeacherHTML ? Hub.lessons.catchUpTeacherHTML(groupId) : ''}</section>`;
+      <div class="actions"><button class="btn small primary" id="reg-save" type="button">Save register</button><span class="tiny muted" id="reg-sum">${abs.length ? `${abs.length} absent: ${abs.map(s => esc(s.name)).join(', ')}` : 'Everyone present'}</span></div>` : '<p class="tiny muted">No students in this class yet.</p>'}${Hub.lessons && Hub.lessons.catchUpTeacherHTML ? Hub.lessons.catchUpTeacherHTML(groupId) : ''}</details>`;
   }
   function bindRegister(root, groupId) {
     const sel = $('#reg-date', root); if (sel) sel.onchange = () => { chosen[groupId] = sel.value; Hub.app.render(); };
+    const box = $('details.reg-card', root); if (box) box.addEventListener('toggle', () => { try { localStorage.setItem('reg-open|' + groupId, box.open ? '1' : '0'); } catch (e) {} const t = $('.reg-tog', box); if (t) t.textContent = box.open ? 'Hide ▲' : 'Show ▼'; });
     $$('.reg-abs', root).forEach(i => (i.onchange = () => i.closest('.reg-row').classList.toggle('is-absent', i.checked)));
     const b = $('#reg-save', root); if (b) b.onclick = async () => {
       const date = $('#reg-date', root).value; let n = 0;
       $$('.reg-abs', root).forEach(i => { setAbsent(i.value, date, i.checked); if (i.checked) n++; });
       S().progress['_teacher|reg:' + groupId + '|' + date] = { at: new Date().toISOString(), absent: n };   // teacher-only: register taken
+      try { localStorage.removeItem('reg-open|' + groupId); } catch (e) {}   // saved: fold it away
       chosen[groupId] = date; Hub.store.log(`Register for ${(C().GROUPS[groupId] || {}).label || groupId} · ${date}: ${n} absent`); Hub.store.save(true);
       try { await Hub.store.flush(); toast(n ? `Register saved — ${n} absent.` : 'Register saved — everyone present.'); } catch (e) { toast(e.message, 'error'); }
       Hub.app.render();
