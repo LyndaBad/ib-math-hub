@@ -6589,7 +6589,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   function xpResult(main, s, src, atts, info) {
     const earned = atts.reduce((x, t) => x + (+Hub.assess.score(t).earned || 0), 0), max = src.reduce((x, k) => x + k.q.parts.reduce((y, p) => y + p.marks, 0), 0), pct = max ? Math.round(100 * earned / max) : 0;
-    const course = s.course, ok = Hub.datacycle && Hub.datacycle.boundsOK(course), grade = ok ? Hub.datacycle.toGrade(pct, course) : null;
+    const course = s.course, ok = Hub.datacycle && Hub.datacycle.boundsOK(course) && hasTestOrQuiz(s.id), grade = ok ? Hub.datacycle.toGrade(pct, course) : null;
     main.innerHTML = `<a class="back" href="#/exampractice">← Exam practice</a>` + U.heading('EXAM PRACTICE', `You scored ${earned}/${max} (${pct}%)`, `${info.used} minute${info.used === 1 ? '' : 's'} used of about ${info.minutes}.${grade !== null ? ` On this paper that is roughly an IB <b>${grade}</b> (using your teacher’s grade boundaries — one practice paper is only a rough guide).` : ''}`) +
       src.map((k, i) => { const t = atts[i]; return t ? U.question(k.q, i, { mode: 'feedback', responses: t.responses, results: t.auto.parts, final: null, released: true }) : ''; }).join('') +
       `<section class="card"><h2 class="bar-head green">Next</h2><div class="actions"><a class="btn primary" href="#/exampractice">Another paper</a><a class="btn ghost" href="#/progress">My progress</a></div><p class="tiny muted">Each question was marked as practice, so it counts a little towards your mastery of that skill.</p></section>`;
@@ -6597,17 +6597,21 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
 
   /* ---------- progress: summary (working IB grade, strongest and weakest skills, missing work) ---------- */
+  /** Students only see a working IB grade once they have at least one marked test or quiz (a retest counts as a test). */
+  function hasTestOrQuiz(sid) {
+    return S().attempts.some(t => { if (t.sid !== sid || t.status !== 'released') return false; const a = Hub.assess.byId(t.aid) || t.inline || {}; return ['Test', 'Unit test', 'Quiz', 'Retest'].includes(a.type) || !!a.mock; });
+  }
   function summaryHTML(s, stats) {
     const asOf = Hub.mastery.asOf(), DC = Hub.datacycle, pr = DC ? DC.predicted(s, asOf) : null, cut = +(((S().settings || {}).dataCycle || {}).grade || 4);
     const trend = DC && pr ? DC.months().filter(m => m.upTo).map(m => [m.short, DC.predicted(s, m.upTo)]).filter(([, x]) => x && x.grade !== null) : [];
     const known = stats.filter(x => x.taught && x.pct !== null), weak = known.filter(x => x.pct < 80).sort((a, b) => a.pct - b.pct).slice(0, 3), strong = known.slice().sort((a, b) => b.pct - a.pct).filter(x => !weak.includes(x)).slice(0, 3);
     const miss = Hub.classdash ? Hub.classdash.missing(s.group, 42).filter(x => !x.a.optional && x.missing.some(m => m.id === s.id)) : [];
-    const gradeCard = pr && pr.grade !== null ? `<div class="mp-grade ${pr.grade >= cut + 1 ? 'hm-g' : pr.grade >= cut ? 'hm-a' : 'hm-r'}"><b>${pr.grade}</b><span>working IB grade</span></div>
+    const showGrade = hasTestOrQuiz(s.id), gradeCard = pr && pr.grade !== null && showGrade ? `<div class="mp-grade ${pr.grade >= cut + 1 ? 'hm-g' : pr.grade >= cut ? 'hm-a' : 'hm-r'}"><b>${pr.grade}</b><span>working IB grade</span></div>
         <div><p class="small">Based on <b>${pr.n}</b> marked piece${pr.n === 1 ? '' : 's'} of work — tests, quizzes, retests and Exit Tickets — weighted average <b>${pr.pct}%</b>,, using Miss Badmus’ grade boundaries. Homework and practice don’t count here.</p>
         ${trend.length > 1 ? `<p class="tiny">By month: ${trend.map(([m, x]) => `${m} <b>${x.grade}</b>`).join(' → ')}</p>` : ''}
         ${pr.grade < 7 && DC.boundsOK(s.course) ? `<p class="tiny muted">Next grade up: about <b>${(((S().settings.dataCycle || {}).bounds || {})[s.course] || {})[pr.grade + 1]}%</b> overall.</p>` : ''}
         <p class="tiny muted">A working grade, not a prediction — it changes as you do more work.</p></div>`
-      : `<p class="small muted">Your working IB grade appears once you have a marked test, quiz or Exit Ticket.</p>`;
+      : `<p class="small muted">Your working IB grade appears here once you have done at least one test or quiz and it has been marked.</p>`;
     return `<div class="grid g2 mp-top"><section class="card"><h2 class="bar-head green">Where I am</h2><div class="mp-row">${gradeCard}</div></section>
       <section class="card"><h2 class="bar-head pink">Missing work</h2>${miss.length ? miss.map(x => `<div class="row-between small"><span><span class="pill ${x.a.type === 'Homework' ? 'amber' : 'pink'}">${x.a.type === 'Homework' ? 'HW' : 'ET'}</span> ${esc(x.a.title)}</span><span class="tiny muted">due ${fmtDate(x.due)}</span></div>`).join('') + '<p class="tiny muted">Talk to Miss Badmus about catching up on these.</p>' : '<p class="tiny gc-ok">✓ Nothing missing in the last six weeks.</p>'}</section></div>
       ${known.length ? `<div class="grid g2"><section class="card"><h2 class="bar-head blue">My strongest skills</h2>${strong.map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}</div>`).join('') || '<p class="tiny muted">Keep going — not enough evidence yet.</p>'}</section>
