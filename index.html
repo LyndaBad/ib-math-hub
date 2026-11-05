@@ -707,6 +707,7 @@ body.mp-on { padding-bottom: 76px; }
 .today-step.todo { border-color: #F6B26B; background: #FFF4E5; } .today-step.ok { border-color: #6AA84F; background: #EEF7E9; } .today-step.none { opacity: .6; }
 @media (max-width: 760px) { .today-row { grid-template-columns: 1fr 1fr; } .today-class { grid-column: 1 / -1; } }
 .keep-open { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; padding: 8px 10px; border: 2px dashed var(--line); border-radius: 10px; } .keep-open.on { border-color: #6AA84F; background: #EEF7E9; } .keep-open label { margin: 0; }
+.new-version { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 9999; background: var(--white); border: 3px solid var(--orange); border-radius: 14px; padding: 10px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.15); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 32px); }
 .dc-goal p { font-size: 1.1rem; } .dc-present .dc-big b { font-size: 3.2rem; }
 @media print { .dc-present .card, .dc-present .dc-big { break-inside: avoid; } }
 .join-stu td { padding: 6px 8px; vertical-align: middle; } .join-stu tr + tr td { border-top: 1px solid var(--line); }
@@ -9266,7 +9267,22 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const u = document.getElementById('auto-upd'); if (u) u.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     } catch (e) { /* offline or signed out: try again next time */ } finally { autoBusy = false; }
   }
-  setInterval(() => autoRefresh(false), 30e3);
+  /* New versions of the hub: when a newer copy has been published, reload into it on a page that just shows data
+     (otherwise show a Reload bar), so nobody keeps running yesterday's rules. */
+  let siteTag = null, lastSiteCheck = 0;
+  const pageTag = async () => { const r = await fetch(location.pathname + '?v=' + Date.now(), { method: 'HEAD', cache: 'no-store' }); return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified')) : null; };
+  if (!ART && location.protocol === 'https:') pageTag().then(t => { siteTag = t; }).catch(() => {});
+  async function checkSite(force) {
+    if (ART || location.protocol !== 'https:' || !siteTag || document.hidden || (!force && Date.now() - lastSiteCheck < 110e3)) return; lastSiteCheck = Date.now();
+    let t = null; try { t = await pageTag(); } catch (e) { return; } if (!t || t === siteTag) return;
+    const role = Hub.auth.role && Hub.auth.role(), h = currentHash() || '#/home', okRe = AUTO_OK[role === 'teacher' && !Hub.auth.isPreview() ? 'teacher' : 'student'], ae = document.activeElement;
+    const safe = okRe.test(h) && !Hub.store.dirty && !document.querySelector('.modal, .modal-back, dialog[open]') && !(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName));
+    if (safe) { location.reload(); return; }
+    if (!document.getElementById('new-version')) document.body.insertAdjacentHTML('beforeend', '<div class="banner new-version" id="new-version" role="status">The hub has been updated. <button class="btn small primary" type="button" onclick="location.reload()">Reload</button> <span class="tiny">(finish and submit what you are doing first)</span></div>');
+  }
+  setInterval(() => { autoRefresh(false); checkSite(); }, 30e3);
+  if (Hub.app) Hub.app.checkSite = () => checkSite(true);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkSite(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) autoRefresh(true); });
   window.addEventListener('focus', () => autoRefresh(true));
     window.addEventListener('hub-conflict', () => { const b = $('#conflict-banner'); if (b) b.hidden = !Hub.store.blocked; });
