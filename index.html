@@ -403,7 +403,7 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 /* NumWorks calculator */
 .calc-launch { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 9px 12px; border-radius: 12px; border: 2px dashed var(--orange); background: var(--white); font-family: var(--f-ui); font-weight: 600; font-size: 1rem; color: var(--ink-2); cursor: pointer; text-align: left; }
 .calc-launch:hover { background: var(--cream); }
-body.no-calc .calc-launch, body.no-calc .calc-q { display: none; }
+body.no-calc .calc-launch:not(.fb-launch), body.no-calc .calc-q { display: none; }
 .calc-q { margin-left: auto; }
 .calc-panel { position: fixed; z-index: 70; top: 12px; right: 12px; bottom: 12px; width: min(400px, 92vw); background: var(--white); border: var(--bw) solid var(--orange); border-radius: var(--r); box-shadow: 0 12px 40px rgba(31, 42, 68, .25); display: flex; flex-direction: column; overflow: hidden; }
 .calc-panel[hidden] { display: none; }
@@ -415,6 +415,50 @@ body.no-calc .calc-launch, body.no-calc .calc-q { display: none; }
 .calc-note { padding: 6px 12px 10px; }
 @media (min-width: 1101px) { body.calc-open .main-col { margin-right: 412px; } }
 @media (max-width: 640px) { .calc-panel { inset: 0; width: auto; border-radius: 0; border-width: 0; } }
+
+
+/* ================= Exam prep, study guides, insights ================= */
+.fb-launch { margin-top: 6px; }
+.fb-q { margin-left: 6px; }
+.calc-q + .fb-q { margin-left: 6px; }
+@media (min-width: 1101px) { body.fb-open .main-col { margin-right: 412px; } }
+@media (max-width: 640px) { .fb-panel { inset: 0; width: auto; border-radius: 0; border-width: 0; } }
+.watch { white-space: nowrap; }
+a.watch:not(.btn) { font-family: var(--f-ui); font-weight: 600; font-size: .85rem; margin-left: 6px; }
+.sg-card { border-color: #9FC5E8; }
+.sg-skill { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.sg-skill .inline-check { flex: 1 1 220px; margin: 0; }
+.sg-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sg-plan li { margin: 0 0 8px; }
+.sg-tbl input[type=text] { min-width: 220px; }
+.tc-row { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.tc-row.done { opacity: .7; }
+.tc-row input { margin-top: 4px; }
+.mk-opts { display: flex; gap: 12px; flex-wrap: wrap; }
+.mk-skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2px 12px; max-height: 260px; overflow: auto; padding: 6px 0; }
+.ct-gap, .ct-def { font-size: 1.15rem; margin: 10px 0 14px; }
+.ct-blank { display: inline-block; min-width: 110px; border-bottom: 2px solid var(--ink); color: transparent; }
+.ct-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.ct-right { background: var(--ok-bg, #E6F4EA) !important; border-color: var(--ok, #2E7D32) !important; }
+.ct-wrong { background: #FDECEA !important; border-color: #D93025 !important; }
+.ct-done { font-size: 1.4rem; }
+.wk-nums { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
+.wk-nums span { background: var(--cream, #FFF8EE); border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: .8rem; display: flex; flex-direction: column; min-width: 92px; }
+.wk-nums b { font-size: 1.3rem; font-family: var(--f-head); }
+.wk-h { margin-top: 12px; }
+.wk-dc { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.wk-pill { border: 2px solid var(--line); border-radius: 999px; padding: 5px 12px; background: var(--white); font-family: var(--f-ui); text-decoration: none; color: var(--ink); }
+.hm-tbl { border-collapse: collapse; font-family: var(--f-ui); font-size: .82rem; }
+.hm-tbl th, .hm-tbl td { border: 1px solid var(--line); padding: 4px 6px; text-align: center; min-width: 34px; }
+.hm-tbl tbody th { text-align: left; white-space: nowrap; font-weight: 600; position: sticky; left: 0; background: var(--white); }
+.hm-tbl thead th span { writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; max-height: 90px; }
+.hm-r { background: #F4CCCC; } .hm-a { background: #FCE8B2; } .hm-g { background: #D9EAD3; }
+.hm-avg th, .hm-avg td { border-top: 2px solid var(--ink); }
+.hm-key i { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--line); margin: 0 3px 0 8px; vertical-align: -2px; }
+.wa-tbl code { background: #F3F3F3; padding: 1px 5px; border-radius: 4px; }
+.gr-up { color: #2E7D32; } .gr-down { color: #D93025; }
+.ab-tbl td:not(:first-child), .ab-tbl th:not(:first-child) { text-align: center; }
+@media print { .calc-panel, .fb-launch, .calc-launch { display: none !important; } }
 
 /* ================= Lesson notebooks ================= */
 .ls { display: flex; flex-direction: column; }
@@ -4776,7 +4820,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /** mode: 'answer' (inputs), 'preview' (read-only student view), 'teacher' (with key + markscheme), 'feedback' (with results). */
   function question(q, i, opts = {}) {
     const mode = opts.mode || 'preview', responses = (opts.responses || {})[q.id] || {}, results = opts.results || {};
-    const head = `<div class="q-head"><span class="q-num">${opts.number || i + 1}</span><div class="q-meta">${q.bookRef ? pill(q.bookRef, 'amber') + ' ' : ''}${skillChip(q.skill)} ${paperBadge(q.paper)} ${q.challenge ? pill('Challenge', 'gold') : ''} ${q.preview ? pill('Preview · does not count', 'blue') : ''} ${opts.slot ? pill(opts.slot, 'pink') : ''}${q.paper === 2 && (mode === 'answer' || opts.calc) ? '<button type="button" class="btn small ghost calc-q" data-calc title="Open the NumWorks calculator">▦ NumWorks</button>' : ''}</div><span class="q-marks">[${q.marks} mark${q.marks > 1 ? 's' : ''}]</span></div>`;
+    const head = `<div class="q-head"><span class="q-num">${opts.number || i + 1}</span><div class="q-meta">${q.bookRef ? pill(q.bookRef, 'amber') + ' ' : ''}${skillChip(q.skill)} ${paperBadge(q.paper)} ${q.challenge ? pill('Challenge', 'gold') : ''} ${q.preview ? pill('Preview · does not count', 'blue') : ''} ${opts.slot ? pill(opts.slot, 'pink') : ''}${q.paper === 2 && (mode === 'answer' || opts.calc) ? '<button type="button" class="btn small ghost calc-q" data-calc title="Open the NumWorks calculator">▦ NumWorks</button>' : ''}${mode === 'answer' ? '<button type="button" class="btn small ghost fb-q" data-booklet title="Open the IB formula booklet">📘 Booklet</button>' : ''}</div><span class="q-marks">[${q.marks} mark${q.marks > 1 ? 's' : ''}]</span></div>`;
     const stem = (q.stem ? `<div class="q-stem">${M(q.stem)}</div>` : '') + (q.fig ? `<div class="q-fig">${q.fig}</div>` : '');
     const parts = q.parts.map(p => {
       const r = results[q.id + '|' + p.id], fin = opts.final ? opts.final[q.id + '|' + p.id] : undefined;
@@ -4897,7 +4941,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
     main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', 'Inquirers. Thinkers. Reflective Learners.', `<img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo">`) +
-      todayHTML + `<div class="attention">
+      todayHTML + (Hub.insights ? Hub.insights.dashCard() : '') + (Hub.exam ? Hub.exam.dashHTML() : '') + `<div class="attention">
         <a class="att ${q.length ? 'hot' : ''}" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark${(r => r ? `<br><small class="att-ready">${r} ready to release</small>` : '')(Hub.assess.readyToRelease().length)}</span></a>
         <a class="att ${drafts.length ? 'warm' : ''}" href="#/studio?status=draft"><b>${drafts.length}</b><span>draft${drafts.length === 1 ? '' : 's'} to review</span></a>
         <a class="att" href="#/studio?status=approved"><b>${S().assessments.filter(a => a.status === 'approved').length}</b><span>approved, not published</span></a>
@@ -5260,7 +5304,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const stats = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null).sort((a, b) => a.pct - b.pct);
     const ia = C().iaSchedule(s.group).find(x => x.date && x.date >= asOf), hour = new Date().getHours();
     main.innerHTML = `${Hub.announce ? Hub.announce.bannerHTML(s) : ''}<section class="hero"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1><p class="lead">Inquirers. Thinkers. Reflective Learners.</p>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div><img class="hero-wolf" src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"></section>
-      <div class="grid g2">
+      ${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
         <section class="card donow-card"><h2 class="bar-head amber">☀ ${dn ? (dn.kind !== 'Do Now' ? 'Your personalised ' + esc(dn.kind) : 'Today’s Do Now') : 'Just for me'}</h2>${dn ? (dn.done ? `<p>Done — <b>${Hub.assess.score(dn.done).earned}/${dn.done.max}</b>.</p><a class="btn small" href="#/result/${dn.done.id}">See feedback</a>` : `<p>${dn.items.filter(it => it.question).length} questions picked just for you${dn.kind === 'Do Now' ? ' for ' + fmtDate(dn.rec.lessonDate, true) : ''}.</p><a class="btn primary" href="#/donow">Start my ${esc(dn.kind === 'Do Now' ? 'Do Now' : dn.kind)} →</a>`) : '<p>Your personalised Do Now, Exit Ticket or quiz appears here once Miss Badmus publishes it.</p>'}</section>
         ${(L => L ? `<section class="card"><h2 class="bar-head blue">▣ Lesson notebook</h2><p><b>${esc(L.title)}</b></p><a class="btn primary" href="#/notebook/${encodeURIComponent(L.id)}">Open today’s notebook →</a></section>` : '')(Hub.lessons && Hub.lessons.latestFor(s))}
         <section class="card"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b>${Hub.attendance && Hub.attendance.absentAccess(a, s.id) ? '<div class="absent-note">You were absent — catch up on the lesson and complete this.</div>' : ''}<div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
@@ -5289,6 +5333,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
         ${(ns => ia || ns.length ? `<section class="card"><h2 class="bar-head blue">◇ My IA</h2>${ia ? `<p><b>${esc(ia.short)}</b> is due <b>${fmtDate(ia.date, true)}</b> <span class="tiny muted">(${daysBetween(asOf, ia.date)} days)</span></p>` : ''}${ns.length ? `<p class="small ia-new">🔓 <b>New in your IA Studio:</b> ${ns.map(st => `<a href="#/ia?tab=s-${st.id}">Stage ${st.n} · ${esc(st.title)}</a>`).join(', ')}</p>` : ''}<a class="btn small" href="#/ia">Open my IA studio →</a></section>` : '')(Hub.iastages ? Hub.iastages.newStages(s) : [])}
       </div>`;
     if (Hub.announce) { Hub.announce.bindBanner(main, s); if (!Hub.announce.unread(s).length) main.insertAdjacentHTML('beforeend', Hub.announce.earlierHTML(s)); }
+    if (Hub.exam) Hub.exam.decorate(main);
   }
 
   /* ---------- taking work ---------- */
@@ -5365,8 +5410,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     if (params.skill) return practiseOne(main, s, params.skill);
     const stats = Hub.mastery.studentSkills(s.id), taught = stats.filter(x => x.taught), rec = taught.filter(x => x.pct !== null).sort((a, b) => a.pct - b.pct).slice(0, 3);
     main.innerHTML = U.heading('INDEPENDENT LEARNING', 'Practice', 'Original IB-style questions with hints, NumWorks screens and worked solutions. Practice counts a little towards mastery (less if you use hints).') +
+      `<section class="card ex-skills"><h2 class="bar-head green">IB exam skills</h2><div class="actions"><a class="btn" href="#/terms">Command term drill</a><button class="btn ghost" type="button" data-booklet>📘 Formula booklet</button>${Hub.exam && Hub.exam.guideFor(s) ? `<a class="btn primary" href="#/guide?d=${Hub.exam.guideFor(s).date}">📘 My study guide</a>` : ''}</div></section>` +
       (rec.length ? `<section class="card"><h2 class="bar-head pink">Recommended for you</h2><div class="grid g3">${rec.map(x => `<a class="rec" href="#/practice?skill=${x.skill}">${U.skillChip(x.skill)}<span>${U.statusChip(x)}</span></a>`).join('')}</div></section>` : '') +
-      C().UNITS[s.course].filter(([u]) => stats.some(x => C().SKILL[x.skill].unit === u)).map(([u, name]) => `<section class="card"><h3 class="unit-h ${U.unitColour(u)}">Unit ${u} · ${esc(name)}</h3>${stats.filter(x => C().SKILL[x.skill].unit === u).map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small ${x.taught ? '' : 'ghost'}" href="#/practice?skill=${x.skill}">${x.taught ? 'Practise' : 'Preview'}</a></div>`).join('')}</section>`).join('');
+      C().UNITS[s.course].filter(([u]) => stats.some(x => C().SKILL[x.skill].unit === u)).map(([u, name]) => `<section class="card"><h3 class="unit-h ${U.unitColour(u)}">Unit ${u} · ${esc(name)}</h3>${stats.filter(x => C().SKILL[x.skill].unit === u).map(x => `<div class="skill-row"><span>${U.skillLabel(x.skill)}</span>${U.statusChip(x)}<a class="btn small ${x.taught ? '' : 'ghost'}" href="#/practice?skill=${x.skill}">${x.taught ? 'Practise' : 'Preview'}</a>${Hub.exam ? Hub.exam.watchHTML(x.skill, 'btn small ghost') : ''}</div>`).join('')}</section>`).join('');
   }
   async function practiseOne(main, s, skill) {
     if (!Hub.auth.isPreview()) {
@@ -5894,8 +5940,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const big = (label, r) => `<div class="dc-big ${r ? tone(r.pct) : ''}"><span class="key-lab">${label}</span><b>${r && r.pct !== null ? r.pct + '%' : '—'}</b><span class="small">${r && r.of ? `${r.at} of ${r.of} students at ${cut()}+` : 'no assessed students yet'}</span></div>`;
     const monthName = lastI >= 0 ? ms[lastI].name : '';
     const nBelow = ok && now('ALL') ? now('ALL').below.length : 0;
-    const tabs = `<div class="tabs no-print"><a class="tab ${params.tab === 'intervention' ? '' : 'on'}" href="#/datacycle">Overview</a><a class="tab ${params.tab === 'intervention' ? 'on' : ''}" href="#/datacycle?tab=intervention">Intervention${nBelow ? ` (${nBelow})` : ''}</a></div>`;
+    const tabs = `<div class="tabs no-print"><a class="tab ${params.tab ? '' : 'on'}" href="#/datacycle">Overview</a><a class="tab ${params.tab === 'intervention' ? 'on' : ''}" href="#/datacycle?tab=intervention">Intervention${nBelow ? ` (${nBelow})` : ''}</a>${Hub.insights ? Hub.insights.tabLinks(params.tab) : ''}</div>`;
     if (params.tab === 'intervention') return intervention(main, tabs, ok, ms, lastI);
+    if (Hub.insights && Hub.insights.tab(main, params, tabs)) return;
     if (params.present) {
       main.innerHTML = `<div class="row-between no-print"><a class="back" href="#/datacycle">← Data cycle</a><button class="btn small" id="dc-print" type="button">Print / save as PDF</button></div>
         <section class="dc-present">${U.heading('IB MATH · PLC DATA CYCLE', 'IB Maths: Analysis & Approaches', esc(monthName ? `Predicted grades as of ${fmtDate(ms[lastI].upTo, true)}` : ''))}
@@ -9179,12 +9226,450 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.iapace = { page, settings, overrideForm, bindOverride, applyOverride, suggestion, counts, classState, GROUPS };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/exam.js ---- */
+/* Exam preparation:
+   · Formula booklet panel (beside the NumWorks; allowed in every paper, so it is never hidden).
+   · Revision Dojo video links for every skill (mapped to the IB syllabus subtopics).
+   · Study guides: one per unit test / exam in the calendar, released to the class 7 days before (the teacher can change the date).
+   · Topic checks (short, IB exam-style quiz after a topic), mock exams per paper, and a command term drill.
+   Study guides and the drill are built in the browser from the curriculum and the student's own record — nothing new is stored for students. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast, fmtDate } = Hub.core;
+  const U = Hub.ui, C = () => Hub.curriculum, S = () => Hub.store.state, M = t => Hub.math.render(t);
+
+  /* ---------- formula booklet ---------- */
+  const BOOKLET_PDF = 'https://assets.revisiondojo.com/assets/data-booklet/ib/ib-math-aa/default/f686de9fd368/booklet.pdf';
+  const BOOKLET_PAGE = 'https://www.revisiondojo.com/ib/ib-math-aa/data-booklet';
+  let fb = null;
+  function bookletToggle(open) {
+    if (!fb) {
+      fb = document.createElement('aside'); fb.id = 'fb-panel'; fb.className = 'calc-panel fb-panel'; fb.hidden = true; fb.setAttribute('aria-label', 'IB formula booklet');
+      fb.innerHTML = `<header class="calc-head"><b>📘 Formula booklet</b><span class="calc-tools"><a class="btn small ghost" href="${BOOKLET_PDF}" target="_blank" rel="noopener">Open in a new tab ↗</a><button class="btn small ghost" type="button" data-fb-close aria-label="Close the formula booklet">×</button></span></header>
+        <div class="calc-frame"><p class="calc-wait tiny muted">Loading the formula booklet…</p></div>
+        <p class="calc-note tiny muted">IB Mathematics: Analysis &amp; Approaches formula booklet (SL &amp; HL — HL pages are marked). You have it in every paper, so learn where things are. Not loading? Use <b>Open in a new tab</b> or <a href="${BOOKLET_PAGE}" target="_blank" rel="noopener">this page</a>.</p>`;
+      document.body.appendChild(fb);
+      fb.querySelector('[data-fb-close]').onclick = () => bookletToggle(false);
+    }
+    const show = open === undefined ? fb.hidden : !!open;
+    if (show && Hub.calc && Hub.calc.open) Hub.calc.toggle(false);   // one side panel at a time
+    fb.hidden = !show; document.body.classList.toggle('fb-open', show);
+    if (show && !fb.querySelector('iframe')) { const f = document.createElement('iframe'); f.src = BOOKLET_PDF; f.title = 'IB formula booklet'; f.onload = () => { const w = fb.querySelector('.calc-wait'); if (w) w.remove(); }; fb.querySelector('.calc-frame').appendChild(f); }
+    if (show) fb.querySelector('[data-fb-close]').focus();
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-booklet]'); if (b) { e.preventDefault(); bookletToggle(true); return; }
+    // opening the calculator closes the booklet (they share the side)
+    if (e.target.closest && e.target.closest('[data-calc]') && fb && !fb.hidden) bookletToggle(false);
+  }, true);
+
+  /* ---------- Revision Dojo videos ---------- */
+  const RD = 'https://www.revisiondojo.com/ib/ib-math-aa/';
+  const SLUG = {
+    '1.1': 'sl-1-1-using-standard-form', '1.2': 'sl-1-2-arithmetic-sequences-and-series', '1.3': 'sl-1-3-geometric-sequences-and-series', '1.4': 'sl-1-4-financial-apps-compound-int-annual-depreciation',
+    '1.5': 'sl-1-5-intro-to-logs', '1.6': 'sl-1-6-simple-proof', '1.7': 'sl-1-7-laws-of-exponents-and-logs', '1.8': 'sl-1-8-sum-of-infinite-geo-sequence', '1.9': 'sl-1-9-binomial-theorem-where-n-is-an-integer',
+    '1.10': 'ahl-1-10-perms-and-combs-binomial-with-negative-and-fractional-indices', '1.11': 'ahl-1-11-partial-fractions', '1.12': 'ahl-1-12-complex-numbers-cartesian-form-and-argand-diag',
+    '1.15': 'ahl-1-15-proof-by-induction-contradiction-counterexamples', '1.16': 'ahl-1-16-solution-of-systems-of-linear-equations',
+    '2.1': 'sl-2-1-equations-of-straight-lines-parallel-and-perpendicular', '2.2': 'sl-2-2-functions-notation-domain-range-and-inverse-as-reflection', '2.3': 'sl-2-3-graphing',
+    '2.5': 'sl-2-5-composite-functions-identity-finding-inverse', '2.6': 'sl-2-6-quadratic-function', '2.7': 'sl-2-7-solutions-of-quadratic-equations-and-inequalities-discriminant-10123',
+    '2.8': 'sl-2-8-reciprocal-and-simple-rational-functions-equations-of-asymptotes', '2.11': 'sl-2-11-transformation-of-functions',
+    '2.12': 'ahl-2-12-factor-and-remainder-theorems-sum-and-product-of-roots', '2.13': 'ahl-2-13-rational-functions', '2.14': 'ahl-2-14-odd-and-even-functions-self-inverse-inverse-and-domain-restriction',
+    '2.15': 'ahl-2-15-solutions-of-inequalities', '2.16': 'ahl-2-16-graphing-modulus-equations-and-inequalities',
+    '4.2': 'sl-4-2-histograms-cf-graphs-box-plots', '4.3': 'sl-4-3-mean-median-mode-mean-of-grouped-data-standard-deviation-quartiles-iqr', '4.4': 'sl-4-4-pearsons-scatter-diagrams-eqn-of-y-on-x', '4.10': 'sl-4-10-x-on-y-regression-line',
+    '5.1': 'sl-5-1-introduction-of-differential-calculus', '5.3': 'sl-5-3-differentiating-polynomials-n-e-z', '5.4': 'sl-5-4-tangents-and-normal', '5.6': 'sl-5-6-differentiating-polynomials-n-e-q-chain-product-and-quotient-rules',
+    '5.7': 'sl-5-7-the-second-derivative', '5.8': 'sl-5-8-testing-for-max-and-min-optimisation-points-of-inflexion', '5.9': 'sl-5-9-kinematics-problems',
+    '5.13': 'ahl-5-13-limits-and-lhopitals', '5.14': 'ahl-5-14-implicit-functions-related-rates-optimisation'
+  };
+  const TITLE = { '1.1': 'Standard form', '1.2': 'Arithmetic sequences & series', '1.3': 'Geometric sequences & series', '1.4': 'Financial applications', '1.6': 'Simple proof', '1.8': 'Sum to infinity', '1.9': 'Binomial theorem',
+    '1.10': 'Counting & extended binomial', '1.11': 'Partial fractions', '1.12': 'Complex numbers', '1.15': 'Proof: induction, contradiction, counterexample', '1.16': 'Systems of linear equations',
+    '2.1': 'Straight lines', '2.2': 'Functions, domain & range', '2.3': 'Graphing', '2.5': 'Composite & inverse functions', '2.6': 'Quadratic functions', '2.7': 'Quadratic equations & discriminant', '2.8': 'Reciprocal & rational functions',
+    '2.11': 'Transformations', '2.12': 'Factor & remainder theorems, roots', '2.13': 'Rational functions', '2.14': 'Odd, even & self-inverse functions', '2.15': 'Inequalities', '2.16': 'Modulus graphs',
+    '4.2': 'Statistical graphs', '4.3': 'Averages & spread', '4.4': 'Correlation & regression', '4.10': 'x on y regression', '5.1': 'Introduction to differentiation', '5.3': 'Differentiating polynomials', '5.4': 'Tangents & normals',
+    '5.6': 'Chain, product & quotient rules', '5.7': 'Second derivative', '5.8': 'Maxima, minima & optimisation', '5.9': 'Kinematics', '5.13': 'Limits & L’Hôpital', '5.14': 'Implicit differentiation & related rates' };
+  /* each Hub skill → the IB syllabus subtopics that cover it */
+  const MAP = {
+    'SL-0.1': ['1.1'], 'SL-1.1': ['1.2'], 'SL-1.2a': ['1.2'], 'SL-1.2b': ['1.3'], 'SL-1.3a': ['1.2'], 'SL-1.3b': ['1.3', '1.8'], 'SL-1.4': ['1.4'], 'SL-1.5a': ['1.9'], 'SL-1.5b': ['1.9'], 'SL-1.6': ['1.6'],
+    'SL-2.1': ['2.2'], 'SL-2.2': ['2.2', '2.3'], 'SL-2.4': ['2.2'], 'SL-2.5': ['2.5'], 'SL-2.6': ['2.5', '2.2'], 'SL-3.1': ['2.1'], 'SL-3.3': ['2.11'], 'SL-3.4': ['2.6'], 'SL-3.5': ['2.7'], 'SL-3.6': ['2.7'], 'SL-3.7': ['2.6'],
+    'SL-4.1': ['2.8'], 'SL-5.2': ['5.1', '5.3', '5.4'], 'SL-5.4': ['5.7', '5.8'], 'SL-5.5': ['5.8', '5.9'], 'SL-6.3': ['4.3', '4.2'], 'SL-7.4': ['4.4', '4.10'],
+    'HL-1.1': ['1.2'], 'HL-1.2a': ['1.2', '1.3'], 'HL-1.2b': ['1.8'], 'HL-1.2c': ['1.4'], 'HL-1.3a': ['1.15', '1.6'], 'HL-1.3b': ['1.15'], 'HL-1.4a': ['1.10'], 'HL-1.4b': ['1.9', '1.10'],
+    'HL-2.1': ['2.2'], 'HL-2.2a': ['2.6', '2.8', '2.13'], 'HL-2.2b': ['1.11'], 'HL-2.2c': ['2.16'], 'HL-2.3': ['2.14'], 'HL-2.4a': ['2.5'], 'HL-2.4b': ['2.14', '2.5'], 'HL-2.5a': ['2.11'], 'HL-2.5b': ['2.16', '2.13'],
+    'HL-3.1': ['2.7', '2.15'], 'HL-3.2': ['1.12'], 'HL-3.3': ['2.12'], 'HL-3.4': ['2.12'], 'HL-3.6': ['1.16'], 'HL-4.1': ['5.13', '5.1'], 'HL-4.3': ['5.6'], 'HL-4.5': ['5.8', '5.9'], 'HL-4.6': ['5.14'], 'HL-5.2': ['4.2', '4.3'], 'HL-5.4': ['4.4', '4.10']
+  };
+  /** Revision Dojo video pages for a skill: [{code, title, url}] */
+  const videos = skill => (MAP[skill] || []).filter(c => SLUG[c]).map(c => ({ code: c, title: TITLE[c] || c, url: RD + SLUG[c] + '/videos' }));
+  const watchHTML = (skill, cls) => { const v = videos(skill); return v.length ? `<a class="watch ${cls || ''}" href="${v[0].url}" target="_blank" rel="noopener" title="Revision Dojo · IB ${esc(v[0].code)} ${esc(v[0].title)}">▶ Watch</a>` : ''; };
+  /** Add “▶ Watch” beside every practice link in the student's What to work on. */
+  function decorate(root) {
+    $$('.wtw a[href^="#/practice?skill="], .sg-skill a[href^="#/practice?skill="]', root).forEach(a => {
+      if (a.nextElementSibling && a.nextElementSibling.classList.contains('watch')) return;
+      const skill = decodeURIComponent(a.getAttribute('href').split('skill=')[1] || ''); const w = watchHTML(skill, 'btn small ghost'); if (w) a.insertAdjacentHTML('afterend', w);
+    });
+  }
+
+  /* ---------- tests in the calendar and their study guides ---------- */
+  const GUIDE_DAYS = 7;
+  /** Unit tests and exams in a class's calendar: [{date, title, unit, skills}] */
+  function tests(groupId) {
+    const g = C().GROUPS[groupId]; if (!g) return [];
+    return C().lessons(groupId).filter(l => l.kind === 'test').map(l => {
+      const m = l.activity.match(/unit\s*(\d+)\s*test/i), unit = m ? +m[1] : null;
+      const title = (l.activity.split(';').find(x => /test|exam/i.test(x)) || l.activity).trim().replace(/^UNIT (\d+) TEST$/, 'Unit $1 Test');
+      const skills = C().skillsFor(g.course).filter(s => unit ? s.unit === unit : (C().taughtDate(s.id, groupId) || '9999') < l.date).map(s => s.id);
+      return { date: l.date, title, unit, skills, group: groupId };
+    }).filter((t, i, all) => all.findIndex(x => x.date === t.date) === i);
+  }
+  const gkey = (groupId, date) => groupId + '|' + date;
+  const guideCfg = () => (S().settings || {}).studyGuides || {};
+  /** When the study guide opens for students (default: 7 days before), and anything the teacher added. */
+  function guideInfo(t) { const c = guideCfg()[gkey(t.group, t.date)] || {}; return { release: c.release || Hub.core.addDays(t.date, -GUIDE_DAYS), note: c.note || '', off: !!c.off }; }
+  /** The study guide a student can see today (from release to the test day). */
+  function guideFor(s, asOf) {
+    asOf = asOf || Hub.mastery.asOf();
+    return tests(s.group).filter(t => t.skills.length).map(t => Object.assign(t, guideInfo(t))).find(t => !t.off && t.release <= asOf && t.date >= asOf) || null;
+  }
+  function guideCardHTML(s) {
+    const t = guideFor(s); if (!t) return '';
+    const days = Hub.core.daysBetween(Hub.mastery.asOf(), t.date);
+    return `<section class="card sg-card"><h2 class="bar-head blue">📘 Study guide · ${esc(t.title)}</h2><p><b>${fmtDate(t.date, true)}</b> — ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`}. ${t.skills.length} skills, your weakest first, with practice, videos and a day-by-day plan.</p><a class="btn primary" href="#/guide?d=${t.date}">Open my study guide →</a></section>`;
+  }
+  /** Study guide page. Students: their own guide. Teacher: ?group=…&d=… shows the class version (no personal data). */
+  function guide(main, params) {
+    const role = Hub.auth.role(), s = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null, groupId = s ? s.group : (params.group || 'SL-A');
+    const t0 = tests(groupId).find(x => x.date === params.d) || (s ? guideFor(s) : null);
+    if (!t0) { main.innerHTML = U.empty('No study guide is open right now. It appears on My day a week before each unit test.', '<a class="btn" href="#/home">Back</a>'); return; }
+    const t = Object.assign(t0, guideInfo(t0)), asOf = Hub.mastery.asOf();
+    if (s && (t.off || t.release > asOf) && !Hub.auth.isPreview()) { main.innerHTML = U.empty(`This study guide opens on ${fmtDate(t.release, true)}.`, '<a class="btn" href="#/home">Back</a>'); return; }
+    const stats = s ? Object.fromEntries(Hub.mastery.studentSkills(s.id).map(x => [x.skill, x])) : {};
+    const order = t.skills.slice().sort((a, b) => { const pa = stats[a] && stats[a].pct !== null ? stats[a].pct : 101, pb = stats[b] && stats[b].pct !== null ? stats[b].pct : 101; return pa - pb; });
+    const asmt = S().assessments.find(a => a.type === 'Unit test' && ['published', 'closed'].includes(a.status) && (a.groups || []).includes(groupId) && Hub.assess.dueFor(a, groupId) === t.date);
+    const papers = asmt ? [...new Set(asmt.questions.map(q => q.paper))].sort() : [];
+    const days = Math.max(1, Math.min(GUIDE_DAYS, Hub.core.daysBetween(asOf, t.date))), plan = [];
+    const study = Math.max(1, days - 1), per = Math.ceil(order.length / study);
+    for (let d = 0; d < study; d++) { const sk = order.slice(d * per, d * per + per); if (sk.length) plan.push({ d, sk }); }
+    const cmdUsed = new Set(); t.skills.forEach(id => (C().SKILL[id].gens || []).forEach(g => { const r = Hub.qcore.registry[g]; if (!r) return; try { Hub.qcore.build(g, 7).parts.forEach(p => p.command && cmdUsed.add(p.command)); } catch (e) {} }));
+    const terms = Object.entries(C().COMMAND_TERMS).filter(([k]) => cmdUsed.has(k) || ['Write down', 'Find', 'Show that', 'Hence'].includes(k));
+    const ck = 'sg|' + (s ? s.id : 'teacher') + '|' + t.date; let ticks = {}; try { ticks = JSON.parse(localStorage.getItem(ck) || '{}'); } catch (e) {}
+    const row = id => { const sk = C().SKILL[id], st = stats[id]; return `<div class="sg-skill"><label class="inline-check"><input type="checkbox" data-sgtick="${id}"${ticks[id] ? ' checked' : ''}><span><b>${esc(sk.name)}</b> <span class="tiny muted">${sk.ox ? 'Oxford ' + sk.ox : ''}${videos(id)[0] ? ' · IB ' + videos(id).map(v => v.code).join(', ') : ''}</span></span></label>
+      <span class="sg-acts">${st ? U.statusChip(st) : ''}${s ? `<a class="btn small" href="#/practice?skill=${id}">Practise</a>` : ''}${watchHTML(id, 'btn small ghost')}</span></div>`; };
+    main.innerHTML = `<div class="row-between no-print"><a class="back" href="${s ? '#/home' : '#/exam'}">← ${s ? 'My day' : 'Exam prep'}</a><button class="btn small" type="button" id="sg-print">Print</button></div>` +
+      U.heading(`STUDY GUIDE · ${esc(C().GROUPS[groupId].label.toUpperCase())}`, esc(t.title), `<b>${fmtDate(t.date, true)}</b>${asmt ? ` · ${asmt.minutes} minutes · ${asmt.questions.reduce((n, q) => n + q.marks, 0)} marks` : ''}${papers.length ? ' · ' + papers.map(p => p === 1 ? 'Paper 1 style (no calculator)' : 'Paper 2 style (NumWorks allowed)').join(' + ') : ' · Paper 1 (no calculator) and Paper 2 (calculator) style questions'}`) +
+      (t.note ? `<div class="sticky big"><b>Miss Badmus:</b> ${esc(t.note)}</div>` : '') +
+      `<div class="grid g2"><section class="card"><h2 class="bar-head pink">What is on the test</h2><p class="tiny muted">${s ? 'Your weakest skills are first. Tick each one off when you can do it without notes.' : 'Students see these in order of their own weakest skill first, with their mastery.'}</p>${order.map(row).join('')}</section>
+        <div><section class="card"><h2 class="bar-head amber">Your ${days}-day plan</h2><ol class="sg-plan">${plan.map(p => `<li><b>${p.d === 0 ? 'Today' : 'Day ' + (p.d + 1)}:</b> ${p.sk.map(id => esc(C().SKILL[id].name)).join(' · ')} — watch the video if you are unsure, then do two practice questions on each.</li>`).join('')}<li><b>${days === 1 ? 'Tonight' : 'Day before the test'}:</b> mixed practice under timed conditions, then check your answers against the formula booklet and the command terms below.</li></ol></section>
+        <section class="card"><h2 class="bar-head green">Formula booklet</h2><p class="small">You get the IB formula booklet in the test. Find each formula you need for this unit in it now, so you are not searching on the day.</p><button class="btn" type="button" data-booklet>📘 Open the formula booklet</button></section>
+        <section class="card"><h2 class="bar-head blue">Command terms</h2>${terms.map(([k, v]) => `<p class="small"><b>${esc(k)}</b> — ${esc(v)}</p>`).join('')}${s ? '<a class="btn small" href="#/terms">Command term drill →</a>' : ''}</section>
+        <section class="card"><h2 class="bar-head pink">On the day</h2><ul class="small"><li>Show your method: method marks (M) are given even when the final answer is wrong.</li><li>Give answers exact or to 3 significant figures unless the question says otherwise.</li><li>“Hence” means use the part before. “Show that” means the working is the point — every step.</li><li>Charge your NumWorks and bring a pencil and ruler.</li></ul></section></div></div>`;
+    $('#sg-print').onclick = () => window.print();
+    $$('[data-sgtick]', main).forEach(i => (i.onchange = () => { ticks[i.dataset.sgtick] = i.checked; try { localStorage.setItem(ck, JSON.stringify(ticks)); } catch (e) {} }));
+    decorate(main);
+  }
+
+  /* ---------- command term drill ---------- */
+  function terms(main) {
+    const role = Hub.auth.role(), s = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null, course = s ? s.course : 'SL', asOf = Hub.mastery.asOf();
+    const T = C().COMMAND_TERMS, names = Object.keys(T);
+    const skills = C().skillsFor(course).filter(k => !s || C().isTaught(k.id, s.group, asOf));
+    const pool = []; skills.forEach(k => k.gens.forEach(g => { if (!Hub.qcore.registry[g]) return; try { const q = Hub.qcore.build(g, Math.floor(Math.random() * 1e6) + 1); q.parts.forEach(p => { if (p.command && T[p.command] && p.prompt) pool.push({ q, p }); }); } catch (e) {} }));
+    const R = Math.random, pick = a => a[Math.floor(R() * a.length)], shuffle = a => a.map(x => [R(), x]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+    const items = [];
+    // questions with the command term hidden (spread across command terms, not all “Find”)
+    const byCmd = {}; pool.forEach(x => (byCmd[x.p.command] = byCmd[x.p.command] || []).push(x));
+    const cmds = shuffle(Object.keys(byCmd));
+    for (let i = 0; items.length < 6 && i < 12 && cmds.length; i++) { const x = pick(byCmd[cmds[i % cmds.length]]); if (!items.some(y => y.p === x.p)) items.push({ kind: 'blank', q: x.q, p: x.p, ans: x.p.command }); }
+    while (items.length < 10) { const k = pick(names); if (items.some(y => y.kind === 'def' && y.ans === k)) continue; items.push({ kind: 'def', ans: k }); }
+    const qs = shuffle(items).map(it => { const wrong = shuffle(names.filter(n => n !== it.ans && !(it.kind === 'blank' && ['Write', 'Use'].includes(n)))).slice(0, 3); return Object.assign(it, { opts: shuffle([it.ans, ...wrong]) }); });
+    let i = 0, score = 0;
+    const draw = () => {
+      if (i >= qs.length) { main.querySelector('#ct-box').innerHTML = `<p class="ct-done">You got <b>${score}/${qs.length}</b>.</p><p class="small">${score >= 9 ? 'Excellent — you read questions like an examiner.' : score >= 6 ? 'Good. Re-read the definitions below for the ones you missed.' : 'Read the definitions below, then try again — knowing what each word asks for saves marks.'}</p><button class="btn primary" id="ct-again" type="button">Try a new set</button>`; $('#ct-again').onclick = () => terms(main); return; }
+      const it = qs[i];
+      main.querySelector('#ct-box').innerHTML = `<p class="tiny muted">Question ${i + 1} of ${qs.length}</p>` + (it.kind === 'blank'
+        ? `<p class="small"><b>Which command term goes in the gap?</b></p>${it.q.stem ? `<div class="q-stem">${M(it.q.stem)}</div>` : ''}<p class="ct-gap">(${esc(it.p.label)}) <span class="ct-blank">________</span> ${M(it.p.prompt)} <span class="tiny muted">[${it.p.marks}]</span></p>`
+        : `<p class="small"><b>Which command term means…</b></p><p class="ct-def">“${esc(T[it.ans])}”</p>`) +
+        `<div class="ct-opts">${it.opts.map(o => `<button class="btn" type="button" data-ct="${esc(o)}">${esc(o)}</button>`).join('')}</div><div id="ct-fb"></div>`;
+      $$('[data-ct]', main).forEach(b => (b.onclick = () => {
+        const ok = b.dataset.ct === it.ans; if (ok) score++;
+        $$('[data-ct]', main).forEach(x => { x.disabled = true; if (x.dataset.ct === it.ans) x.classList.add('ct-right'); else if (x === b) x.classList.add('ct-wrong'); });
+        $('#ct-fb').innerHTML = `<p class="small ${ok ? 'gc-ok' : ''}">${ok ? '✓ Right.' : `✗ It is <b>${esc(it.ans)}</b>.`} <b>${esc(it.ans)}</b>: ${esc(T[it.ans])}</p><button class="btn primary" id="ct-next" type="button">${i + 1 < qs.length ? 'Next' : 'See my score'}</button>`;
+        $('#ct-next').onclick = () => { i++; draw(); }; $('#ct-next').focus();
+      }));
+    };
+    main.innerHTML = U.heading('IB EXAM SKILLS', 'Command term drill', 'Every IB question starts with a command term that tells you how much to write and how much working to show. 10 quick questions — nothing is saved or marked.') +
+      `<div class="grid g2"><section class="card"><div id="ct-box"></div></section><section class="card"><h2 class="bar-head blue">The command terms</h2>${names.map(k => `<p class="small"><b>${esc(k)}</b> — ${esc(T[k])}</p>`).join('')}</section></div>`;
+    draw();
+  }
+
+  /* ---------- teacher: topic checks and mock exams ---------- */
+  /** Oxford sections finished for a class (every skill taught), newest first, with whether a topic check already covers them. */
+  function topics(course) {
+    const asOf = Hub.mastery.asOf(), groups = Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id);
+    const covered = new Set(S().assessments.filter(a => a.status !== 'archived' && a.course === course && a.topicCheck).flatMap(a => a.topicCheck));
+    const sec = {}; C().skillsFor(course).forEach(k => { const key = k.ox || k.id; (sec[key] = sec[key] || { ox: key, unit: k.unit, skills: [] }).skills.push(k.id); });
+    return Object.values(sec).map(x => { const ends = groups.map(g => x.skills.map(id => C().taughtDate(id, g)).reduce((m, d) => !d || !m ? null : d > m ? d : m, '0000'));
+      const done = ends.filter(d => d && d < asOf); return Object.assign(x, { finished: done.length ? done.sort().pop() : null, all: done.length === groups.length, covered: covered.has(x.ox), name: x.skills.map(id => C().SKILL[id].name).join(' · ') }); })
+      .filter(x => x.finished).sort((a, b) => b.finished.localeCompare(a.finished));
+  }
+  const due = course => topics(course).filter(x => !x.covered && Hub.core.daysBetween(x.finished, Hub.mastery.asOf()) <= 21);
+  function makeTopicCheck(course, oxs) {
+    const secs = topics(course).filter(x => oxs.includes(x.ox)), skills = secs.flatMap(x => x.skills);
+    let r = Hub.assess.createDraft({ course, type: 'Quiz', skills, style: 'exam', count: Math.min(6, Math.max(3, 2 * secs.length)) });
+    if (!r.ok) r = Hub.assess.createDraft({ course, type: 'Quiz', skills, style: 'mixed', count: Math.min(6, Math.max(3, 2 * secs.length)) });
+    if (!r.ok) return r;
+    Object.assign(r.assessment, { title: `${course} · Topic check · ${oxs.slice().sort((a, b) => parseFloat(a) - parseFloat(b)).join(', ')}`, topicCheck: oxs.slice(), minutes: 20, groups: Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id) });
+    Hub.store.save(true); return r;
+  }
+  const MOCK = { SL: { 1: [80, 90], 2: [80, 90] }, HL: { 1: [110, 120], 2: [110, 120] } };
+  function makeMock(course, paper, half, skills) {
+    const full = MOCK[course][paper], target = half ? Math.round(full[0] / 2) : full[0], minutes = half ? Math.round(full[1] / 2) : full[1];
+    const P = paper === 1 ? 'P1' : 'P2';
+    let gens = skills.flatMap(id => C().SKILL[id].gens).filter(g => { const r = Hub.qcore.registry[g]; return r && r.paper === paper; });
+    const examG = gens.filter(g => Hub.qcore.registry[g].exam); if (examG.length >= 4) gens = examG.concat(gens.filter(g => !Hub.qcore.registry[g].exam).slice(0, examG.length));
+    if (!gens.length) return { ok: false, error: `No Paper ${paper} questions exist for those skills yet.` };
+    const r = Hub.assess.createDraft({ course, type: 'Unit test', skills, paper: P, style: 'mixed', count: 1 }); if (!r.ok) return r;
+    const a = r.assessment, qs = []; let marks = 0, bag = [];
+    for (let n = 0; marks < target && n < 40; n++) {
+      if (!bag.length) bag = gens.map(g => [Math.random(), g]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+      const q = Hub.assess.buildQ(bag.pop(), false, false, false); if (marks + q.marks > target + 6 && marks >= target - 8) continue; qs.push(q); marks += q.marks;
+    }
+    // section A (short) before section B (long), like the IB papers
+    qs.sort((x, y) => x.marks - y.marks);
+    Object.assign(a, { questions: qs, reviewed: {}, title: `${course} · Mock Paper ${paper}${half ? ' (half paper)' : ''} · ${paper === 1 ? 'no calculator' : 'calculator'}`, minutes, mock: P, paper: P, uploadRequired: true, release: 'hold', groups: Object.values(C().GROUPS).filter(g => g.course === course).map(g => g.id) });
+    Hub.store.save(true); return { ok: true, assessment: a, marks };
+  }
+
+  /* ---------- teacher page #/exam ---------- */
+  function teacherView(main, params) {
+    const asOf = Hub.mastery.asOf(), course = params.course === 'HL' ? 'HL' : 'SL', groups = Object.values(C().GROUPS);
+    const upcoming = groups.flatMap(g => tests(g.id).filter(t => t.date >= asOf && t.skills.length).slice(0, 2).map(t => Object.assign(t, guideInfo(t), { label: g.label })));
+    const tps = topics(course), mocks = S().assessments.filter(a => a.mock && a.course === course && a.status !== 'archived');
+    const taught = C().skillsFor(course).filter(k => groups.some(g => g.course === course && C().isTaught(k.id, g.id, asOf)));
+    main.innerHTML = U.heading('IB EXAM PREPARATION', 'Exam prep', 'Study guides before every test, topic checks after every topic, and full mock papers — every question original and IB exam-style.') +
+      `<section class="card"><h2 class="bar-head blue">📘 Study guides</h2><p class="tiny muted">Each opens for the class on My day ${GUIDE_DAYS} days before the test, built from the unit’s skills — each student sees their weakest skills first, with practice, Revision Dojo videos, the formula booklet and a day-by-day plan. Change the date or add a note if you like.</p>
+        ${upcoming.length ? `<div class="scroll"><table class="tbl sg-tbl"><thead><tr><th>Class</th><th>Test</th><th>Date</th><th>Guide opens</th><th>Note to students</th><th></th></tr></thead><tbody>${upcoming.map(t => `<tr data-sg="${esc(gkey(t.group, t.date))}"><td>${esc(t.label)}</td><td><b>${esc(t.title)}</b><div class="tiny muted">${t.skills.length} skills</div></td><td>${fmtDate(t.date, true)}</td>
+          <td><input type="date" class="sg-rel" value="${t.release}" max="${t.date}"><label class="inline-check tiny"><input type="checkbox" class="sg-off"${t.off ? ' checked' : ''}> don’t release</label><div class="tiny ${t.release <= asOf && !t.off ? 'gc-ok' : 'muted'}">${t.off ? 'Not released' : t.release <= asOf ? '✓ Students can see it' : 'Opens in ' + Hub.core.daysBetween(asOf, t.release) + ' days'}</div></td>
+          <td><input type="text" class="sg-note" maxlength="300" value="${esc(t.note)}" placeholder="e.g. Bring your NumWorks — retest slots on Friday"></td><td><a class="btn small ghost" href="#/guide?group=${t.group}&d=${t.date}">View</a></td></tr>`).join('')}</tbody></table></div>
+          <div class="actions"><button class="btn primary small" id="sg-save" type="button">Save study guide dates and notes</button></div>` : '<p class="tiny muted">No unit tests in the calendar ahead.</p>'}</section>
+      <div class="tabs no-print"><a class="tab ${course === 'SL' ? 'on' : ''}" href="#/exam">AA SL</a><a class="tab ${course === 'HL' ? 'on' : ''}" href="#/exam?course=HL">AA HL</a></div>
+      <div class="grid g2"><section class="card"><h2 class="bar-head pink">✔ Topic checks</h2><p class="tiny muted">A short IB exam-style quiz (3–6 questions, about 20 minutes) after each topic. It counts as a Quiz in the data cycle. Tick the topics to include, then check the draft and publish it.</p>
+          ${tps.length ? `<div class="tc-list">${tps.slice(0, 12).map(x => `<label class="tc-row ${x.covered ? 'done' : ''}"><input type="checkbox" class="tc-pick" value="${esc(x.ox)}"${!x.covered && Hub.core.daysBetween(x.finished, asOf) <= 21 ? ' checked' : ''}><span><b>${esc(x.ox)}</b> ${esc(x.name)}<span class="tiny muted"> · finished ${fmtDate(x.finished)}${x.all ? '' : ' (one class so far)'}</span></span>${x.covered ? '<span class="pill green">checked ✓</span>' : ''}</label>`).join('')}</div>
+            <div class="actions"><button class="btn primary" id="tc-make" type="button">Make topic check</button></div>` : '<p class="tiny muted">No topics finished yet.</p>'}</section>
+        <section class="card"><h2 class="bar-head amber">📝 Mock exams</h2><p class="tiny muted">A mock paper from the skills taught so far, shortest questions first like the real paper. ${course} Paper 1 and Paper 2 are ${MOCK[course][1][0]} marks in ${MOCK[course][1][1]} minutes. It is held for you to mark and counts as a Test in the data cycle.</p>
+          <div class="mk-opts"><label>Paper <select id="mk-paper"><option value="1">Paper 1 — no calculator</option><option value="2">Paper 2 — calculator</option></select></label><label>Length <select id="mk-len"><option value="full">Full paper</option><option value="half">Half paper (${Math.round(MOCK[course][1][0] / 2)} marks)</option></select></label></div>
+          <details><summary class="small">Skills included (${taught.length} taught)</summary><div class="mk-skills">${taught.map(k => `<label class="inline-check tiny"><input type="checkbox" class="mk-sk" value="${k.id}" checked> ${esc(k.ox || '')} ${esc(k.name)}</label>`).join('')}</div></details>
+          ${course === 'HL' ? '<p class="tiny muted">Paper 3 (HL problem solving) isn’t available yet — it needs longer investigation questions.</p>' : ''}
+          <div class="actions"><button class="btn primary" id="mk-make" type="button">Make mock paper</button></div>
+          ${mocks.length ? `<p class="small"><b>Your mocks</b></p>${mocks.slice(0, 6).map(a => `<div class="row-between small"><a href="#/edit/${encodeURIComponent(a.id)}">${esc(a.title)}</a><span class="tiny muted">${a.status} · ${a.questions.reduce((n, q) => n + q.marks, 0)} marks</span></div>`).join('')}` : ''}</section></div>
+      <section class="card"><h2 class="bar-head green">Command term drill</h2><p class="small">Students find it on their Practice page and in every study guide: 10 quick questions using real IB-style question parts with the command term blanked out. Nothing is saved.</p><a class="btn" href="#/terms">Try the drill</a></section>`;
+    const save = $('#sg-save'); if (save) save.onclick = async () => {
+      const st = S(), cfg = st.settings.studyGuides = Object.assign({}, st.settings.studyGuides || {});
+      $$('[data-sg]', main).forEach(tr => { const k = tr.dataset.sg, date = k.split('|')[1], rel = $('.sg-rel', tr).value, note = $('.sg-note', tr).value.trim().slice(0, 300), off = $('.sg-off', tr).checked;
+        const def = Hub.core.addDays(date, -GUIDE_DAYS); if (rel === def && !note && !off) delete cfg[k]; else cfg[k] = { release: rel || def, note, off }; });
+      Hub.store.log('Updated study guide dates'); Hub.store.save(true);
+      try { await Hub.store.flush(); toast('Saved — study guides will open on those dates.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render();
+    };
+    const tc = $('#tc-make'); if (tc) tc.onclick = async () => {
+      const oxs = $$('.tc-pick', main).filter(i => i.checked).map(i => i.value); if (!oxs.length) return toast('Tick at least one topic.', 'error');
+      const r = makeTopicCheck(course, oxs); if (!r.ok) return toast(r.error, 'error');
+      try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); }
+      toast('Topic check drafted — check the questions, set the date, then publish.'); Hub.app.nav('#/edit/' + r.assessment.id);
+    };
+    const mk = $('#mk-make'); if (mk) mk.onclick = async () => {
+      const skills = $$('.mk-sk', main).filter(i => i.checked).map(i => i.value); if (!skills.length) return toast('Tick at least one skill.', 'error');
+      mk.disabled = true; mk.textContent = 'Building…';
+      const r = makeMock(course, +$('#mk-paper').value, $('#mk-len').value === 'half', skills);
+      if (!r.ok) { mk.disabled = false; mk.textContent = 'Make mock paper'; return toast(r.error, 'error'); }
+      try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); }
+      toast(`Mock drafted — ${r.marks} marks. Check it, then publish.`); Hub.app.nav('#/edit/' + r.assessment.id);
+    };
+  }
+  /** Dashboard line: study guides opening soon and topics waiting for a check. */
+  function dashHTML() {
+    const asOf = Hub.mastery.asOf(), soon = Object.keys(C().GROUPS).flatMap(g => tests(g).map(t => Object.assign(t, guideInfo(t), { label: C().GROUPS[g].label }))).filter(t => t.skills.length && !t.off && t.date >= asOf && Hub.core.daysBetween(asOf, t.release) <= 3);
+    const tcs = ['SL', 'HL'].map(c => [c, due(c).length]).filter(x => x[1]);
+    if (!soon.length && !tcs.length) return '';
+    return `<section class="card exam-strip"><h2 class="bar-head blue">Exam prep</h2>${soon.map(t => `<p class="small">📘 <b>${esc(t.label)}</b> · ${esc(t.title)} study guide ${t.release <= asOf ? '<b>is open</b> for students' : 'opens ' + fmtDate(t.release, true)} <span class="tiny muted">(test ${fmtDate(t.date, true)})</span></p>`).join('')}
+      ${tcs.map(([c, n]) => `<p class="small">✔ AA ${c}: ${n} topic${n === 1 ? '' : 's'} finished without a topic check.</p>`).join('')}<a class="btn small" href="#/exam${tcs.length && tcs[0][0] === 'HL' ? '?course=HL' : ''}">Open exam prep →</a></section>`;
+  }
+  Hub.exam = { bookletToggle, videos, watchHTML, decorate, tests, guideFor, guideCardHTML, guide, terms, topics, makeTopicCheck, makeMock, teacherView, dashHTML, BOOKLET_PDF };
+})(window.Hub = window.Hub || {});
+
+
+/* ---- js/insights.js ---- */
+/* Teacher insights:
+   · Monday summary (#/weekly, and a card on the dashboard on Mondays): last week per class, who needs a nudge, the skills that cost
+     the most marks, and what is coming this week. Copyable for an email or the PLC.
+   · Data cycle tabs: Heat map (skill × student), Wrong answers (distractor analysis), Growth over time, A day vs B day. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast, fmtDate, addDays, daysBetween } = Hub.core;
+  const U = Hub.ui, C = () => Hub.curriculum, S = () => Hub.store.state;
+  const COUNTED = ['Unit test', 'Test', 'Quiz', 'Retest', 'Exit Ticket'];
+  const live = a => a && ['published', 'closed'].includes(a.status);
+  const dayOf = t => String(t.date || t.at || '').slice(0, 10);
+  const pctOf = t => { const v = Hub.assess.score(t); return v && v.pct !== null && v.pct !== undefined && !isNaN(v.pct) ? v.pct : null; };
+  const mean = xs => xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null;
+  const tone = p => p === null ? '' : p >= 80 ? 'hm-g' : p >= 60 ? 'hm-a' : 'hm-r';
+  const typeOf = t => (Hub.assess.byId(t.aid) || t.inline || {}).type;
+
+  /* ---------- Monday summary ---------- */
+  function weekBounds(asOf) {
+    const d = new Date(asOf + 'T12:00:00Z'), dow = (d.getUTCDay() + 6) % 7;   // Monday = 0
+    const thisMon = addDays(asOf, -dow), lastMon = addDays(thisMon, -7);
+    return { from: lastMon, to: addDays(thisMon, -1), thisMon, thisSun: addDays(thisMon, 6) };
+  }
+  function weekly(asOf) {
+    const w = weekBounds(asOf), groups = Object.values(C().GROUPS);
+    const per = groups.map(g => {
+      const studs = Hub.roster.inGroup(g.id), ids = new Set(studs.map(s => s.id));
+      const work = S().assessments.filter(a => live(a) && (a.groups || []).includes(g.id)).map(a => ({ a, due: Hub.assess.dueFor(a, g.id) })).filter(x => x.due && x.due >= w.from && x.due <= w.to)
+        .map(x => { const done = studs.filter(s => Hub.assess.attemptsFor(x.a.id, s.id).length); const sc = studs.map(s => Hub.assess.attemptsFor(x.a.id, s.id).filter(t => t.status === 'released').pop()).filter(Boolean).map(pctOf).filter(p => p !== null);
+          return { a: x.a, due: x.due, done: done.length, total: studs.length, avg: mean(sc), missing: studs.filter(s => !Hub.assess.attemptsFor(x.a.id, s.id).length) }; });
+      const marked = S().attempts.filter(t => ids.has(t.sid) && t.status === 'released' && dayOf(t) >= w.from && dayOf(t) <= w.to);
+      const toMark = Hub.assess.queue().filter(t => ids.has(t.sid)).length;
+      const absent = Hub.attendance ? studs.reduce((n, s) => n + Object.keys(S().progress).filter(k => k.startsWith(s.id + '|att:') && k.slice(s.id.length + 5) >= w.from && k.slice(s.id.length + 5) <= w.to).length, 0) : 0;
+      const miss = {}; work.forEach(x => x.missing.forEach(s => (miss[s.id] = miss[s.id] || { s, n: 0 }).n++));
+      const low = {}; marked.forEach(t => { const p = pctOf(t); if (p === null) return; (low[t.sid] = low[t.sid] || { s: Hub.roster.byId(t.sid), ps: [] }).ps.push(p); });
+      const lost = {}; marked.forEach(t => { const a = t.inline || Hub.assess.byId(t.aid) || {}; (a.questions || []).forEach(q => (q.parts || []).forEach(p => { const r = t.auto && t.auto.parts && t.auto.parts[q.id + '|' + p.id]; if (!r || !q.skill) return; const fin = t.final && t.final.parts ? t.final.parts[q.id + '|' + p.id] : undefined, e = fin ?? r.earned;
+        const x = lost[q.skill] = lost[q.skill] || { skill: q.skill, e: 0, m: 0 }; x.e += +e || 0; x.m += p.marks; })); });
+      const next = C().lessons(g.id).filter(l => l.date >= w.thisMon && l.date <= w.thisSun && l.kind !== 'none');
+      return { g, studs: studs.length, work, avg: mean(marked.map(pctOf).filter(p => p !== null)), nMarked: marked.length, toMark, absent,
+        missing: Object.values(miss).filter(x => x.n >= 2 || (work.length === 1 && x.n === 1)).sort((a, b) => b.n - a.n),
+        low: Object.values(low).filter(x => x.s && mean(x.ps) < 60).map(x => ({ s: x.s, avg: mean(x.ps), n: x.ps.length })).sort((a, b) => a.avg - b.avg),
+        lost: Object.values(lost).filter(x => x.m >= 4 && x.e / x.m < 0.7).sort((a, b) => a.e / a.m - b.e / b.m).slice(0, 3),
+        mis: Hub.mastery.misconceptions(g.id, 7).slice(0, 2), next, tests: next.filter(l => l.kind === 'test') };
+    });
+    const guides = Hub.exam ? groups.flatMap(g => Hub.exam.tests(g.id).filter(t => t.skills.length).map(t => { const r = ((S().settings.studyGuides || {})[g.id + '|' + t.date] || {}).release || addDays(t.date, -7); return { g, t, r }; })).filter(x => x.r >= w.thisMon && x.r <= w.thisSun) : [];
+    const dc = Hub.datacycle ? ['SL', 'HL'].map(c => [c, Hub.datacycle.count(c, asOf)]) : [];
+    return { w, per, guides, dc };
+  }
+  const shortT = a => esc(String(a.title || '').replace(/^(SL|HL) · /, ''));
+  function weeklyHTML(D) {
+    const { w, per } = D;
+    return `<div class="grid g2">${per.map(x => `<section class="card wk-card"><h2 class="bar-head ${x.g.course === 'SL' ? 'amber' : 'blue'}"><a href="#/class/${x.g.id}">${esc(x.g.label)}</a></h2>
+      <div class="wk-nums"><span><b>${x.avg ?? '—'}${x.avg !== null ? '%' : ''}</b>average on marked work</span><span><b>${x.nMarked}</b>pieces marked</span><span><b>${x.toMark}</b>waiting to mark</span>${x.absent ? `<span><b>${x.absent}</b>absences</span>` : ''}</div>
+      ${x.work.length ? `<p class="small"><b>Work due last week</b></p>${x.work.map(y => `<div class="row-between small"><span>${shortT(y.a)} <span class="tiny muted">${fmtDate(y.due)}</span></span><span><b>${y.done}/${y.total}</b> done${y.avg !== null ? ` · avg ${y.avg}%` : ''}</span></div>`).join('')}` : '<p class="tiny muted">No work was due last week.</p>'}
+      ${x.missing.length ? `<p class="small wk-h"><b>Missing work</b></p><p class="miss-names small">${x.missing.map(m => `<a href="#/student/${encodeURIComponent(m.s.id)}">${esc(m.s.name)}</a>${m.n > 1 ? ` ×${m.n}` : ''}`).join(', ')}</p>` : ''}
+      ${x.low.length ? `<p class="small wk-h"><b>Below 60% last week</b></p><p class="miss-names small">${x.low.map(m => `<a href="#/student/${encodeURIComponent(m.s.id)}">${esc(m.s.name)}</a> <span class="tiny muted">${m.avg}%</span>`).join(', ')}</p>` : ''}
+      ${x.lost.length ? `<p class="small wk-h"><b>Skills that cost the most marks</b></p>${x.lost.map(l => `<div class="row-between small"><span>${U.skillChip(l.skill)}</span><b>${Math.round(100 * l.e / l.m)}%</b></div>`).join('')}` : ''}
+      ${x.mis.length ? `<p class="tiny muted">Common mistake: ${x.mis.map(m => esc(Hub.mastery.tagText(m.tag)) + ` (${m.students})`).join('; ')}</p>` : ''}
+      <p class="small wk-h"><b>This week</b></p>${x.next.length ? x.next.map(l => `<p class="tiny">${l.kind === 'test' ? '📝 ' : ''}<b>${fmtDate(l.date, true)}</b> ${esc(l.activity.slice(0, 80))}</p>`).join('') : '<p class="tiny muted">No lessons.</p>'}</section>`).join('')}</div>
+      ${D.guides.length ? `<section class="card"><h2 class="bar-head blue">Study guides opening this week</h2>${D.guides.map(x => `<p class="small">📘 ${esc(x.g.label)} · ${esc(x.t.title)} — opens ${fmtDate(x.r, true)}</p>`).join('')}</section>` : ''}`;
+  }
+  function weeklyText(D) {
+    const L = [`IB AA weekly summary — week of ${fmtDate(D.w.from)} to ${fmtDate(D.w.to)}`, ''];
+    D.dc.forEach(([c, r]) => r && r.of && L.push(`Data cycle AA ${c}: ${r.at}/${r.of} students at 4+ (${r.pct}%)`)); if (D.dc.length) L.push('');
+    D.per.forEach(x => { L.push(`${x.g.label}: average ${x.avg ?? '—'}${x.avg !== null ? '%' : ''} on ${x.nMarked} marked pieces; ${x.toMark} to mark${x.absent ? `; ${x.absent} absences` : ''}`);
+      x.work.forEach(y => L.push(`  • ${String(y.a.title).replace(/^(SL|HL) · /, '')}: ${y.done}/${y.total} done${y.avg !== null ? `, avg ${y.avg}%` : ''}`));
+      if (x.missing.length) L.push(`  Missing work: ${x.missing.map(m => m.s.name).join(', ')}`);
+      if (x.low.length) L.push(`  Below 60%: ${x.low.map(m => `${m.s.name} (${m.avg}%)`).join(', ')}`);
+      if (x.lost.length) L.push(`  Weakest skills: ${x.lost.map(l => `${U.skillName(l.skill)} (${Math.round(100 * l.e / l.m)}%)`).join(', ')}`);
+      if (x.tests.length) L.push(`  This week: ${x.tests.map(l => `${l.activity} on ${fmtDate(l.date)}`).join(', ')}`); L.push(''); });
+    return L.join('\n');
+  }
+  function weeklyView(main) {
+    const asOf = Hub.mastery.asOf(), D = weekly(asOf);
+    main.innerHTML = U.heading('MONDAY SUMMARY', `Week of ${fmtDate(D.w.from)} – ${fmtDate(D.w.to)}`, 'Last week across your four classes, who needs a nudge, and what is coming up this week.', '<button class="btn" id="wk-copy" type="button">Copy as text</button>') +
+      (D.dc.some(([, r]) => r && r.of) ? `<div class="wk-dc">${D.dc.map(([c, r]) => r && r.of ? `<a class="wk-pill" href="#/datacycle">AA ${c} data cycle: <b>${r.at}/${r.of}</b> at 4+ (${r.pct}%)</a>` : '').join('')}</div>` : '') + weeklyHTML(D);
+    $('#wk-copy').onclick = async () => { const t = weeklyText(D); try { await navigator.clipboard.writeText(t); toast('Copied — paste it into an email or your PLC notes.'); } catch (e) { U.modal(`<h2 class="modal-title">Weekly summary</h2><textarea rows="14" readonly>${esc(t)}</textarea>`); } };
+  }
+  /** Dashboard card: Mondays (and the first school day of a week). */
+  function dashCard() {
+    const asOf = Hub.mastery.asOf(), dow = (new Date(asOf + 'T12:00:00Z').getUTCDay() + 6) % 7; if (dow > 1) return '';
+    const D = weekly(asOf), m = D.per.reduce((n, x) => n + x.missing.length, 0), l = D.per.reduce((n, x) => n + x.low.length, 0), k = D.per.reduce((n, x) => n + x.toMark, 0);
+    return `<section class="card wk-dash"><h2 class="bar-head amber">📋 Your Monday summary</h2><p class="small">Last week: <b>${m}</b> student${m === 1 ? '' : 's'} missing work · <b>${l}</b> below 60% · <b>${k}</b> to mark${D.guides.length ? ` · <b>${D.guides.length}</b> study guide${D.guides.length === 1 ? '' : 's'} opening this week` : ''}.</p><a class="btn small primary" href="#/weekly">Open the summary →</a></section>`;
+  }
+
+  /* ---------- Data cycle tabs ---------- */
+  const TABS = [['heatmap', 'Heat map'], ['wrong', 'Wrong answers'], ['growth', 'Growth'], ['ab', 'A vs B day']];
+  const pick = (params, list, def) => list.includes(params.g) ? params.g : def;
+  function heatmap(main, params) {
+    const asOf = Hub.mastery.asOf(), gid = pick(params, Object.keys(C().GROUPS), 'SL-A'), g = C().GROUPS[gid];
+    const skills = C().skillsFor(g.course).filter(k => C().isTaught(k.id, gid, asOf));
+    const rows = Hub.roster.inGroup(gid).map(s => { const st = Object.fromEntries(Hub.mastery.studentSkills(s.id).map(x => [x.skill, x])); return { s, st, all: Hub.mastery.overall(s.id) }; }).sort((a, b) => (a.all ?? 999) - (b.all ?? 999));
+    const colAvg = skills.map(k => mean(rows.map(r => r.st[k.id]).filter(x => x && x.pct !== null && x.n).map(x => x.pct)));
+    return `<div class="tabs no-print">${Object.values(C().GROUPS).map(x => `<a class="tab ${x.id === gid ? 'on' : ''}" href="#/datacycle?tab=heatmap&g=${x.id}">${esc(x.label)}</a>`).join('')}</div>
+      <section class="card"><h2 class="bar-head pink">Skill × student heat map · ${esc(g.label)}</h2><p class="tiny muted">Mastery on every taught skill (recent work counts more). Weakest students at the top. <span class="hm-key"><i class="hm-r"></i>below 60% <i class="hm-a"></i>60–79% <i class="hm-g"></i>80%+ <i></i>no evidence</span></p>
+      ${rows.length && skills.length ? `<div class="scroll"><table class="hm-tbl"><thead><tr><th>Student</th><th>All</th>${skills.map(k => `<th title="${esc(k.name)}"><span>${esc(k.id.slice(3))}</span></th>`).join('')}</tr></thead><tbody>
+        ${rows.map(r => `<tr><th><a href="#/student/${encodeURIComponent(r.s.id)}">${esc(r.s.name)}</a></th><td class="${tone(r.all)}"><b>${r.all ?? ''}</b></td>${skills.map(k => { const x = r.st[k.id], p = x && x.n ? x.pct : null; return `<td class="${tone(p)}" title="${esc(r.s.name)} · ${esc(k.name)}${p !== null ? ': ' + p + '%' : ': no evidence'}">${p ?? ''}</td>`; }).join('')}</tr>`).join('')}
+        <tr class="hm-avg"><th>Class</th><td></td>${colAvg.map(p => `<td class="${tone(p)}"><b>${p ?? ''}</b></td>`).join('')}</tr></tbody></table></div>
+        <p class="tiny muted">Column headings are the skill codes (Oxford section) — hover for the skill name. Click a student for their full record.</p>` : '<p class="tiny muted">No taught skills or students yet.</p>'}</section>`;
+  }
+  function wrong(main, params) {
+    const course = params.g === 'HL' ? 'HL' : 'SL', since = addDays(Hub.mastery.asOf(), -42);
+    const asmts = S().assessments.filter(a => live(a) && a.course === course && a.type !== 'Homework' && S().attempts.some(t => t.aid === a.id && t.status === 'released' && dayOf(t) >= since));
+    const items = asmts.flatMap(a => Hub.assess.itemAnalysis(a.id).map(r => Object.assign(r, { a }))).filter(r => r.n >= 3 && r.mean !== null && r.mean < 70 && (r.wrong.length || r.tags.length)).sort((x, y) => x.mean - y.mean).slice(0, 15);
+    return `<div class="tabs no-print"><a class="tab ${course === 'SL' ? 'on' : ''}" href="#/datacycle?tab=wrong&g=SL">AA SL</a><a class="tab ${course === 'HL' ? 'on' : ''}" href="#/datacycle?tab=wrong&g=HL">AA HL</a></div>
+      <section class="card"><h2 class="bar-head amber">Wrong-answer analysis · AA ${course}</h2><p class="tiny muted">Question parts from the last 6 weeks where the class averaged below 70%, with the wrong answers students gave most often and the misconception each one points to. Use it to plan the reteach.</p>
+      ${items.length ? `<div class="scroll"><table class="tbl wa-tbl"><thead><tr><th>Question</th><th>Skill</th><th>Class avg</th><th>Most common wrong answers</th><th>Misconception</th></tr></thead><tbody>${items.map(r => `<tr><td><a href="#/analysis/${encodeURIComponent(r.a.id)}">${shortT(r.a)}</a><div class="tiny muted">${esc(r.label)} · ${r.marks} mark${r.marks > 1 ? 's' : ''} · ${r.n} students</div></td><td>${U.skillChip(r.skill)}</td><td class="${tone(r.mean)}"><b>${r.mean}%</b></td>
+        <td>${r.wrong.map(([v, n]) => `<div class="small"><code>${esc(String(v).slice(0, 40))}</code> <span class="tiny muted">× ${n} (${Math.round(100 * n / r.n)}%)</span></div>`).join('') || '<span class="tiny muted">—</span>'}</td>
+        <td>${r.tags.map(([t, n]) => `<div class="small">${esc(Hub.mastery.tagText(t))} <span class="tiny muted">× ${n}</span></div>`).join('') || '<span class="tiny muted">—</span>'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="tiny muted">Nothing below 70% with enough answers yet (needs at least 3 students per question).</p>'}</section>`;
+  }
+  /** Monthly average of counted, marked work. */
+  function monthly(sids, ms) {
+    const set = new Set(sids);
+    return ms.map(m => { if (!m.upTo) return null; const end = m.upTo; const ps = S().attempts.filter(t => set.has(t.sid) && t.status === 'released' && dayOf(t) >= m.first && dayOf(t) <= end && COUNTED.includes(typeOf(t))).map(pctOf).filter(p => p !== null); return ps.length ? { avg: mean(ps), n: ps.length } : null; });
+  }
+  function lineChart(series, ms) {
+    const W = 560, H = 210, L = 34, B = 26, step = (W - L - 20) / Math.max(1, ms.length - 1), y = v => H - B - (H - B - 10) * v / 100, x = i => L + 10 + i * step;
+    const grid = [0, 50, 100].map(v => `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink)">${v}%</text><line x1="${L}" x2="${W - 6}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/>`).join('');
+    const lines = series.map(s => { const pts = s.vals.map((v, i) => v ? [x(i), y(v.avg), v] : null).filter(Boolean); if (!pts.length) return '';
+      return `<polyline fill="none" stroke="${s.col}" stroke-width="3" ${s.dash ? 'stroke-dasharray="7 5"' : ''} points="${pts.map(p => p[0] + ',' + p[1]).join(' ')}"/>${pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="${s.col}" stroke="var(--ink)" stroke-width="1.2"><title>${esc(s.name)}: ${p[2].avg}% (${p[2].n} pieces)</title></circle>`).join('')}`; }).join('');
+    const labels = ms.map((m, i) => `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="12" fill="var(--ink)">${m.short}</text>`).join('');
+    return `<svg class="dc-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average score by month">${grid}${lines}${labels}</svg><div class="dc-key tiny">${series.map(s => `<span><i style="background:${s.col}"></i>${esc(s.name)}</span>`).join('')}</div>`;
+  }
+  const COL = { 'SL-A': 'var(--orange)', 'SL-B': '#F6B26B', 'HL-A': '#3D85C6', 'HL-B': '#9FC5E8' };
+  function growth(main, params) {
+    const ms = Hub.datacycle.months(), course = params.g === 'HL' ? 'HL' : 'SL', groups = Object.values(C().GROUPS);
+    const series = groups.map(g => ({ name: g.label, col: COL[g.id], dash: g.day === 'B', vals: monthly(Hub.roster.inGroup(g.id).map(s => s.id), ms) }));
+    const studs = Hub.roster.inCourse(course).map(s => { const ts = S().attempts.filter(t => t.sid === s.id && t.status === 'released' && COUNTED.includes(typeOf(t))).sort((a, b) => dayOf(a).localeCompare(dayOf(b))).map(pctOf).filter(p => p !== null);
+      if (ts.length < 4) return { s, n: ts.length }; const k = Math.min(3, Math.floor(ts.length / 2)), first = mean(ts.slice(0, k)), last = mean(ts.slice(-k)); return { s, n: ts.length, first, last, d: last - first }; });
+    const ok = studs.filter(x => x.d !== undefined).sort((a, b) => a.d - b.d), few = studs.filter(x => x.d === undefined).length;
+    const row = x => `<tr><td><a href="#/student/${encodeURIComponent(x.s.id)}">${esc(x.s.name)}</a> <span class="tiny muted">${esc(x.s.group.slice(-1))} day</span></td><td>${x.first}%</td><td>${x.last}%</td><td class="${x.d >= 5 ? 'gr-up' : x.d <= -5 ? 'gr-down' : ''}"><b>${x.d > 0 ? '▲ +' : x.d < 0 ? '▼ ' : ''}${x.d}</b></td></tr>`;
+    return `<section class="card"><h2 class="bar-head blue">Average score by month</h2><p class="tiny muted">Tests, quizzes, retests and Exit Tickets (not homework) marked each month, per class. Dashed lines are B day. Hover a point for the number of pieces.</p>${lineChart(series, ms)}</section>
+      <div class="tabs no-print"><a class="tab ${course === 'SL' ? 'on' : ''}" href="#/datacycle?tab=growth&g=SL">AA SL</a><a class="tab ${course === 'HL' ? 'on' : ''}" href="#/datacycle?tab=growth&g=HL">AA HL</a></div>
+      <section class="card"><h2 class="bar-head green">Each student: first work vs latest work</h2><p class="tiny muted">Average of each student’s first three marked pieces against their latest three. Biggest drops first — they are the ones to check in with.${few ? ` ${few} student${few === 1 ? ' has' : 's have'} fewer than 4 marked pieces, so not shown yet.` : ''}</p>
+      ${ok.length ? `<div class="scroll"><table class="tbl gr-tbl"><thead><tr><th>Student</th><th>First</th><th>Latest</th><th>Change</th></tr></thead><tbody>${ok.map(row).join('')}</tbody></table></div>` : '<p class="tiny muted">Not enough marked work yet.</p>'}</section>`;
+  }
+  function ab(main) {
+    const asOf = Hub.mastery.asOf(), ms = Hub.datacycle.months();
+    const block = course => {
+      const gs = Object.values(C().GROUPS).filter(g => g.course === course);
+      const info = gs.map(g => { const studs = Hub.roster.inGroup(g.id), ids = studs.map(s => s.id);
+        const pred = studs.map(s => Hub.datacycle.predicted(s, asOf)).filter(Boolean), withG = pred.filter(p => p.grade !== null);
+        const set = S().assessments.filter(a => live(a) && a.type !== 'Homework' && (a.groups || []).includes(g.id) && (Hub.assess.dueFor(a, g.id) || '9999') < asOf);
+        const exp = set.length * studs.length, got = set.reduce((n, a) => n + studs.filter(s => Hub.assess.attemptsFor(a.id, s.id).length).length, 0);
+        const mo = monthly(ids, ms).filter(Boolean);
+        return { g, n: studs.length, avg: mean(pred.map(p => p.pct)), at: withG.length ? Math.round(100 * withG.filter(p => p.grade >= 4).length / withG.length) : null, comp: exp ? Math.round(100 * got / exp) : null, month: mo.length ? mo[mo.length - 1].avg : null }; });
+      const skills = C().skillsFor(course).map(k => { const v = gs.map(g => Hub.mastery.groupSkill(g.id, k.id).avgAll); return { k, a: v[0], b: v[1] }; }).filter(x => x.a !== null && x.b !== null && Math.abs(x.a - x.b) >= 10).sort((x, y) => Math.abs(y.a - y.b) - Math.abs(x.a - x.b)).slice(0, 8);
+      const cell = (v, suf) => v === null || v === undefined ? '—' : v + (suf || '');
+      return `<section class="card"><h2 class="bar-head ${course === 'SL' ? 'amber' : 'blue'}">AA ${course}: A day vs B day</h2>
+        <div class="scroll"><table class="tbl ab-tbl"><thead><tr><th></th>${info.map(x => `<th>${esc(x.g.label)}</th>`).join('')}</tr></thead><tbody>
+          <tr><td>Students</td>${info.map(x => `<td>${x.n}</td>`).join('')}</tr>
+          <tr><td>Average so far (weighted, as in the data cycle)</td>${info.map(x => `<td><b>${cell(x.avg, '%')}</b></td>`).join('')}</tr>
+          <tr><td>At a 4 or above</td>${info.map(x => `<td>${cell(x.at, '%')}</td>`).join('')}</tr>
+          <tr><td>Latest month average</td>${info.map(x => `<td>${cell(x.month, '%')}</td>`).join('')}</tr>
+          <tr><td>Work handed in (not homework)</td>${info.map(x => `<td>${cell(x.comp, '%')}</td>`).join('')}</tr></tbody></table></div>
+        ${skills.length ? `<p class="small wk-h"><b>Skills with a gap of 10 points or more</b></p><table class="tbl ab-tbl"><thead><tr><th>Skill</th>${info.map(x => `<th>${esc(x.g.day)} day</th>`).join('')}</tr></thead><tbody>${skills.map(x => `<tr><td>${U.skillChip(x.k.id)}</td><td class="${tone(x.a)}">${x.a}%</td><td class="${tone(x.b)}">${x.b}%</td></tr>`).join('')}</tbody></table>` : '<p class="tiny muted">No skill differs by 10 points or more between the two classes.</p>'}</section>`;
+    };
+    return `<p class="tiny muted">Same course, same teacher, different days — differences point at timing (e.g. the gap between lessons) rather than teaching.</p>${block('SL')}${block('HL')}`;
+  }
+  /** Called by the data cycle view: returns true when it drew one of these tabs. */
+  function tab(main, params, tabsHTML) {
+    const fn = { heatmap, wrong, growth, ab }[params.tab]; if (!fn) return false;
+    const label = TABS.find(t => t[0] === params.tab)[1];
+    main.innerHTML = U.heading('PLC GOAL · DATA', label, { heatmap: 'Where each student stands on every taught skill.', wrong: 'Which wrong answers come up most — and what they tell you.', growth: 'Are students improving? Class trends and each student’s change.', ab: 'Comparing your A day and B day classes.' }[params.tab]) + tabsHTML + fn(main, params);
+    return true;
+  }
+  const tabLinks = cur => TABS.map(([k, l]) => `<a class="tab ${cur === k ? 'on' : ''}" href="#/datacycle?tab=${k}">${l}</a>`).join('');
+  Hub.insights = { weekly, weeklyView, weeklyText, dashCard, tab, tabLinks };
+})(window.Hub = window.Hub || {});
+
+
 /* ---- js/app.js ---- */
 /* App shell: sign-in, navigation, routing (#/page/param?query), preview banner, re-rendering. */
 (function (Hub) {
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
-  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['announce', '✉', 'Announcements'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
+  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['lessons', '▣', 'Lessons & notebooks'], ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['announce', '✉', 'Announcements'], ['donow', '☀', 'Personalised quizzes'], ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], ['exam', '📝', 'Exam prep'], ['weekly', '📋', 'Monday summary'], ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
   const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
@@ -9195,8 +9680,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
-    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p) }
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m) }
   };
   function shell() {
     const sess = Hub.auth.current(), role = Hub.auth.role(), st = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null;
@@ -9205,6 +9690,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><a class="brand" href="#/home"><img src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"><span class="brand-text"><small>Miss Badmus’</small><b>IB Math Hub</b></span></a><p class="slogan">Inquirers. Thinkers. Reflective Learners.</p>
       <nav aria-label="Main">${navItems.map(([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && Hub.announce && st && Hub.announce.unread(st).length ? `<span class="badge">${Hub.announce.unread(st).length}</span>` : ''}</a>`).join('')}</nav>
       <button class="calc-launch" type="button" data-calc aria-controls="calc-panel"><span class="ic" aria-hidden="true">▦</span>NumWorks calculator</button>
+      <button class="calc-launch fb-launch" type="button" data-booklet><span class="ic" aria-hidden="true">📘</span>Formula booklet</button>
       ${role === 'teacher' ? pickerHTML() : ''}
       <div class="side-foot"><span class="demo-badge">PRIVATE CLASSROOM</span><span class="tiny">Saved in Supabase</span></div></aside>
       <div class="main-col"><header class="top"><button class="menu-btn" id="menu" aria-label="Open menu" aria-expanded="false" aria-controls="side">☰</button><span class="top-title">${role === 'teacher' ? 'IB Mathematics: Analysis & Approaches' : esc(sub)}</span><span id="save-status" class="save-status" aria-live="polite"></span>
