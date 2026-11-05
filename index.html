@@ -514,6 +514,9 @@ body.test-mode .watch, body.test-mode .pv-pick, body.test-mode .side .slogan { d
 
 
 /* notebooks: live lesson, catch-up, unit notes */
+.fb-item { border-top: 1px dashed var(--line); padding: 8px 0; } .fb-reply { background: #EEF4FB; border-left: 4px solid #3D85C6; border-radius: 8px; padding: 6px 10px; margin: 6px 0; } .fb-t.done { opacity: .7; } .fb-filter { margin-left: auto; display: inline-flex; flex-wrap: wrap; gap: 4px; } .fb-rep textarea { width: 100%; margin: 6px 0; }
+.pace { display: flex; flex-wrap: wrap; gap: 8px; border: 0; padding: 0; margin: 10px 0 4px; } .pace legend { font-weight: 700; margin-bottom: 4px; } .pace-opt { border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-family: var(--f-ui); }
+.pace-sum { margin: 8px 0; } .pace-sum ul { margin: 6px 0 0; }
 .lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
 .lv-tile { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border-radius: 12px; border: 2px solid var(--line); background: var(--white); color: var(--ink); text-decoration: none; font-family: var(--f-ui); min-height: 74px; }
 .lv-tile.red { background: #FDECEA; border-color: #D93025; } .lv-tile.amber { background: #FFF4D6; border-color: #E8A400; } .lv-tile.green { background: #E6F4EA; border-color: #2E7D32; }
@@ -6021,7 +6024,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const stats = Hub.mastery.studentSkills(s.id).filter(x => x.taught && x.pct !== null).sort((a, b) => a.pct - b.pct);
     const ia = C().iaSchedule(s.group).find(x => x.date && x.date >= asOf), hour = new Date().getHours();
     main.innerHTML = `${Hub.announce ? Hub.announce.bannerHTML(s) : ''}<section class="hero slim"><div><p class="kicker">${C().GROUPS[s.group].label.toUpperCase()} · ${fmtDate(asOf, true).toUpperCase()}</p><h1>${hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}, ${esc(s.name.split(' ')[0])}.</h1>${nl ? `<p class="next-pill">Next lesson · <b>${fmtDate(nl.date, true)}</b> · ${esc(nl.activity)}</p>` : ''}</div></section>
-      ${Hub.nudge ? Hub.nudge.bannerHTML(s) : ''}${Hub.lessons && Hub.lessons.catchUpCardHTML ? Hub.lessons.catchUpCardHTML(s) : ''}${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
+      ${Hub.nudge ? Hub.nudge.bannerHTML(s) : ''}${Hub.feedback ? Hub.feedback.replyCardHTML(s) : ''}${Hub.lessons && Hub.lessons.catchUpCardHTML ? Hub.lessons.catchUpCardHTML(s) : ''}${Hub.exam ? Hub.exam.guideCardHTML(s) : ''}<div class="grid g2">
         <section class="card act"><h2 class="bar-head green">To do</h2>${todo.length ? todo.map(({ a }) => `<div class="todo"><div><b>${esc(a.title)}</b>${Hub.attendance && Hub.attendance.absentAccess(a, s.id) ? '<div class="absent-note">You were absent — catch up on the lesson and complete this.</div>' : ''}<div class="tiny muted">${a.type} · ${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · about ${a.minutes} min${Hub.assess.dueFor(a, s.group) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s.group))}` : ''}${a.uploadRequired ? ' · 📷 upload your working' : ''}</div></div><a class="btn small" href="#/task/${a.id}">Start →</a></div>`).join('') : '<p>Nothing to do right now. 🎉</p>'}</section>
         ${extra.length ? `<section class="card ex-opt"><h2 class="bar-head blue">Optional extra practice</h2><p class="tiny muted">Not required — pick one if you want more practice on a particular exercise.</p>${extra.map(({ a }) => `<div class="todo"><div><b>${esc(a.title.replace(/^Extra practice · /, ''))}</b><div class="tiny muted">${a.questions.length} questions · optional</div></div><a class="btn small" href="#/task/${encodeURIComponent(a.id)}">Practise</a></div>`).join('')}</section>` : ''}
         ${(L => L ? `<section class="card"><h2 class="bar-head blue">▣ Lesson notebook</h2><p><b>${esc(L.title)}</b></p><a class="btn primary" href="#/notebook/${encodeURIComponent(L.id)}">Open today’s notebook →</a></section>` : '')(Hub.lessons && Hub.lessons.latestFor(s))}
@@ -8177,6 +8180,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     if (!ctx.key) add(`My own notes ${opt('Optional')}`, 'mine', `<p class="tiny muted">Optional — make this page your own. Add a photo of your handwritten notes, or type your own notes. For maths, tap the maths keys: fractions, √, powers, π.</p><div id="mine-list">${mineHTML(r.mine || [], ctx)}</div>${ctx.readOnly ? '' : `<div class="actions mine-add"><label class="btn small primary file-btn"><input type="file" accept="image/*" data-mine-photo capture="environment" aria-label="Add a photo of my notes"> 📷 Add a photo of my notes</label><button type="button" class="btn small" data-mine-add="note">+ Type a note</button><button type="button" class="btn small" data-mine-add="example">+ My worked example</button><button type="button" class="btn small" data-mine-add="term">+ Key word</button></div>`}`);
     if (L.reflect !== false) add('Reflection', 'reflect', `<fieldset class="rag"><legend>How confident do you feel about today’s lesson?</legend>${[['red', 'I’m stuck'], ['amber', 'Getting there'], ['green', 'I’ve got it']].map(([v, t]) => `<label class="rag-opt ${v}"><input type="radio" name="rag" value="${v}" ${r.rag === v ? 'checked' : ''} ${dis}> ${t}</label>`).join('')}</fieldset>
       <label>One thing I learned today<textarea id="nb-learned" rows="2" ${dis}>${esc(r.learned || '')}</textarea></label><label>A question I still have <span class="tiny muted">(Miss Badmus reads these)</span><textarea id="nb-question" rows="2" ${dis}>${esc(r.question || '')}</textarea></label>`);
+    if (L.pace !== false) add('How was today?', 'pace', `<fieldset class="pace"><legend>How was today’s pace?</legend>${[['slow', 'Too slow'], ['right', 'About right'], ['fast', 'Too fast']].map(([v, t]) => `<label class="pace-opt"><input type="radio" name="pace" value="${v}" ${r.pace === v ? 'checked' : ''} ${dis}> ${t}</label>`).join('')}</fieldset>
+      <label>Anything else about today’s lesson? <span class="tiny muted">(optional · Miss Badmus reads these)</span><textarea id="nb-pacenote" rows="2" maxlength="400" ${dis}>${esc(r.paceNote || '')}</textarea></label>`);
     const eq = L.eq ? `<div class="eq-strip"><span class="eq-tag">Essential question</span> ${M(L.eq)}</div>` : '';
     const tools = secs.length > 2 ? `<div class="nb-tools no-print"><span class="tiny muted">Tap a heading to open or close it.</span><button type="button" class="btn small ghost" data-nb-all="open">Open all</button><button type="button" class="btn small ghost" data-nb-all="close">Close all</button></div>` : '';
     return `${eq}<div class="chips nb-skills">${L.skills.map(s => U.skillChip(s)).join('')}</div>${tools}${secs.join('') || U.empty('This notebook is still empty.')}`;
@@ -8210,6 +8215,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const f = $('#yt-form', root); if (f && ts.length) out.tasks = U.readResponses(f, ts);
       const rag = $('input[name="rag"]:checked', root); out.rag = rag ? rag.value : '';
       out.learned = ($('#nb-learned', root) || {}).value || ''; out.question = ($('#nb-question', root) || {}).value || '';
+      const pc = $('input[name="pace"]:checked', root); out.pace = pc ? pc.value : ''; out.paceNote = ($('#nb-pacenote', root) || {}).value || '';
       return out;
     };
     const saveNow = ctx.readOnly || !ctx.save ? () => {} : debounce(() => ctx.save(collect()), 600);
@@ -8260,7 +8266,15 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const bl = blanksOf(L.keyIdeas), ts = tasksOf(L);
     const notesOK = bl.filter((a, k) => blankOK(a, (resp.blanks || {})[k])).length;
     let parts = 0, right = 0; ts.forEach(q => { if (!(resp.checked || {})[q.id]) return; q.parts.forEach(p => { if (p.answer.kind === 'open') return; parts++; if (Hub.math.markPart(p, ((resp.tasks || {})[q.id] || {})[p.id]).verdict === 'correct') right++; }); });
-    return { notes: bl.length ? `${notesOK}/${bl.length}` : '—', yt: parts ? `${right}/${parts}` : '—', own: (resp.mine || []).length, rag: resp.rag || '', learned: resp.learned || '', question: resp.question || '' };
+    return { notes: bl.length ? `${notesOK}/${bl.length}` : '—', yt: parts ? `${right}/${parts}` : '—', own: (resp.mine || []).length, rag: resp.rag || '', learned: resp.learned || '', question: resp.question || '', pace: resp.pace || '', paceNote: resp.paceNote || '' };
+  }
+  const PACE_TXT = { slow: 'Too slow', right: 'About right', fast: 'Too fast' };
+  /** Pace votes and comments for one class: "3 too fast · 12 about right · 1 too slow" + comments. */
+  function paceHTML(L, studs) {
+    const xs = studs.map(s => [s, summary(L, (S().progress[s.id + '|' + NB + L.id] || {}).responses)]).filter(([, x]) => x && (x.pace || x.paceNote.trim()));
+    if (!xs.length) return '';
+    const n = k => xs.filter(([, x]) => x.pace === k).length, notes = xs.filter(([, x]) => x.paceNote.trim());
+    return `<div class="pace-sum"><b>Pace:</b> <span class="pill red">${n('fast')} too fast</span> <span class="pill green">${n('right')} about right</span> <span class="pill">${n('slow')} too slow</span>${notes.length ? `<ul class="small">${notes.map(([s, x]) => `<li><b>${esc(s.name)}:</b> ${esc(x.paceNote)}${x.pace ? ` <span class="tiny muted">(${PACE_TXT[x.pace]})</span>` : ''}</li>`).join('')}</ul>` : ''}</div>`;
   }
   const ragChip = v => v ? `<span class="rag-chip ${v}">${{ red: 'Stuck', amber: 'Getting there', green: 'Got it' }[v]}</span>` : '<span class="tiny muted">—</span>';
 
@@ -8377,8 +8391,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     }
     main.innerHTML = head + groupsOf(L.course).map(g => { const st = Hub.roster.inGroup(g, true); const done = st.filter(s => S().progress[s.id + '|' + NB + L.id]).length; const qs = st.map(s => [s, summary(L, (S().progress[s.id + '|' + NB + L.id] || {}).responses)]).filter(([, x]) => x && x.question.trim());
       return `<section class="card scroll"><div class="row-between"><h2 class="bar-head blue">${C().GROUPS[g].label}</h2><span class="tiny muted">${done}/${st.length} opened · ${relLabel(L, g)[0]}</span></div>
-      ${qs.length ? `<div class="sticky"><b>Questions from students</b><ul>${qs.map(([s, x]) => `<li><b>${esc(s.name)}:</b> ${esc(x.question)}</li>`).join('')}</ul></div>` : ''}
-      <table class="tbl"><thead><tr><th>Student</th><th>Confidence</th><th>Notes</th><th>Your turn</th><th>Own notes</th><th>One thing learned</th><th>Updated</th></tr></thead><tbody>${st.map(s => { const p = S().progress[s.id + '|' + NB + L.id], x = p && summary(L, p.responses); return `<tr><td>${x ? `<a href="${base}?view=responses&sid=${encodeURIComponent(s.id)}">${esc(s.name)}</a>` : esc(s.name)}</td><td>${x ? ragChip(x.rag) : '<span class="tiny muted">not opened</span>'}</td><td>${x ? x.notes : ''}</td><td>${x ? x.yt : ''}</td><td>${x ? x.own || '—' : ''}</td><td class="small">${x ? esc(x.learned) : ''}</td><td class="tiny">${p ? fmtDateTime(p.updatedAt) : ''}</td></tr>`; }).join('')}</tbody></table></section>`; }).join('');
+      ${qs.length ? `<div class="sticky"><b>Questions from students</b><ul>${qs.map(([s, x]) => `<li><b>${esc(s.name)}:</b> ${esc(x.question)}</li>`).join('')}</ul></div>` : ''}${paceHTML(L, st)}
+      <table class="tbl"><thead><tr><th>Student</th><th>Confidence</th><th>Pace</th><th>Notes</th><th>Your turn</th><th>Own notes</th><th>One thing learned</th><th>Updated</th></tr></thead><tbody>${st.map(s => { const p = S().progress[s.id + '|' + NB + L.id], x = p && summary(L, p.responses); return `<tr><td>${x ? `<a href="${base}?view=responses&sid=${encodeURIComponent(s.id)}">${esc(s.name)}</a>` : esc(s.name)}</td><td>${x ? ragChip(x.rag) : '<span class="tiny muted">not opened</span>'}</td><td class="small">${x && x.pace ? PACE_TXT[x.pace] : ''}</td><td>${x ? x.notes : ''}</td><td>${x ? x.yt : ''}</td><td>${x ? x.own || '—' : ''}</td><td class="small">${x ? esc(x.learned) : ''}</td><td class="tiny">${p ? fmtDateTime(p.updatedAt) : ''}</td></tr>`; }).join('')}</tbody></table></section>`; }).join('');
   }
 
   /** Live lesson: one tile per student — how far they are, their red/amber/green, and anyone stuck or asking a question. Refreshes itself. */
@@ -8392,7 +8406,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     main.innerHTML = head + `<div class="tabs">${gs.map(x => `<a class="tab ${x === g ? 'on' : ''}" href="${base}?view=live&g=${x}">${C().GROUPS[x].label}</a>`).join('')}</div>
       <section class="card act"><div class="row-between"><h2 class="bar-head green">● Live · ${esc(C().GROUPS[g].label)}</h2><span class="small"><b>${opened}/${studs.length}</b> opened${bl ? ` · ${bl} blanks in the notes` : ''} · updates every minute</span></div>
         ${stuck.length || asks.length ? `<div class="sticky">${stuck.length ? `<p><b>Stuck:</b> ${stuck.map(r => esc(r.st.name)).join(', ')}</p>` : ''}${asks.map(r => `<p><b>${esc(r.st.name)} asks:</b> ${esc(r.x.question)}</p>`).join('')}</div>` : ''}
-        <div class="lv-grid">${rows.sort((a, b) => (a.x ? 1 : 0) - (b.x ? 1 : 0) || a.st.name.localeCompare(b.st.name)).map(tile).join('')}</div>
+        ${paceHTML(L, studs)}<div class="lv-grid">${rows.sort((a, b) => (a.x ? 1 : 0) - (b.x ? 1 : 0) || a.st.name.localeCompare(b.st.name)).map(tile).join('')}</div>
         <p class="tiny muted"><span class="lv-key red"></span>Stuck <span class="lv-key amber"></span>Getting there <span class="lv-key green"></span>Got it <span class="lv-key open"></span>Working <span class="lv-key none"></span>Not opened. Tap a student to see their notebook.</p></section>`;
   }
 
@@ -10872,13 +10886,80 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   Hub.nudge = { open, send, notDone, buttonHTML, bannerHTML, bindBanner, mine };
 })(window.Hub = window.Hub || {});
 
+/* ---- js/feedback.js ---- */
+/* Student feedback with names. Each message is the student's own "<id>|fb:<id>" progress record, so no other student ever
+   sees it. Miss Badmus reads them in her Feedback inbox, marks them dealt with and can reply; the reply appears on the
+   student's My day and Feedback page. */
+(function (Hub) {
+  'use strict';
+  const { esc, $, $$, toast, fmtDate } = Hub.core;
+  const U = Hub.ui, S = () => Hub.store.state, C = () => Hub.curriculum;
+  const P = '|fb:';
+  const CATS = [['lesson', 'A lesson'], ['work', 'Homework, a quiz or a test'], ['site', 'The website'], ['idea', 'A suggestion'], ['other', 'Something else']];
+  const catName = k => (CATS.find(c => c[0] === k) || [0, 'Feedback'])[1];
+  const when = iso => iso ? `${fmtDate(String(iso).slice(0, 10), true)} ${new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '';
+  /** All feedback (teacher) or the student's own: [{key, sid, cat, text, at, status, reply, replyAt, seenReply}] newest first. */
+  function list(sid) {
+    return Object.entries(S().progress || {}).filter(([k]) => k.includes(P) && (!sid || k.startsWith(sid + P)))
+      .map(([k, v]) => Object.assign({ key: k, sid: k.split('|')[0] }, v.responses || {})).filter(f => f.text).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  }
+  const unseenReplies = sid => list(sid).filter(f => f.reply && !f.seenReply);
+  const newCount = () => list().filter(f => f.status !== 'done').length;
+
+  /* ---------- student ---------- */
+  function student(main) {
+    const s = Hub.roster.byId(Hub.auth.sid()); if (!s) { main.innerHTML = U.empty('Your account is not on a class roster.'); return; }
+    const mine = list(s.id);
+    main.innerHTML = U.heading('TELL MISS BADMUS', 'Feedback', 'Tell me what’s working, what isn’t, or what would help you learn. Miss Badmus reads every message — your name is included so she can follow up.') +
+      `<section class="card act"><h2 class="bar-head pink">Send feedback</h2><form id="fb-form" class="form-grid">
+        <label>What is it about?<select id="fb-cat">${CATS.map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select></label>
+        <label class="span2">Your message <span class="tiny muted">(up to 600 characters)</span><textarea id="fb-text" rows="4" maxlength="600" placeholder="e.g. The pace in today’s lesson was too fast for me when we did partial fractions."></textarea></label>
+        <div class="actions span2"><button class="btn primary" type="submit">Send to Miss Badmus</button></div></form>
+        <p class="tiny muted">If you are worried about your safety or someone else’s, please speak to a trusted adult in school straight away — feedback here isn’t checked immediately.</p></section>
+      ${mine.length ? `<section class="card"><h2 class="bar-head blue">Your feedback</h2>${mine.map(f => `<div class="fb-item"><p class="tiny muted">${esc(catName(f.cat))} · ${when(f.at)}${f.status === 'done' ? ' · <span class="gc-ok">seen ✓</span>' : ''}</p><p>${esc(f.text)}</p>${f.reply ? `<div class="fb-reply"><b>Miss Badmus:</b> ${esc(f.reply)} <span class="tiny muted">${when(f.replyAt)}</span></div>` : ''}</div>`).join('')}</section>` : ''}`;
+    $('#fb-form').onsubmit = async e => {
+      e.preventDefault(); const text = $('#fb-text').value.trim(); if (!text) return toast('Write your message first.', 'error');
+      if (Hub.auth.isPreview()) return toast('Preview — this is not sent.');
+      const id = 'f' + Date.now().toString(36), at = new Date().toISOString();
+      S().progress[s.id + P + id] = { responses: { cat: $('#fb-cat').value, text: text.slice(0, 600), at }, createdAt: at, updatedAt: at };
+      Hub.store.save(true); try { await Hub.store.flush(); toast('Sent — thank you!'); } catch (err) { toast(err.message, 'error'); return; } Hub.app.render();
+    };
+    // opening the page marks replies as read
+    const un = unseenReplies(s.id); if (un.length && !Hub.auth.isPreview()) { un.forEach(f => { const r = S().progress[f.key]; r.responses = Object.assign({}, r.responses, { seenReply: true }); r.updatedAt = new Date().toISOString(); }); Hub.store.save(true); Hub.store.flush().catch(() => {}); }
+  }
+  /** My day card when Miss Badmus has replied. */
+  function replyCardHTML(s) {
+    const un = s ? unseenReplies(s.id) : []; if (!un.length) return '';
+    return `<section class="card act fb-card"><h2 class="bar-head blue">💬 Miss Badmus replied to your feedback</h2>${un.slice(0, 2).map(f => `<p class="small"><span class="tiny muted">You said:</span> ${esc(f.text.slice(0, 120))}${f.text.length > 120 ? '…' : ''}</p><div class="fb-reply">${esc(f.reply)}</div>`).join('')}<a class="btn small" href="#/feedback">Open feedback →</a></section>`;
+  }
+
+  /* ---------- teacher inbox ---------- */
+  function teacher(main, params) {
+    const show = params.show === 'all' ? 'all' : 'new', g = C().GROUPS[params.g] ? params.g : '', all = list();
+    const items = all.filter(f => (show === 'all' || f.status !== 'done') && (!g || (Hub.roster.byId(f.sid) || {}).group === g));
+    const link = o => '#/feedback?' + new URLSearchParams(Object.assign({ show, g }, o)).toString();
+    main.innerHTML = U.heading('STUDENT VOICE', 'Feedback inbox', 'Messages from students, with their names. Mark each one as dealt with, and reply if you like — the reply shows on the student’s My day.') +
+      `<div class="tabs"><a class="tab ${show === 'new' ? 'on' : ''}" href="${link({ show: 'new' })}">New (${all.filter(f => f.status !== 'done').length})</a><a class="tab ${show === 'all' ? 'on' : ''}" href="${link({ show: 'all' })}">All (${all.length})</a>
+        <span class="fb-filter">${[['', 'All classes'], ...Object.values(C().GROUPS).map(x => [x.id, x.label])].map(([id, l]) => `<a class="tab small ${g === id ? 'on' : ''}" href="${link({ g: id })}">${esc(l)}</a>`).join('')}</span></div>
+      ${items.length ? items.map(f => { const st = Hub.roster.byId(f.sid) || { name: f.sid, group: '' };
+        return `<section class="card fb-t ${f.status === 'done' ? 'done' : ''}"><div class="row-between"><b><a href="#/student/${encodeURIComponent(f.sid)}">${esc(st.name)}</a> <span class="tiny muted">${esc((C().GROUPS[st.group] || {}).label || '')}</span></b><span class="tiny muted">${esc(catName(f.cat))} · ${when(f.at)}</span></div>
+          <p>${esc(f.text)}</p>${f.reply ? `<div class="fb-reply"><b>Your reply:</b> ${esc(f.reply)} <span class="tiny muted">${when(f.replyAt)}${f.seenReply ? ' · read ✓' : ''}</span></div>` : ''}
+          <details class="fb-rep"><summary class="small">${f.reply ? 'Edit reply' : 'Reply'}</summary><textarea rows="2" maxlength="500" data-fbtext="${esc(f.key)}">${esc(f.reply || '')}</textarea><button class="btn small primary" type="button" data-fbreply="${esc(f.key)}">Send reply</button></details>
+          <div class="actions"><button class="btn small ${f.status === 'done' ? 'ghost' : ''}" type="button" data-fbdone="${esc(f.key)}">${f.status === 'done' ? 'Mark as new' : '✓ Dealt with'}</button></div></section>`; }).join('') : U.empty(show === 'new' ? 'No new feedback. 🎉' : 'No feedback yet.')}`;
+    const upd = async (key, patch, msg) => { const r = S().progress[key]; if (!r) return; r.responses = Object.assign({}, r.responses, patch); r.updatedAt = new Date().toISOString(); Hub.store.save(true); try { await Hub.store.flush(); toast(msg); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); };
+    $$('[data-fbdone]', main).forEach(b => (b.onclick = () => { const r = S().progress[b.dataset.fbdone]; upd(b.dataset.fbdone, { status: r && r.responses.status === 'done' ? 'new' : 'done' }, 'Updated.'); }));
+    $$('[data-fbreply]', main).forEach(b => (b.onclick = () => { const t = $(`[data-fbtext="${CSS.escape(b.dataset.fbreply)}"]`, main).value.trim(); if (!t) return toast('Write a reply first.', 'error'); upd(b.dataset.fbreply, { reply: t.slice(0, 500), replyAt: new Date().toISOString(), seenReply: false, status: 'done' }, 'Reply sent — the student sees it on My day.'); }));
+  }
+  Hub.feedback = { list, newCount, unseenReplies, student, teacher, replyCardHTML, CATS };
+})(window.Hub = window.Hub || {});
+
 /* ---- js/app.js ---- */
 /* App shell: sign-in, navigation, routing (#/page/param?query), preview banner, re-rendering. */
 (function (Hub) {
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
-  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['weekly', '📋', 'Monday summary'], 'Teaching', ['lessons', '▣', 'Lessons & notebooks'], ['donow', '☀', 'Personalised quizzes'], ['announce', '✉', 'Announcements'], 'Assessment', ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['exam', '📝', 'Exam prep'], 'Data', ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], 'Course', ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
-  const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar']];
+  const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['weekly', '📋', 'Monday summary'], 'Teaching', ['lessons', '▣', 'Lessons & notebooks'], ['donow', '☀', 'Personalised quizzes'], ['announce', '✉', 'Announcements'], ['feedback', '💬', 'Feedback inbox'], 'Assessment', ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['exam', '📝', 'Exam prep'], 'Data', ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], 'Course', ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
+  const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar'], ['feedback', '💬', 'Feedback']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
   /** Navigate. In the claude.ai preview frame the URL hash is not used (only plain #names pass through), so routes live in memory there. */
@@ -10888,15 +10969,15 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const params = Object.fromEntries(new URLSearchParams(qs || '')); if (id) params.id = decodeURIComponent(id); return { page: page || 'home', params };
   }
   const ROUTES = {
-    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
-    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p) }
+    teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), feedback: (m, p) => Hub.feedback.teacher(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
+    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), feedback: m => Hub.feedback.student(m) }
   };
   function shell() {
     const sess = Hub.auth.current(), role = Hub.auth.role(), st = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null;
     const navItems = role === 'teacher' ? TEACHER_NAV : (Hub.testMode && Hub.testMode.forStudent() ? [['home', '🔒', 'Test mode']] : STUDENT_NAV), q = role === 'teacher' ? Hub.assess.queue().length : 0;
     const name = role === 'student' ? (st ? st.name : '') : sess.name, sub = role === 'student' ? (st ? C().GROUPS[st.group].label : '') : 'Teacher · IB AA SL & HL';
     $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><a class="brand" href="#/home"><img src="${Hub.LOGO}" alt="Miss Badmus’ IB wolf logo"><span class="brand-text"><small>Miss Badmus’</small><b>IB Math Hub</b></span></a><p class="slogan">Inquirers. Thinkers. Reflective Learners.</p>
-      <nav aria-label="Main">${navItems.map(it => typeof it === 'string' ? `<p class="side-h">${it}</p>` : it).map(it => typeof it === 'string' ? it : (([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'home' && role === 'student' && st && ((n => n ? `<span class="badge">${n}</span>` : '')((Hub.announce ? Hub.announce.unread(st).length : 0) + (Hub.nudge ? Hub.nudge.mine(st).length : 0))) || ''}${false ? `<span class="badge">${0}</span>` : ''}</a>`)(it)).join('')}</nav>
+      <nav aria-label="Main">${navItems.map(it => typeof it === 'string' ? `<p class="side-h">${it}</p>` : it).map(it => typeof it === 'string' ? it : (([id, ic, label]) => `<a href="#/${id}" data-nav="${id}"><span class="ic" aria-hidden="true">${ic}</span>${label}${id === 'marking' && q ? `<span class="badge">${q}</span>` : ''}${id === 'feedback' && role === 'teacher' && Hub.feedback && Hub.feedback.newCount() ? `<span class="badge">${Hub.feedback.newCount()}</span>` : ''}${id === 'home' && role === 'student' && st && ((n => n ? `<span class="badge">${n}</span>` : '')((Hub.announce ? Hub.announce.unread(st).length : 0) + (Hub.nudge ? Hub.nudge.mine(st).length : 0))) || ''}${false ? `<span class="badge">${0}</span>` : ''}</a>`)(it)).join('')}</nav>
       <button class="calc-launch" type="button" data-calc aria-controls="calc-panel"><span class="ic" aria-hidden="true">▦</span>NumWorks calculator</button>
       <button class="calc-launch fb-launch" type="button" data-booklet><span class="ic" aria-hidden="true">📘</span>Formula booklet</button>
       ${role === 'teacher' ? pickerHTML() : ''}
@@ -10950,7 +11031,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const sess = Hub.auth.current();
     if (!sess || (sess.role === 'student' && !Hub.roster.byId(sess.sid))) { shellFor = null; signIn(); return; }
     if (sess.role === 'teacher' && !Hub.auth.isPreview() && Hub.store.state) Hub.assess.autoClose();
-    const key = sess.email + '|' + Hub.auth.role() + '|' + (Hub.auth.sid() || '') + '|' + Hub.assess.queue().length + '|' + (Hub.testMode && Hub.testMode.forStudent() ? 'tm' : '');
+    const key = sess.email + '|' + Hub.auth.role() + '|' + (Hub.auth.sid() || '') + '|' + Hub.assess.queue().length + '|' + (Hub.testMode && Hub.testMode.forStudent() ? 'tm' : '') + '|' + (Hub.feedback && Hub.auth.role() === 'teacher' ? Hub.feedback.newCount() : '');
     if (shellFor !== key || !$('#main')) { shell(); shellFor = key; }
     const { page, params } = parse(), role = Hub.auth.role(), routes = ROUTES[role], fn = routes[page] || routes.home;
     $$('[data-nav]').forEach(a => { const on = a.dataset.nav === page || (['edit', 'preview', 'print', 'analysis'].includes(page) && a.dataset.nav === 'studio') || (page === 'lesson' && a.dataset.nav === 'lessons') || (page === 'mark' && a.dataset.nav === 'marking') || (page === 'class' && a.dataset.nav === 'home') || (page === 'iaprint' && a.dataset.nav === 'ia') || (['task', 'result'].includes(page) && a.dataset.nav === 'home'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
