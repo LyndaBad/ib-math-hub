@@ -6621,13 +6621,13 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     main.innerHTML = (opts.back || `<a class="back" href="#/home">← My day</a>`) + U.heading(`${a.type.toUpperCase()}${a.course ? ' · AA ' + a.course : ''}`, esc(a.title), `${a.questions.length} question${a.questions.length > 1 ? 's' : ''} · ${a.questions.reduce((x, q) => x + q.marks, 0)} marks${a.minutes ? ` · about ${a.minutes} minutes` : ''}${Hub.assess.dueFor(a, s ? s.group : null) ? ` · due ${fmtDate(Hub.assess.dueFor(a, s ? s.group : null))}` : ''}`) +
       (opts.preview ? '<div class="notice preview">Preview — nothing you enter here is saved or marked into anyone’s record.</div>' : '') +
       `<form id="take" novalidate>${a.questions.map((q, i) => U.question(q, i, { mode: 'answer', responses, hints: opts.hints, slot: opts.slots ? opts.slots[i] : '' })).join('')}
-      ${a.uploadRequired || opts.allowUpload ? `<section class="card upload-card"><h2 class="bar-head amber">📷 Upload your working ${a.uploadRequired ? '<span class="pill red">required · 0 marks</span>' : '<span class="pill">optional</span>'}</h2><div class="photo-tips"><b class="small">📸 How to take a good photo</b><ol class="small">
-        <li><b>Use your phone</b> if you can — the Chromebook webcam makes blurry, sideways photos.</li>
-        <li>Lay the sheet <b>flat on the desk</b> and hold the phone straight above it, <b>upright (portrait)</b>.</li>
-        <li>Get close so the page <b>fills the photo</b>, in good light with no shadow over it.</li>
-        <li>Photograph <b>every page</b> with working. Write in dark pen or pencil, pressing firmly.</li>
-        <li>Check the preview below: can you read every line? If not, press Remove and take it again.</li></ol>
-        <p class="tiny muted">Photos I can’t read can’t get method marks. No upload means you can’t submit.</p></div><label class="file-btn btn"><input type="file" id="up" accept="image/*,application/pdf" multiple capture="environment"> Add photo or PDF</label><ul id="up-list" class="up-list"></ul></section>` : ''}
+      ${a.uploadRequired || opts.allowUpload ? `<section class="card upload-card"><h2 class="bar-head amber">📷 Upload your working ${a.uploadRequired ? '<span class="pill red">required · 0 marks</span>' : '<span class="pill">optional</span>'}</h2><div class="photo-tips"><b class="small">📸 How to take a good photo on your Chromebook</b><ol class="small">
+        <li>Hold the sheet <b>the right way up</b> (not sideways), facing the camera.</li>
+        <li>Bring it <b>close</b> so the page fills the picture, and keep it <b>flat and still</b> for a second.</li>
+        <li>Face a light — don’t sit with a window behind you, and keep shadows off the page.</li>
+        <li>Write in <b>dark pen or pencil</b>, pressing firmly, so the camera can pick it up.</li>
+        <li>Photograph <b>every page</b> with working, then check the preview below: can you read every line? If not, press Remove and take it again.</li></ol>
+        <p class="tiny muted">Work I can’t read can’t get method marks. No upload means you can’t submit.</p></div><label class="file-btn btn"><input type="file" id="up" accept="image/*,application/pdf" multiple capture="environment"> Add photo or PDF</label><ul id="up-list" class="up-list"></ul></section>` : ''}
       ${a.type === 'Retest' ? `<label class="inline-check proof"><input type="checkbox" id="proof"> I have done my retest preparation (proof of studying) and understand a retest is capped at ${a.cap || 80}%.</label>` : ''}
       ${opts.reflect !== false ? `<label>Reflection — what will you check next time? <span class="tiny muted">(optional)</span><textarea id="reflection" rows="2">${esc((prog && prog.reflection) || '')}</textarea></label>` : ''}
       <div class="actions sticky-actions"><button class="btn primary" id="submit" type="submit">Submit</button><span id="autosave" class="tiny muted">${prog && prog.updatedAt ? 'Answers saved ' + fmtDateTime(prog.updatedAt) : 'Your answers save as you type.'}</span></div></form>`;
@@ -6643,10 +6643,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const up = $('#up'); if (up) up.onchange = async () => { for (const f of up.files) { try { toast('Uploading ' + f.name + '…'); const meta = await Hub.uploads.add(f); ups.push(meta);
           let warn = '';
           if (meta.preview) { const im = new Image(); await new Promise(r => { im.onload = r; im.onerror = r; im.src = meta.preview; }); const w = im.naturalWidth, h = im.naturalHeight;
-            if (w && h && w > h * 1.15) warn = 'This photo is sideways or landscape. Hold your phone upright over the sheet so it reads the right way up — then Remove this one and add the new photo.';
-            else if (w && Math.max(w, h) < 1100) warn = 'This photo is small and may be blurry. Use your phone camera, get closer, and check you can read every line.'; }
+            if (w && Math.max(w, h) < 900) warn = 'This photo is very small and may be hard to read. Hold the sheet closer to the camera, keep it still, and check you can read every line.'; }
           if (warn) U.modal(`<h2 class="modal-title">📸 Check your photo</h2><p>${warn}</p>${meta.preview ? `<img class="up-big" src="${meta.preview}" alt="Your photo">` : ''}<p class="tiny muted">You can still submit, but Miss Badmus can only give marks for working she can read.</p>`);
-          else toast('Added ' + f.name + ' — check the photo below looks right.'); } catch (e) { toast(e.message, 'error'); } } up.value = ''; listUps(); persist(); };
+          else toast('Added ' + f.name + ' — check the preview below: is it the right way up and can you read every line?'); } catch (e) { toast(e.message, 'error'); } } up.value = ''; listUps(); persist(); };
     let busy = false;
     form.onsubmit = async e => {
       e.preventDefault(); if (busy) return;
