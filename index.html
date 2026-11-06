@@ -11425,12 +11425,23 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const U = Hub.ui, S = () => Hub.store.state, C = () => Hub.curriculum;
   const P = 'nudge:';
   const done = (aid, sid) => Hub.assess.attemptsFor(aid, sid).length > 0;
-  const defaultText = (a, due) => `Reminder: you haven’t completed “${String(a.title || '').replace(/^(SL|HL) · /, '')}” yet${due ? ` — it was due ${fmtDate(due, true)}` : ''}. Please complete it today. If you’re stuck, come and see me.`;
+  /** Wording follows the due date: "is due" before it, "is due today" on the day, "was due" after it. */
+  function defaultText(a, due) {
+    const name = `“${String(a.title || '').replace(/^(SL|HL) · /, '')}”`, today = Hub.core.todayISO();
+    if (!due) return `Reminder: you haven’t completed ${name} yet. Please complete it as soon as you can. If you’re stuck, come and see me.`;
+    if (due > today) return `Reminder: ${name} is due ${fmtDate(due, true)} and you haven’t completed it yet. Please complete it before the due date so you don’t get a late mark. If you’re stuck, come and see me.`;
+    if (due === today) return `Reminder: ${name} is due today and you haven’t completed it yet. Please complete it today so you don’t get a late mark. If you’re stuck, come and see me.`;
+    return `Reminder: ${name} was due ${fmtDate(due, true)} and you haven’t completed it yet. Please complete it ASAP — late points are now being deducted. Come to tutoring if you need help.`;
+  }
+  const unreadFor = (sid, aid) => Object.keys(S().progress).filter(k => k.startsWith(sid + '|' + P) && (S().progress[k].responses || {}).aid === aid && !(S().progress[k].responses || {}).read);
   /** Students in these classes who have not handed in this assessment. */
   function notDone(a, groups) { return (groups || a.groups || []).flatMap(g => Hub.roster.inGroup(g)).filter(s => (!a.targets || a.targets.includes(s.id)) && !done(a.id, s.id)); }
   function send(a, sids, text) {
     const id = 'n' + Date.now().toString(36), at = new Date().toISOString();
-    sids.forEach(sid => { S().progress[sid + '|' + P + id] = { responses: { text: String(text).slice(0, 400), aid: a.id, at }, createdAt: at, updatedAt: at }; });
+    sids.forEach(sid => {
+      unreadFor(sid, a.id).forEach(k => delete S().progress[k]);   // one reminder per task: the new one replaces any they haven't read
+      const msg = typeof text === 'function' ? text(sid) : text;
+      S().progress[sid + '|' + P + id] = { responses: { text: String(msg).slice(0, 400), aid: a.id, at }, createdAt: at, updatedAt: at }; });
     const st = S(); st.settings.nudges = (st.settings.nudges || []).concat([{ id, aid: a.id, n: sids.length, at }]).slice(-80);
     Hub.store.log(`Reminded ${sids.length} student${sids.length === 1 ? '' : 's'} about “${a.title}”`); Hub.store.save(true);
   }
@@ -11438,20 +11449,22 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function open(aid, group) {
     const a = Hub.assess.byId(aid); if (!a) return;
     const groups = group ? [group] : (a.groups || []), who = notDone(a, groups), due = group ? Hub.assess.dueFor(a, group) : (groups.map(g => Hub.assess.dueFor(a, g)).filter(Boolean).sort()[0] || null);
-    const last = (S().settings.nudges || []).filter(n => n.aid === aid).pop();
+    const last = (S().settings.nudges || []).filter(n => n.aid === aid).pop(), dues = [...new Set(groups.map(g => Hub.assess.dueFor(a, g) || ''))];
     if (!who.length) { toast('Everyone has done it — nobody to remind.'); return; }
     const closed = who.filter(s => Hub.attendance && Hub.attendance.lockedFor(a, s.id));
     const mdl = U.modal(`<h2 class="modal-title">🔔 Remind students who haven’t done it</h2><p class="small"><b>${esc(a.title)}</b>${last ? ` <span class="tiny muted">· last reminder ${fmtDate(last.at.slice(0, 10), true)}</span>` : ''}</p>
-      <fieldset class="nd-who"><legend class="small"><b>${who.length} not done</b> — untick anyone you don’t want to remind</legend>${who.map(s => `<label class="inline-check"><input type="checkbox" class="nd-s" value="${esc(s.id)}" checked> ${esc(s.name)}${groups.length > 1 ? ` <span class="tiny muted">${esc(C().GROUPS[s.group].label)}</span>` : ''}</label>`).join('')}</fieldset>
+      <fieldset class="nd-who"><legend class="small"><b>${who.length} not done</b> — untick anyone you don’t want to remind</legend>${who.map(s => `<label class="inline-check"><input type="checkbox" class="nd-s" value="${esc(s.id)}" ${unreadFor(s.id, a.id).length ? '' : 'checked'}> ${esc(s.name)}${unreadFor(s.id, a.id).length ? ' <span class="pill amber tiny">already reminded</span>' : ''}${groups.length > 1 ? ` <span class="tiny muted">${esc(C().GROUPS[s.group].label)}</span>` : ''}</label>`).join('')}</fieldset>
       ${closed.length ? `<p class="small nd-warn">⚠ This ${esc(a.type)} has closed for ${closed.length} of them (they were in the lesson), so they can’t open it. Tick <b>Keep open</b> on the class dashboard first, or they will be reminded about something they can’t do.</p>` : ''}
       <label>Message<textarea id="nd-text" rows="3" maxlength="400">${esc(defaultText(a, due))}</textarea></label>
-      <p class="tiny muted">Only the ticked students see it — on My day, with a button straight to the work. It disappears when they hand it in. For an alert on their phones too, copy the names for a Canvas message.</p>
+      ${who.some(s => unreadFor(s.id, a.id).length) ? '<p class="tiny muted">Students marked <b>already reminded</b> haven’t read your last reminder yet, so they’re unticked. Tick them to replace it with this one — they never see two.</p>' : ''}
+      <p class="tiny muted">${dues.length > 1 ? 'The classes have different due dates, so each student gets the wording for their own class unless you edit the message. ' : ''}Only the ticked students see it — on My day, with a button straight to the work. It disappears when they hand it in. For an alert on their phones too, copy the names for a Canvas message.</p>
       <div class="actions"><button class="btn primary" id="nd-send" type="button">Send reminder</button><button class="btn ghost" id="nd-copy" type="button">Copy names for Canvas</button></div>`);
     const root = mdl.el;
     $('#nd-send', root).onclick = async () => {
       const sids = $$('.nd-s', root).filter(i => i.checked).map(i => i.value), text = $('#nd-text', root).value.trim();
       if (!sids.length) return toast('Tick at least one student.', 'error'); if (!text) return toast('Write a message.', 'error');
-      send(a, sids, text); try { await Hub.store.flush(); toast(`Reminder sent to ${sids.length} student${sids.length === 1 ? '' : 's'}.`); } catch (e) { toast(e.message, 'error'); }
+      const auto = text === defaultText(a, due).trim();
+      send(a, sids, auto && dues.length > 1 ? sid => defaultText(a, Hub.assess.dueFor(a, (Hub.roster.byId(sid) || {}).group)) : text); try { await Hub.store.flush(); toast(`Reminder sent to ${sids.length} student${sids.length === 1 ? '' : 's'}.`); } catch (e) { toast(e.message, 'error'); }
       mdl.close(); Hub.app.render();
     };
     $('#nd-copy', root).onclick = async () => { const names = $$('.nd-s', root).filter(i => i.checked).map(i => (Hub.roster.byId(i.value) || {}).name).join(', '); try { await navigator.clipboard.writeText(names); toast('Names copied.'); } catch (e) { toast(names); } };
@@ -11462,7 +11475,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   /* ---------- student ---------- */
   function mine(s) {
     return Object.entries(S().progress).filter(([k]) => k.startsWith(s.id + '|' + P)).map(([k, v]) => Object.assign({ key: k }, v.responses || {}))
-      .filter(r => r.text && !r.read && r.aid && !done(r.aid, s.id) && Hub.assess.forStudent(s.id).some(a => a.id === r.aid)).sort((x, y) => String(y.at).localeCompare(String(x.at)));
+      .filter(r => r.text && !r.read && r.aid && !done(r.aid, s.id) && Hub.assess.forStudent(s.id).some(a => a.id === r.aid)).sort((x, y) => String(y.at).localeCompare(String(x.at)))
+      .filter((r, i, all) => all.findIndex(x => x.aid === r.aid) === i);   // one per task, the newest
   }
   function bannerHTML(s) {
     const list = mine(s); if (!list.length) return '';
