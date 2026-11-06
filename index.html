@@ -192,6 +192,8 @@ legend { font-family: var(--f-ui); font-weight: 700; padding: 0 6px; }
 details.unit-fold > summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; } details.unit-fold > summary::-webkit-details-marker { display: none; } details.unit-fold > summary .unit-h { margin: 0; } details.unit-fold .fold-tog { margin-left: auto; } details.unit-fold[open] > summary { margin-bottom: 10px; }
 .ag-tbl .ag-c { text-align: center; min-width: 34px; } .ag-tbl .ag-h { text-align: center; white-space: nowrap; } .ag-none .gb-name { opacity: .65; }
 .ag-work img { max-width: 100%; border-radius: 8px; border: 1px solid var(--line, #ddd); } .ag-work figure { margin: 0 0 12px; }
+.gb-late { font-size: .62em; margin-left: 3px; color: var(--red, #c53030); font-weight: 700; white-space: nowrap; } .gb-lp input { width: 58px; margin: 0 2px; }
+.ag-in { width: 46px; text-align: center; padding: 2px; } .ag-marks { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px; margin: 8px 0 12px; border: 1px dashed var(--line, #ccc); border-radius: 10px; } .ag-marks .ag-in { width: 56px; } .ag-late { margin-left: 6px; cursor: pointer; border: 0; }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -6085,7 +6087,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const todayHTML = `<section class="card today"><h2 class="bar-head green">Today · ${fmtDate(asOf, true)}</h2>${todayRows.length ? todayRows.join('') : '<p class="tiny muted">No lessons today.</p>'}</section>`;
     const dueHTML = `<h2 class="sec">${esc(dueLabel)}</h2><div class="grid g2">${dueTile('Exit Ticket', 'Exit Tickets')}${dueTile('Homework', 'Homework')}</div>`;
     const mis = ['SL-A', 'SL-B', 'HL-A', 'HL-B'].flatMap(g => Hub.mastery.misconceptions(g, 28).slice(0, 2).map(m => Object.assign({ g }, m))).sort((a, b) => b.students - a.students).slice(0, 6);
-    main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', '', Hub.upkeep ? Hub.upkeep.buttonHTML() : '') + (Hub.upkeep ? Hub.upkeep.nudgeHTML() : '') +
+    main.innerHTML = U.heading(`${fmtDate(asOf, true).toUpperCase()} · TEACHER DASHBOARD`, 'Every learner. A next step.', '', Hub.upkeep ? Hub.upkeep.buttonHTML() : '') + (Hub.upkeep ? Hub.upkeep.nudgeHTML() : '') + (Hub.nudge ? Hub.nudge.autoCardHTML() : '') +
       (Hub.testMode ? Hub.testMode.stripHTML() : '') + todayHTML + (Hub.insights ? Hub.insights.dashCard() : '') + (Hub.exam ? Hub.exam.dashHTML() : '') + (() => { const nA = S().assessments.filter(a => a.status === 'approved').length, nIA = Object.values(S().ia).filter(n => Object.values(n.status || {}).includes('submitted')).length;
         const tiles = [q.length ? `<a class="att hot" href="#/marking"><b>${q.length}</b><span>submission${q.length === 1 ? '' : 's'} to mark${(r => r ? `<br><small class="att-ready">${r} ready to release</small>` : '')(Hub.assess.readyToRelease().length)}</span></a>` : '',
           drafts.length ? `<a class="att warm" href="#/studio?status=draft"><b>${drafts.length}</b><span>draft${drafts.length === 1 ? '' : 's'} to review</span></a>` : '',
@@ -6335,22 +6337,44 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const latest = sid => S().attempts.filter(t => t.aid === a.id && t.sid === sid).sort((x, y) => String(y.at).localeCompare(String(x.at)))[0];
     const cell = (t, k, max) => { const ar = t.auto && t.auto.parts && t.auto.parts[k]; const fin = t.final && t.final.parts && t.final.parts[k];
       const e = fin !== undefined && fin !== null ? +fin : ar && ar.verdict !== 'teacher' ? +ar.earned : null;
-      if (e === null) return `<td class="ag-c hm-a" title="Needs your mark">?</td>`; const pc = max ? e / max : 0; return `<td class="ag-c ${pc >= 0.999 ? 'hm-g' : pc > 0 ? 'hm-a' : 'hm-r'}">${e}</td>`; };
+      if (e === null) return `<td class="ag-c hm-a"><input class="ag-in" type="number" min="0" max="${max}" step="0.5" data-t="${esc(t.id)}" data-k="${esc(k)}" title="Your mark out of ${max}" placeholder="?" value="${(DRAFT[t.id] || {})[k] ?? ''}"></td>`; const pc = max ? e / max : 0; return `<td class="ag-c ${pc >= 0.999 ? 'hm-g' : pc > 0 ? 'hm-a' : 'hm-r'}">${e}</td>`; };
     const rows = studs.map(st => { const t = latest(st.id);
       if (!t) return `<tr class="ag-none"><th class="gb-name">${esc(st.name)}</th>${parts.map(() => '<td class="ag-c"></td>').join('')}<td colspan="3" class="tiny muted">not submitted</td></tr>`;
-      const sc = Hub.assess.score(t), n = (t.uploads || []).length;
-      return `<tr><th class="gb-name">${esc(st.name)}</th>${parts.map(pt => cell(t, pt.key, pt.max)).join('')}<td><b>${sc.earned}/${sc.max}</b>${t.status === 'released' ? '' : ' <span class="pill amber tiny">not released</span>'}</td>
+      const sc = Hub.assess.score(t), n = (t.uploads || []).length, L = Hub.gradebook && Hub.gradebook.late(Object.assign({}, t, { lateWaived: false }), a, st.group), open = needs(t);
+      return `<tr><th class="gb-name">${esc(st.name)}${L ? ` <button class="pill ${t.lateWaived ? 'green' : 'red'} tiny ag-late" type="button" data-waive="${esc(t.id)}" title="${t.lateWaived ? 'Late penalty excused — click to apply it again' : `${L.days} day${L.days === 1 ? '' : 's'} late (−${L.minus}%) — click to excuse`}">${t.lateWaived ? 'late · excused' : `late ${L.days}d`}</button>` : ''}</th>${parts.map(pt => cell(t, pt.key, pt.max)).join('')}<td><b>${sc.earned}/${sc.max}</b>${t.status === 'released' ? '' : t.status === 'submitted' ? ` <button class="btn small primary" type="button" data-agrel="${esc(t.id)}">Release</button>` : ' <span class="pill amber tiny">not released</span>'}</td>
         <td>${n ? `<button class="btn small" type="button" data-work="${esc(t.id)}">📷 ${n === 1 ? 'View work' : `View ${n} files`}</button>` : a.uploadRequired ? '<span class="pill red tiny">no upload</span>' : '<span class="tiny muted">—</span>'}</td>
         <td><a class="btn small ghost" href="#/mark/${esc(t.id)}">Mark</a></td></tr>`; }).join('');
     const done = studs.filter(st => latest(st.id)).length;
     return `<section class="card ag-card"><div class="row-between"><h2 class="bar-head green">Every student, every question</h2>${groups.length > 1 ? `<div class="gb-tabs">${['all'].concat(groups).map(x => `<a class="chip ${x === g ? 'on' : ''}" href="#/analysis/${a.id}?g=${x}">${x === 'all' ? 'Both classes' : esc(C().GROUPS[x].label)}</a>`).join('')}</div>` : ''}</div>
-      <p class="tiny muted">${done}/${studs.length} submitted. Marks per question part (green full marks, amber part marks, red none, <b>?</b> waiting for your mark). Press <b>📷 View work</b> to see the photos a student uploaded.</p>
+      <p class="tiny muted">${done}/${studs.length} submitted. Marks per question part (green full marks, amber part marks, red none). Type your mark in any empty box — open <b>📷 View work</b> to mark while you look at the photos — then press <b>Release</b>.</p>
+      ${(n => n ? `<div class="actions"><button class="btn small primary" type="button" id="ag-relall">Release all ${n} fully marked</button></div>` : '')(studs.map(st => latest(st.id)).filter(t => t && t.status === 'submitted' && filled(t)).length)}
       <div class="scroll"><table class="tbl ag-tbl"><thead><tr><th class="gb-name">Student</th>${parts.map(pt => `<th class="ag-h" title="${pt.max} mark${pt.max === 1 ? '' : 's'}">${pt.label}<span class="tiny muted"> /${pt.max}</span></th>`).join('')}<th>Total</th><th>Working</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
   }
+  const DRAFT = {};   // marks typed but not yet released: attemptId → { partKey: mark }
+  /** Parts of a submitted attempt that wait for the teacher. */
+  const needs = t => t.status === 'submitted' ? Object.entries((t.auto && t.auto.parts) || {}).filter(([, r]) => r.verdict === 'teacher').map(([k]) => k) : [];
+  const filled = t => needs(t).every(k => DRAFT[t.id] && DRAFT[t.id][k] !== undefined && DRAFT[t.id][k] !== '');
+  async function releaseOne(tid) {
+    const t = S().attempts.find(x => x.id === tid); if (!t) return;
+    if (!filled(t)) return toast('Give a mark for every empty box first.', 'error');
+    Hub.assess.release(tid, Object.assign({}, DRAFT[tid] || {}), t.comment || ''); delete DRAFT[tid];
+    try { await Hub.store.flush(); toast('Released.'); } catch (e) { toast(e.message, 'error'); } Hub.app.render();
+  }
   function bindGrid(main, a) {
+    const setDraft = i => { const v = i.value === '' ? '' : Math.max(0, Math.min(+i.max, +i.value)); (DRAFT[i.dataset.t] = DRAFT[i.dataset.t] || {})[i.dataset.k] = v; $$(`.ag-in[data-t="${i.dataset.t}"][data-k="${i.dataset.k}"]`).forEach(o => { if (o !== i) o.value = v; }); };
+    $$('.ag-in', main).forEach(i => (i.oninput = () => setDraft(i)));
+    $$('[data-agrel]', main).forEach(b => (b.onclick = () => releaseOne(b.dataset.agrel)));
+    const ra = $('#ag-relall', main); if (ra) ra.onclick = async () => { const ids = S().attempts.filter(t => t.aid === a.id && t.status === 'submitted' && filled(t)).map(t => t.id); ids.forEach(id => { Hub.assess.release(id, Object.assign({}, DRAFT[id] || {}), ''); delete DRAFT[id]; }); try { await Hub.store.flush(); toast(`Released ${ids.length}.`); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); };
+    $$('[data-waive]', main).forEach(b => (b.onclick = async () => { const t = S().attempts.find(x => x.id === b.dataset.waive); t.lateWaived = !t.lateWaived; Hub.store.log(`${t.lateWaived ? 'Excused' : 'Applied'} late penalty for ${(Hub.roster.byId(t.sid) || {}).name || 'a student'} on “${a.title}”`); Hub.store.save(true); try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); }));
     $$('[data-work]', main).forEach(b => (b.onclick = async () => {
       const t = S().attempts.find(x => x.id === b.dataset.work), st = Hub.roster.byId(t.sid);
-      const mdl = U.modal(`<h2 class="modal-title">📷 ${esc(st ? st.name : 'Student')} · uploaded working</h2><p class="tiny muted">${esc(a.title)} · submitted ${fmtDateTime(t.at)}</p><div class="ag-work"><p class="tiny muted">Loading…</p></div><div class="actions"><a class="btn small" href="#/mark/${esc(t.id)}">Mark this work →</a></div>`);
+      const qs = Hub.assess.questionsOf(t), lab = k => { const [qid, pid] = k.split('|'), qi = qs.findIndex(q => q.id === qid), q = qs[qi], pt = q && q.parts.find(p => p.id === pid); return { name: `Q${qi + 1}${q && q.parts.length > 1 ? pt.label : ''}`, max: pt ? pt.marks : 0, cmd: pt ? pt.command : '' }; };
+      const todo = needs(t);
+      const mdl = U.modal(`<h2 class="modal-title">📷 ${esc(st ? st.name : 'Student')} · uploaded working</h2><p class="tiny muted">${esc(a.title)} · submitted ${fmtDateTime(t.at)}</p>
+        ${todo.length ? `<div class="ag-marks"><b class="small">Your marks</b>${todo.map(k => { const L = lab(k); return `<label class="inline">${L.name}${L.cmd ? ` <span class="tiny muted">${esc(L.cmd)}</span>` : ''} <input class="ag-in" type="number" min="0" max="${L.max}" step="0.5" data-t="${esc(t.id)}" data-k="${esc(k)}" value="${(DRAFT[t.id] || {})[k] ?? ''}"> / ${L.max}</label>`; }).join('')}<button class="btn small primary" type="button" id="ag-mrel">Save &amp; release</button></div>` : ''}
+        <div class="ag-work"><p class="tiny muted">Loading…</p></div><div class="actions"><a class="btn small ghost" href="#/mark/${esc(t.id)}">Full marking page →</a></div>`);
+      $$('.ag-in', mdl.el).forEach(i => (i.oninput = () => setDraft(i)));
+      const mr = $('#ag-mrel', mdl.el); if (mr) mr.onclick = () => { if (!filled(t)) return toast('Give a mark for every box first.', 'error'); mdl.close(); releaseOne(t.id); };
       const box = mdl.el.querySelector('.ag-work'), html = [];
       for (const u of t.uploads) { let url = null; try { url = await Hub.uploads.url(u.id); } catch (e) {}
         html.push(url ? (u.type === 'application/pdf' ? `<p><a class="btn small" href="${url}" target="_blank" rel="noopener">Open PDF: ${esc(u.name)}</a></p>` : `<figure class="work-img"><a href="${url}" target="_blank" rel="noopener" title="Open full size"><img src="${url}" alt="Uploaded working by ${esc(st ? st.name : '')}"></a><figcaption class="tiny muted">${esc(u.name)} · tap to open full size</figcaption></figure>`) : `<p class="tiny muted">${esc(u.name)} could not be loaded — check your connection and try again.</p>`); }
@@ -11491,6 +11515,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       <label>Message<textarea id="nd-text" rows="3" maxlength="400">${esc(defaultText(a, due))}</textarea></label>
       ${who.some(s => unreadFor(s.id, a.id).length) ? '<p class="tiny muted">Students marked <b>already reminded</b> haven’t read your last reminder yet, so they’re unticked. Tick them to replace it with this one — they never see two.</p>' : ''}
       <p class="tiny muted">${dues.length > 1 ? 'The classes have different due dates, so each student gets the wording for their own class unless you edit the message. ' : ''}Only the ticked students see it — on My day, with a button straight to the work. It disappears when they hand it in. For an alert on their phones too, copy the names for a Canvas message.</p>
+      <label class="inline-check tiny"><input type="checkbox" id="nd-auto" data-aid="${esc(a.id)}" ${a.autoRemind !== false ? 'checked' : ''}> Automatic reminders for this task (the day before it’s due, and when it’s late)</label>
       <div class="actions"><button class="btn primary" id="nd-send" type="button">Send reminder</button><button class="btn ghost" id="nd-copy" type="button">Copy names for Canvas</button></div>`);
     const root = mdl.el;
     $('#nd-send', root).onclick = async () => {
@@ -11511,8 +11536,37 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       .filter(r => r.text && !r.read && r.aid && !done(r.aid, s.id) && Hub.assess.forStudent(s.id).some(a => a.id === r.aid)).sort((x, y) => String(y.at).localeCompare(String(x.at)))
       .filter((r, i, all) => all.findIndex(x => x.aid === r.aid) === i);   // one per task, the newest
   }
+  /* ---------- automatic reminders: worked out on the student's own page, so they cost nothing to run ----------
+     From 3 pm the day before a homework/quiz/test is due, until it is handed in; and for a week after the due date.
+     Only for students who haven't done it; never for Exit Tickets; never twice (a reminder from Miss Badmus wins). */
+  const nyNow = () => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map(x => [x.type, x.value])); return { date: `${p.year}-${p.month}-${p.day}`, h: +p.hour }; };
+  const addDay = (d, n) => Hub.core.addDays(d, n);
+  const autoOn = a => (S().settings || {}).autoRemind !== false && a.autoRemind !== false;
+  function phaseFor(a, due) {
+    const n = nyNow(); if (!due) return null;
+    if (n.date === due || (n.date === addDay(due, -1) && n.h >= 15)) return 'before';
+    if (n.date > due && n.date <= addDay(due, 7)) return 'after';
+    return null;
+  }
+  const dismissed = (sid, aid, ph) => { try { return localStorage.getItem(`ar|${sid}|${aid}|${ph}`) === '1'; } catch (e) { return false; } };
+  function autoFor(s) {
+    if (!s) return [];
+    return Hub.assess.forStudent(s.id).filter(a => a.status === 'published' && !a.optional && a.type !== 'Exit Ticket' && autoOn(a) && !done(a.id, s.id) && !(Hub.attendance && Hub.attendance.lockedFor && Hub.attendance.lockedFor(a, s.id)))
+      .map(a => { const due = Hub.assess.dueFor(a, s.group), ph = phaseFor(a, due); return ph && !dismissed(s.id, a.id, ph) ? { key: `auto|${a.id}|${ph}`, aid: a.id, auto: true, text: '', at: nyNow().date } : null; }).filter(Boolean);
+  }
+  /** Teacher: who is being reminded automatically right now, by task. */
+  function autoSummary() {
+    return S().assessments.filter(a => a.status === 'published' && !a.optional && a.type !== 'Exit Ticket' && autoOn(a)).flatMap(a => (a.groups || []).map(g => {
+      const ph = phaseFor(a, Hub.assess.dueFor(a, g)); if (!ph) return null; const who = notDone(a, [g]); return who.length ? { a, g, ph, who } : null; })).filter(Boolean);
+  }
+  function autoCardHTML() {
+    const on = (S().settings || {}).autoRemind !== false, list = on ? autoSummary() : [];
+    return `<section class="card ar-card"><div class="row-between"><h2 class="bar-head pink">🔔 Automatic reminders</h2><label class="inline-check tiny"><input type="checkbox" id="ar-on" ${on ? 'checked' : ''}> On</label></div>
+      ${!on ? '<p class="small muted">Off — students only get reminders you send yourself.</p>' : list.length ? list.map(x => `<p class="small"><b>${x.who.length}</b> ${esc(C().GROUPS[x.g].label.replace('AA ', ''))} student${x.who.length === 1 ? '' : 's'} ${x.ph === 'before' ? 'are being reminded' : 'are being reminded (overdue)'} about <a href="#/analysis/${esc(x.a.id)}?g=${x.g}">${esc(x.a.title)}</a> <span class="tiny muted">· due ${fmtDate(Hub.assess.dueFor(x.a, x.g), true)}</span></p>`).join('') : '<p class="small muted">Nobody needs a reminder right now.</p>'}
+      <p class="tiny muted">Students who haven’t done a homework, quiz or test see a reminder on My day from 3 pm the day before it’s due, and for a week after if it’s late. Not for Exit Tickets. Turn it off for one task from its 🔔 Remind box.</p></section>`;
+  }
   function bannerHTML(s) {
-    const list = mine(s); if (!list.length) return '';
+    const manual = mine(s), list = manual.concat(autoFor(s).filter(r => !manual.some(m => m.aid === r.aid))); if (!list.length) return '';
     return `<section class="card act nd-banner" aria-live="polite"><h2 class="bar-head pink">🔔 Reminder from Miss Badmus</h2>${list.map(r => { const a = Hub.assess.byId(r.aid);
       // the standard wording is worked out when the student reads it, so "is due" / "was due" is always right on the day
       const text = r.auto || /^Reminder: you haven’t completed “/.test(r.text) ? defaultText(a, Hub.assess.dueFor(a, s.group)) : r.text;
@@ -11520,12 +11574,15 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   function bindBanner(root, s) {
     $$('[data-ndread]', root).forEach(b => (b.onclick = async () => {
+      if (b.dataset.ndread.startsWith('auto|')) { const [, aid, ph] = b.dataset.ndread.split('|'); try { localStorage.setItem(`ar|${s.id}|${aid}|${ph}`, '1'); } catch (e) {} const sec = b.closest('.nd-banner'); b.closest('.ann-item').remove(); if (sec && !sec.querySelector('.ann-item')) sec.remove(); return; }
       if (Hub.auth.isPreview()) { b.closest('.ann-item').remove(); return; }
       const rec = S().progress[b.dataset.ndread]; if (rec) { rec.responses = Object.assign({}, rec.responses, { read: true }); rec.updatedAt = new Date().toISOString(); Hub.store.save(true); }
       try { await Hub.store.flush(); } catch (e) { toast(e.message, 'error'); } Hub.app.render();
     }));
   }
-  Hub.nudge = { open, send, notDone, buttonHTML, bannerHTML, bindBanner, mine };
+  document.addEventListener('change', async e => { if (e.target && e.target.id === 'ar-on') { S().settings.autoRemind = e.target.checked; Hub.store.log(`Automatic reminders ${e.target.checked ? 'on' : 'off'}`); Hub.store.save(true); try { await Hub.store.flush(); } catch (err) { toast(err.message, 'error'); } Hub.app.render(); }
+    if (e.target && e.target.id === 'nd-auto') { const a = Hub.assess.byId(e.target.dataset.aid); if (!a) return; a.autoRemind = e.target.checked; Hub.store.save(true); try { await Hub.store.flush(); toast(`Automatic reminders ${a.autoRemind ? 'on' : 'off'} for this task.`); } catch (err) { toast(err.message, 'error'); } } });
+  Hub.nudge = { open, send, notDone, buttonHTML, bannerHTML, bindBanner, mine, autoFor, autoSummary, autoCardHTML };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/feedback.js ---- */
@@ -11748,6 +11805,13 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const KIND_SHORT = { et: 'ET', hw: 'HW', quiz: 'Quiz', test: 'Test', retake: 'Retest' };
   const kindOf = a => a.mock ? 'test' : (a.retestOf || a.type === 'Retest' || / · Retake$/.test(a.title || '')) ? 'retake' : a.type === 'Exit Ticket' ? 'et' : a.type === 'Homework' ? 'hw' : a.type === 'Quiz' ? 'quiz' : ['Unit test', 'Test'].includes(a.type) ? 'test' : 'hw';
   const short = t => String(t || '').replace(/^(SL|HL) · /, '');
+  /** Late work: days after the due date (New York calendar days) × the penalty per day (2.5 percentage points unless changed). */
+  const nyDate = iso => { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso)); } catch (e) { return String(iso).slice(0, 10); } };
+  const perDay = () => { const v = +((S().settings || {}).latePenalty); return isNaN(v) || (S().settings || {}).latePenalty === undefined ? 2.5 : v; };
+  function late(t, a, g) {
+    const due = Hub.assess.dueFor(a, g); if (!due || !t.at || t.lateWaived || a.type === 'Exit Ticket') return null;
+    const days = Math.round((Date.parse(nyDate(t.at)) - Date.parse(due)) / 864e5); return days > 0 ? { days, minus: days * perDay() } : null;
+  }
   const pctOf = t => { try { const v = Hub.assess.score(t).pct; return v === null || v === undefined || isNaN(v) ? null : Math.round(v); } catch (e) { return null; } };
   const mean = xs => xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null;
   const tone = p => p === null ? '' : p >= 80 ? 'hm-g' : p >= 60 ? 'hm-a' : 'hm-r';
@@ -11772,8 +11836,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       .map(a => ({ id: a.id, a, kind: kindOf(a), title: short(a.title), due: Hub.assess.dueFor(a, g) || String(a.publishedAt || '').slice(0, 10), targets: a.targets || null,
         cell: sid => { if (a.targets && !a.targets.includes(sid)) return { pct: null, txt: '', na: true };
           const ts = Hub.assess.attemptsFor(a.id, sid), rel = ts.filter(t => t.status === 'released').pop(), sub = ts.filter(t => t.status === 'submitted').pop();
-          if (rel) { const p = pctOf(rel); return { pct: p, txt: p === null ? '✓' : p + '%' }; }
-          if (sub) return { pct: null, txt: 'to mark' };
+          if (rel) { const p = pctOf(rel), L = late(rel, a, g); if (L && p !== null) { const adj = Math.max(0, Math.round((p - L.minus) * 10) / 10); return { pct: adj, raw: p, late: L.days, txt: adj + '%' }; } return { pct: p, txt: p === null ? '✓' : p + '%' }; }
+          if (sub) { const L = late(sub, a, g); return { pct: null, txt: 'to mark', late: L ? L.days : 0 }; }
           const due = Hub.assess.dueFor(a, g); return { pct: null, txt: due && due < today ? 'missing' : '' }; } }));
     // personalised Exit Tickets and quizzes (Do Now records), one column per lesson
     const dn = {}; S().attempts.filter(t => t.donowKey && String(t.donowKey).startsWith(g + '|') && studs.some(s => s.id === t.sid)).forEach(t => { (dn[t.donowKey] = dn[t.donowKey] || []).push(t); });
@@ -11787,7 +11851,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       all.forEach(c => { const v = c.cell(s.id); if (v.pct !== null) (by[c.kind] = by[c.kind] || []).push(v.pct); });
       const shown = cells.filter(v => v.pct !== null).map(v => v.pct);
       const pr = Hub.datacycle ? Hub.datacycle.predicted(s, Hub.mastery.asOf()) : null;
-      return { s, cells, ib: pr && pr.grade !== null ? pr.grade : null, ibPct: pr ? pr.pct : null, ibN: pr ? pr.n : 0, avg: mean(shown), byKind: Object.fromEntries(KINDS.slice(1).map(([k]) => [k, mean(by[k] || [])])), missing: cells.filter(v => v.txt === 'missing').length }; });
+      const lateN = cells.filter(v => v.late).length;
+      return { s, cells, lateN, ib: pr && pr.grade !== null ? pr.grade : null, ibPct: pr ? pr.pct : null, ibN: pr ? pr.n : 0, avg: mean(shown), byKind: Object.fromEntries(KINDS.slice(1).map(([k]) => [k, mean(by[k] || [])])), missing: cells.filter(v => v.txt === 'missing').length }; });
     const colAvg = cols.map((c, i) => mean(rows.map(r => r.cells[i].pct).filter(p => p !== null)));
     const course = g.slice(0, 2), withIB = rows.filter(r => r.ib !== null), dist = [7, 6, 5, 4, 3, 2, 1].map(k => [k, withIB.filter(r => r.ib === k).length]);
     const cut = Hub.datacycle ? +((S().settings.dataCycle || {}).grade || 4) : 4;
@@ -11798,8 +11863,8 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const ibTone = (k, cut) => k === null ? '' : k >= cut + 1 ? 'hm-g' : k >= cut ? 'hm-a' : 'hm-r';
   function csv(g, kind) {
     const { cols, rows, colAvg } = build(g, kind), q = v => { const t = String(v === null || v === undefined ? '' : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-    const head = ['Student', 'Email', 'Working IB grade', 'Weighted % (IB grade)', ...cols.map(c => `${KIND_SHORT[c.kind]}: ${c.title} (${c.due || ''})`), 'Average %', ...KINDS.slice(1).map(([k, l]) => `${l} average %`), 'Missing'];
-    const lines = [head, ...rows.map(r => [r.s.name, r.s.email || '', r.ib ?? '', r.ibPct ?? '', ...r.cells.map(v => v.na ? 'n/a' : v.pct !== null ? v.pct : v.txt), r.avg ?? '', ...KINDS.slice(1).map(([k]) => r.byKind[k] ?? ''), r.missing]),
+    const head = ['Student', 'Email', 'Working IB grade', 'Weighted % (IB grade)', ...cols.map(c => `${KIND_SHORT[c.kind]}: ${c.title} (${c.due || ''})`), 'Average %', ...KINDS.slice(1).map(([k, l]) => `${l} average %`), 'Missing', 'Late submissions'];
+    const lines = [head, ...rows.map(r => [r.s.name, r.s.email || '', r.ib ?? '', r.ibPct ?? '', ...r.cells.map(v => v.na ? 'n/a' : v.pct !== null ? v.pct : v.txt), r.avg ?? '', ...KINDS.slice(1).map(([k]) => r.byKind[k] ?? ''), r.missing, r.lateN]),
       ['Class average', '', '', mean(rows.map(r => r.ibPct).filter(v => v !== null)) ?? '', ...colAvg.map(v => v ?? ''), mean(rows.map(r => r.avg).filter(v => v !== null)) ?? '']];
     return lines.map(l => l.map(q).join(',')).join('\n');
   }
@@ -11807,19 +11872,20 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const g = C().GROUPS[params.g] ? params.g : (localStorage.getItem('hub-pref-gb') || 'SL-A'), kind = KINDS.some(k => k[0] === params.kind) ? params.kind : 'all';
     try { localStorage.setItem('hub-pref-gb', g); } catch (e) {}
     const B = build(g, kind), { cols, rows, colAvg } = B, link = o => '#/gradebook?' + new URLSearchParams(Object.assign({ g, kind }, o)).toString();
-    main.innerHTML = U.heading('MARKS', 'Gradebook', 'Every Exit Ticket, homework, quiz, test and retest for one class, with averages. Percentages are the latest released mark; “to mark” is waiting for you; “missing” is past its due date.', `<button class="btn primary" id="gb-csv" type="button">⬇ Export CSV</button>`) +
+    main.innerHTML = U.heading('MARKS', 'Gradebook', 'Every Exit Ticket, homework, quiz, test and retest for one class, with averages. Percentages are the latest released mark; “to mark” is waiting for you; “missing” is past its due date.', `<label class="inline tiny gb-lp" title="Taken off work handed in after its due date (not Exit Tickets). Excuse a student on the task’s analysis page.">Late: −<input type="number" id="gb-lp" min="0" max="50" step="0.5" value="${perDay()}">% per day</label><button class="btn primary" id="gb-csv" type="button">⬇ Export CSV</button>`) +
       `<div class="tabs">${Object.values(C().GROUPS).map(x => `<a class="tab ${x.id === g ? 'on' : ''}" href="${link({ g: x.id })}">${esc(x.label)}</a>`).join('')}</div>
       <div class="tabs">${KINDS.map(([k, l]) => `<a class="tab small ${k === kind ? 'on' : ''}" href="${link({ kind: k })}">${l}</a>`).join('')}</div>
       ${B.ibOK ? `<section class="card gb-ibsum"><h2 class="bar-head green">Working IB grades · ${esc(C().GROUPS[g].label)}</h2><div class="gb-dist">${B.dist.map(([k, n]) => `<div class="gb-d ${ibTone(k, B.cut)}"><b>${n}</b><span>grade ${k}</span></div>`).join('')}</div>
         <p class="small"><b>${B.atCut}/${B.nIB}</b> students${B.nIB ? ` (${Math.round(100 * B.atCut / B.nIB)}%)` : ''} are working at a ${B.cut} or above.${B.studs.length - B.nIB ? ` ${B.studs.length - B.nIB} have no counted work yet.` : ''} <a href="#/datacycle">Data cycle →</a></p>
         <p class="tiny muted">Same rule as the Data cycle: Tests, Quizzes, Retests and Exit Tickets weighted, best retest counts, converted with your ${B.course} boundaries. Homework is not counted. In the table, each Test, Quiz and Retest also shows its own IB grade.</p></section>` : `<section class="card warn-card"><p class="small">Set your ${B.course} grade boundaries on the <a href="#/datacycle">Data cycle</a> page to see working IB grades here.</p></section>`}
       <section class="card">${!rows.length ? U.empty('No students in this class yet.') : !cols.length ? U.empty('Nothing has been set for this class yet.') : `<div class="scroll gb-wrap"><table class="gb-tbl"><thead><tr><th class="gb-name">Student</th><th title="Working IB grade: weighted Tests, Quizzes, Retests and Exit Tickets, converted with your ${B.course} grade boundaries">IB</th><th>Avg</th>${cols.map(c => `<th title="${esc(c.title)}"><span class="gb-k ${c.kind}">${KIND_SHORT[c.kind]}</span>${c.a ? `<a class="gb-t" href="#/analysis/${esc(c.id)}?g=${g}" title="Every student, every question, and their uploaded work">${esc(c.title.slice(0, 38))}</a>` : `<span class="gb-t">${esc(c.title.slice(0, 38))}</span>`}<span class="tiny muted">${c.due ? fmtDate(c.due) : ''}</span></th>`).join('')}</tr></thead>
-        <tbody>${rows.map(r => `<tr><th class="gb-name"><a href="#/student/${encodeURIComponent(r.s.id)}">${esc(r.s.name)}</a>${r.missing ? ` <span class="pill red">${r.missing} missing</span>` : ''}</th><td class="gb-ib ${ibTone(r.ib, B.cut)}" title="${r.ibPct !== null ? `Weighted ${r.ibPct}% from ${r.ibN} counted task${r.ibN === 1 ? '' : 's'}` : 'No counted work yet'}"><b>${r.ib ?? (r.ibPct !== null ? '?' : '')}</b></td><td class="${tone(r.avg)}"><b>${r.avg ?? ''}</b></td>${r.cells.map((v, i) => `<td class="${v.na ? 'gb-na' : v.pct !== null ? tone(v.pct) : v.txt === 'missing' ? 'gb-miss' : v.txt === 'to mark' ? 'gb-mark' : ''}">${v.na ? '—' : v.pct !== null ? v.pct + (['test', 'quiz', 'retake'].includes(cols[i].kind) && gradeOf(v.pct, B.course) !== null ? `<sup class="gb-g">${gradeOf(v.pct, B.course)}</sup>` : '') : v.txt === 'to mark' ? `<a href="#/marking">${v.txt}</a>` : esc(v.txt)}</td>`).join('')}</tr>`).join('')}
+        <tbody>${rows.map(r => `<tr><th class="gb-name"><a href="#/student/${encodeURIComponent(r.s.id)}">${esc(r.s.name)}</a>${r.missing ? ` <span class="pill red">${r.missing} missing</span>` : ''}</th><td class="gb-ib ${ibTone(r.ib, B.cut)}" title="${r.ibPct !== null ? `Weighted ${r.ibPct}% from ${r.ibN} counted task${r.ibN === 1 ? '' : 's'}` : 'No counted work yet'}"><b>${r.ib ?? (r.ibPct !== null ? '?' : '')}</b></td><td class="${tone(r.avg)}"><b>${r.avg ?? ''}</b></td>${r.cells.map((v, i) => `<td class="${v.na ? 'gb-na' : v.pct !== null ? tone(v.pct) : v.txt === 'missing' ? 'gb-miss' : v.txt === 'to mark' ? 'gb-mark' : ''}">${v.na ? '—' : v.pct !== null ? (v.late ? `<span title="${v.raw}% before the late penalty: ${v.late} day${v.late === 1 ? '' : 's'} late × ${perDay()}%">` : '') + v.pct + (v.late ? `<sup class="gb-late">late ${v.late}d</sup></span>` : '') + (['test', 'quiz', 'retake'].includes(cols[i].kind) && gradeOf(v.pct, B.course) !== null ? `<sup class="gb-g">${gradeOf(v.pct, B.course)}</sup>` : '') : v.txt === 'to mark' ? `<a href="#/marking">${v.txt}</a>` : esc(v.txt)}</td>`).join('')}</tr>`).join('')}
         <tr class="gb-avg"><th class="gb-name">Class average</th><td></td><td><b>${mean(rows.map(r => r.avg).filter(v => v !== null)) ?? ''}</b></td>${colAvg.map(v => `<td class="${tone(v)}"><b>${v ?? ''}</b></td>`).join('')}</tr></tbody></table></div>
         <p class="tiny muted">Scores are percentages. “—” means a retest or retake that wasn’t set for that student. The CSV also has each student’s average for Exit Tickets, homework, quizzes, tests and retests.</p>`}</section>`;
     $('#gb-csv').onclick = () => { const blob = new Blob([csv(g, kind)], { type: 'text/csv' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${C().GROUPS[g].label.replace(/[^\w]+/g, '_')}_gradebook${kind === 'all' ? '' : '_' + kind}_${Hub.core.todayISO()}.csv`; document.body.appendChild(a); a.click(); a.remove(); toast('Gradebook downloaded.'); };
+    const lp = $('#gb-lp'); if (lp) lp.onchange = async () => { const v = Math.max(0, Math.min(50, +lp.value || 0)); S().settings.latePenalty = v; Hub.store.log(`Late penalty set to ${v}% per day`); Hub.store.save(true); try { await Hub.store.flush(); toast(`Late penalty: −${v}% per day.`); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); };
   }
-  Hub.gradebook = { view, build, csv, columns, rosterOrder };
+  Hub.gradebook = { view, build, csv, columns, rosterOrder, late, perDay };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/app.js ---- */
