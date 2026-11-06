@@ -11436,12 +11436,12 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   const unreadFor = (sid, aid) => Object.keys(S().progress).filter(k => k.startsWith(sid + '|' + P) && (S().progress[k].responses || {}).aid === aid && !(S().progress[k].responses || {}).read);
   /** Students in these classes who have not handed in this assessment. */
   function notDone(a, groups) { return (groups || a.groups || []).flatMap(g => Hub.roster.inGroup(g)).filter(s => (!a.targets || a.targets.includes(s.id)) && !done(a.id, s.id)); }
-  function send(a, sids, text) {
+  function send(a, sids, text, auto) {
     const id = 'n' + Date.now().toString(36), at = new Date().toISOString();
     sids.forEach(sid => {
       unreadFor(sid, a.id).forEach(k => delete S().progress[k]);   // one reminder per task: the new one replaces any they haven't read
       const msg = typeof text === 'function' ? text(sid) : text;
-      S().progress[sid + '|' + P + id] = { responses: { text: String(msg).slice(0, 400), aid: a.id, at }, createdAt: at, updatedAt: at }; });
+      S().progress[sid + '|' + P + id] = { responses: Object.assign({ text: String(msg).slice(0, 400), aid: a.id, at }, auto ? { auto: true } : {}), createdAt: at, updatedAt: at }; });
     const st = S(); st.settings.nudges = (st.settings.nudges || []).concat([{ id, aid: a.id, n: sids.length, at }]).slice(-80);
     Hub.store.log(`Reminded ${sids.length} student${sids.length === 1 ? '' : 's'} about “${a.title}”`); Hub.store.save(true);
   }
@@ -11464,7 +11464,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
       const sids = $$('.nd-s', root).filter(i => i.checked).map(i => i.value), text = $('#nd-text', root).value.trim();
       if (!sids.length) return toast('Tick at least one student.', 'error'); if (!text) return toast('Write a message.', 'error');
       const auto = text === defaultText(a, due).trim();
-      send(a, sids, auto && dues.length > 1 ? sid => defaultText(a, Hub.assess.dueFor(a, (Hub.roster.byId(sid) || {}).group)) : text); try { await Hub.store.flush(); toast(`Reminder sent to ${sids.length} student${sids.length === 1 ? '' : 's'}.`); } catch (e) { toast(e.message, 'error'); }
+      send(a, sids, auto && dues.length > 1 ? sid => defaultText(a, Hub.assess.dueFor(a, (Hub.roster.byId(sid) || {}).group)) : text, auto); try { await Hub.store.flush(); toast(`Reminder sent to ${sids.length} student${sids.length === 1 ? '' : 's'}.`); } catch (e) { toast(e.message, 'error'); }
       mdl.close(); Hub.app.render();
     };
     $('#nd-copy', root).onclick = async () => { const names = $$('.nd-s', root).filter(i => i.checked).map(i => (Hub.roster.byId(i.value) || {}).name).join(', '); try { await navigator.clipboard.writeText(names); toast('Names copied.'); } catch (e) { toast(names); } };
@@ -11481,7 +11481,9 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   function bannerHTML(s) {
     const list = mine(s); if (!list.length) return '';
     return `<section class="card act nd-banner" aria-live="polite"><h2 class="bar-head pink">🔔 Reminder from Miss Badmus</h2>${list.map(r => { const a = Hub.assess.byId(r.aid);
-      return `<div class="ann-item"><div><p>${esc(r.text)}</p><span class="tiny muted">${fmtDate(String(r.at).slice(0, 10), true)}</span></div><div class="actions"><a class="btn small primary" href="#/task/${encodeURIComponent(a.id)}">Do it now →</a><button class="btn small ghost" type="button" data-ndread="${esc(r.key)}">Got it</button></div></div>`; }).join('')}</section>`;
+      // the standard wording is worked out when the student reads it, so "is due" / "was due" is always right on the day
+      const text = r.auto || /^Reminder: you haven’t completed “/.test(r.text) ? defaultText(a, Hub.assess.dueFor(a, s.group)) : r.text;
+      return `<div class="ann-item"><div><p>${esc(text)}</p><span class="tiny muted">${fmtDate(String(r.at).slice(0, 10), true)}</span></div><div class="actions"><a class="btn small primary" href="#/task/${encodeURIComponent(a.id)}">Do it now →</a><button class="btn small ghost" type="button" data-ndread="${esc(r.key)}">Got it</button></div></div>`; }).join('')}</section>`;
   }
   function bindBanner(root, s) {
     $$('[data-ndread]', root).forEach(b => (b.onclick = async () => {
