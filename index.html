@@ -196,6 +196,7 @@ details.unit-fold > summary { display: flex; align-items: center; gap: 12px; cur
 .ag-in { width: 46px; text-align: center; padding: 2px; } .ag-marks { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px; margin: 8px 0 12px; border: 1px dashed var(--line, #ccc); border-radius: 10px; } .ag-marks .ag-in { width: 56px; } .ag-late { margin-left: 6px; cursor: pointer; border: 0; }
 @media (max-width: 640px) { .q-head { flex-wrap: wrap; align-items: flex-start; } .q-meta { flex: 1 1 200px; } .q-meta > * { max-width: 100%; } .q-card { padding: 12px 12px; } }
 .up-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line, #ddd); vertical-align: middle; margin-right: 6px; }
+.due-sub { margin: 8px 0 2px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; } .due-prev { opacity: .78; border-top: 1px dashed var(--line, #ddd); margin-top: 8px; }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -6092,12 +6093,24 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
           const done = studs.filter(st => Hub.assess.attemptsFor(a.id, st.id).length).length, absent = a.type === 'Exit Ticket' && Hub.attendance ? studs.filter(st => Hub.attendance.isAbsent(st.id, D)).length : 0;
           out[a.type].push({ a, g, label: C().GROUPS[g].label, done, total: studs.length, absent }); }); });
       return out; };
-    let dueDay = asOf, due = dueOn(dueDay), dueLabel = 'Due today';
-    if (!due['Exit Ticket'].length && !due.Homework.length) { const past = S().assessments.filter(a => ['Exit Ticket', 'Homework'].includes(a.type) && ['published', 'closed'].includes(a.status)).flatMap(a => (a.groups || []).map(g => Hub.assess.dueFor(a, g))).filter(d => d && d < dueDay).sort().pop();
-      if (past) { dueDay = past; due = dueOn(past); dueLabel = 'Nothing due today · last due ' + fmtDate(past, true); } }
-    const dueTile = (type, head) => { const rows = due[type], d = rows.reduce((n, r) => n + r.done, 0), t = rows.reduce((n, r) => n + r.total, 0), ab = rows.reduce((n, r) => n + r.absent, 0), pc = t ? Math.round(100 * d / t) : null;
+    // Exit Tickets and homework: for each class, the one released most recently ("Latest") and the one before it ("Previous").
+    // Older ones live in the Gradebook.
+    const relOf = (a, g) => { const o = Hub.assess.openFor(a, g); return String(o || a.lessonDate || a.publishedAt || a.createdAt || '').slice(0, 16); };
+    const recent = type => { const latest = [], prev = [];
+      Object.values(C().GROUPS).forEach(G => { const studs = Hub.roster.inGroup(G.id); if (!studs.length) return;
+        const list = S().assessments.filter(a => a.type === type && ['published', 'closed'].includes(a.status) && !a.optional && !Array.isArray(a.targets) && (a.groups || []).includes(G.id) && Hub.assess.released(a, G.id))
+          .sort((x, y) => relOf(y, G.id).localeCompare(relOf(x, G.id)) || String(y.createdAt || '').localeCompare(String(x.createdAt || '')));
+        list.slice(0, 2).forEach((a, k) => { const due = Hub.assess.dueFor(a, G.id), done = studs.filter(st => Hub.assess.attemptsFor(a.id, st.id).length).length;
+          const absent = type === 'Exit Ticket' && Hub.attendance && due ? studs.filter(st => Hub.attendance.isAbsent(st.id, due)).length : 0;
+          (k ? prev : latest).push({ a, g: G.id, label: G.label, done, total: studs.length, absent, due }); }); });
+      return { latest, prev }; };
+    const due = { 'Exit Ticket': recent('Exit Ticket'), Homework: recent('Homework') }, dueLabel = 'Latest Exit Tickets and homework';
+    const rowHTML = r => `<div class="row-between small due-row"><a href="#/analysis/${esc(r.a.id)}?g=${r.g}" title="Every student, every question">${esc(r.label)}</a><span class="tiny muted">${esc(r.a.title.replace(/^(SL|HL) · /, ''))}${r.due ? ` · due ${fmtDate(r.due)}` : ''}</span><b>${r.done}/${r.total}</b></div>`;
+    const dueTile = (type, head) => { const { latest: rows, prev } = due[type], d = rows.reduce((n, r) => n + r.done, 0), t = rows.reduce((n, r) => n + r.total, 0), ab = rows.reduce((n, r) => n + r.absent, 0), pc = t ? Math.round(100 * d / t) : null;
       return `<section class="card due-tile"><h3 class="bar-head ${type === 'Homework' ? 'amber' : 'pink'}">${head}</h3>${rows.length ? `<p class="due-big"><b>${d}/${t}</b> complete <span class="pill ${pc >= 90 ? 'green' : pc >= 70 ? 'amber' : 'red'}">${pc}%</span>${ab ? ` <span class="tiny muted">· ${ab} absent</span>` : ''}</p>
-        ${rows.map(r => `<div class="row-between small due-row"><a href="#/class/${r.g}">${esc(r.label)}</a><span class="tiny muted">${esc(r.a.title.replace(/^(SL|HL) · /, ''))}</span><b>${r.done}/${r.total}</b></div>`).join('')}` : `<p class="tiny muted">None ${dueLabel === 'Due today' ? 'due today' : 'due that day'}.</p>`}</section>`; };
+        <p class="tiny muted due-sub">Latest</p>${rows.map(rowHTML).join('')}
+        ${prev.length ? `<div class="due-prev"><p class="tiny muted due-sub">Previous</p>${prev.map(rowHTML).join('')}</div>` : ''}
+        <p class="tiny"><a href="#/gradebook?kind=${type === 'Homework' ? 'hw' : 'et'}">Older ones → Gradebook</a></p>` : `<p class="tiny muted">None released yet.</p>`}</section>`; };
     const todayRows = Object.values(C().GROUPS).map(g => { const L = C().lessons(g.id).find(l => l.date === asOf && l.kind !== 'none'); if (!L) return null;
       const studs = Hub.roster.inGroup(g.id), ids = new Set(studs.map(x => x.id)), reg = Hub.attendance ? Hub.attendance.registerTaken(g.id, asOf) : null;
       const ets = S().assessments.filter(a => a.type === 'Exit Ticket' && ['published', 'closed'].includes(a.status) && (a.groups || []).includes(g.id) && Hub.assess.dueFor(a, g.id) === asOf);
