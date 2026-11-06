@@ -195,6 +195,7 @@ details.unit-fold > summary { display: flex; align-items: center; gap: 12px; cur
 .gb-late { font-size: .62em; margin-left: 3px; color: var(--red, #c53030); font-weight: 700; white-space: nowrap; } .gb-lp input { width: 58px; margin: 0 2px; }
 .ag-in { width: 46px; text-align: center; padding: 2px; } .ag-marks { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px; margin: 8px 0 12px; border: 1px dashed var(--line, #ccc); border-radius: 10px; } .ag-marks .ag-in { width: 56px; } .ag-late { margin-left: 6px; cursor: pointer; border: 0; }
 @media (max-width: 640px) { .q-head { flex-wrap: wrap; align-items: flex-start; } .q-meta { flex: 1 1 200px; } .q-meta > * { max-width: 100%; } .q-card { padding: 12px 12px; } }
+.up-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line, #ddd); vertical-align: middle; margin-right: 6px; }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -5315,11 +5316,32 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
 /* Private Supabase storage. Short-lived URLs, no browser-only file records. */
 (function(Hub){
  'use strict';
- async function compress(file){const bitmap=await createImageBitmap(file);const k=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));const c=document.createElement('canvas');c.width=Math.round(bitmap.width*k);c.height=Math.round(bitmap.height*k);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(bitmap,0,0,c.width,c.height);bitmap.close();return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Could not process photo.')),'image/jpeg',.82));}
- async function add(file){if(Hub.auth.isPreview())throw Error('Uploads are disabled in teacher preview.');let blob=file;if(file.type.startsWith('image/'))blob=await compress(file);if(!['image/jpeg','image/png','application/pdf'].includes(blob.type)||blob.size>10485760)throw Error('Choose a photo or PDF under 10 MB.');
- const r=await Hub.cloud.call('file-upload',{type:blob.type,size:blob.size});const {error}=await Hub.cloud.client.storage.from('hub-work').uploadToSignedUrl(r.path,r.token,blob,{contentType:blob.type});if(error)throw error;return {id:r.path,name:file.name,type:blob.type,size:blob.size,at:new Date().toISOString()};}
+ /* Photos are shrunk to 1600 px before upload. Some phones and tablets (older iPads, iPhones with very large photos,
+    HEIC files on Windows/Chromebooks) can't decode a photo in the browser, or decode it as a blank picture; in those cases
+    we try a second way of reading it, and if that also fails we send the original photo as it is (if it is a JPEG/PNG under 10 MB). */
+ const LIMIT=10485760, OK=['image/jpeg','image/png','application/pdf'];
+ const isHeic=f=>/heic|heif/i.test(f.type)||/\.(heic|heif)$/i.test(f.name||'');
+ function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{res({src:im,w:im.naturalWidth,h:im.naturalHeight,done:()=>URL.revokeObjectURL(u)});};im.onerror=()=>{URL.revokeObjectURL(u);rej(Error('decode'));};im.src=u;});}
+ async function decode(file){try{const b=await createImageBitmap(file);return {src:b,w:b.width,h:b.height,done:()=>b.close&&b.close()};}catch(e){return loadImg(file);}}
+ function blank(c){try{const t=document.createElement('canvas');t.width=24;t.height=24;const g=t.getContext('2d');g.drawImage(c,0,0,24,24);const d=g.getImageData(0,0,24,24).data;let mn=255,mx=0;for(let i=0;i<d.length;i+=4){const v=(d[i]+d[i+1]+d[i+2])/3;if(v<mn)mn=v;if(v>mx)mx=v;}return mx-mn<6;}catch(e){return false;}}
+ async function shrink(img){const k=Math.min(1,1600/Math.max(img.w,img.h));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.w*k));c.height=Math.max(1,Math.round(img.h*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img.src,0,0,c.width,c.height);img.done();if(!img.w||blank(c))throw Error('blank');return new Promise((resolve,reject)=>c.toBlob(b=>b&&b.size>0?resolve(b):reject(Error('blank')),'image/jpeg',.82));}
+ async function compress(file){
+  try{return await shrink(await decode(file));}catch(e1){}
+  try{return await shrink(await loadImg(file));}catch(e2){}
+  if(['image/jpeg','image/png'].includes(file.type)&&file.size<=LIMIT)return file;   // send the original
+  if(isHeic(file))throw Error('This photo is in iPhone “HEIC” format, which this device can’t open. Take a screenshot of the photo and upload that instead — or on the iPhone go to Settings › Camera › Formats › Most Compatible.');
+  throw Error('This photo couldn’t be opened. Try taking the photo again, or upload a screenshot of it.');
+ }
+ async function add(file){if(Hub.auth.isPreview())throw Error('Uploads are disabled in teacher preview.');
+  let blob=file;if((file.type||'').startsWith('image/')||isHeic(file)||!file.type)blob=await compress(file);
+  if(blob.type==='application/pdf'||file.type==='application/pdf')blob=file;
+  if(!OK.includes(blob.type))throw Error('Choose a photo (JPEG or PNG) or a PDF.');if(blob.size>LIMIT)throw Error('That file is over 10 MB — take a smaller photo or a screenshot.');
+  let lastErr=null;
+  for(let i=0;i<2;i++){try{const r=await Hub.cloud.call('file-upload',{type:blob.type,size:blob.size});const {error}=await Hub.cloud.client.storage.from('hub-work').uploadToSignedUrl(r.path,r.token,blob,{contentType:blob.type});if(error)throw error;
+   const meta={id:r.path,name:file.name,type:blob.type,size:blob.size,at:new Date().toISOString()};if(blob.type.startsWith('image/'))Object.defineProperty(meta,'preview',{value:URL.createObjectURL(blob),enumerable:false});return meta;}catch(e){lastErr=e;await new Promise(r=>setTimeout(r,1200));}}
+  throw Error('The upload didn’t go through ('+((lastErr&&lastErr.message)||'network')+'). Check your Wi-Fi and try again.');}
  async function url(id){const r=await Hub.cloud.call('file-read',{path:id});return r.signedUrl;}
- Hub.uploads={add,url,get:async id=>({id,url:await url(id)}),del:async()=>{throw Error('Unlink the attachment; existing submitted work is retained.')}};
+ Hub.uploads={add,url,compress,get:async id=>({id,url:await url(id)}),del:async()=>{throw Error('Unlink the attachment; existing submitted work is retained.')}};
 })(window.Hub=window.Hub||{});
 
 /* ---- js/mastery.js ---- */
@@ -6593,11 +6615,11 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     const form = $('#take');
     if (Hub.testMode) Hub.testMode.followQuestions(form, a.questions); let ups = uploads.slice(); const hints = {};
     if (Hub.timer && s) Hub.timer.attach(main, form, a, s, opts);
-    const listUps = () => { const ul = $('#up-list'); if (ul) ul.innerHTML = ups.map((u, i) => `<li>📄 ${esc(u.name)} <span class="tiny muted">${Math.round(u.size / 1024)} KB</span> <button type="button" class="btn small ghost" data-rmup="${i}">Remove</button></li>`).join(''); $$('[data-rmup]').forEach(b => (b.onclick = () => { ups.splice(Number(b.dataset.rmup), 1); listUps(); persist(); })); };
+    const listUps = () => { const ul = $('#up-list'); if (ul) ul.innerHTML = ups.map((u, i) => `<li>${u.preview ? `<img class="up-thumb" src="${u.preview}" alt="Your photo">` : '📄'} ${esc(u.name)} <span class="tiny muted">${Math.round(u.size / 1024)} KB</span> <button type="button" class="btn small ghost" data-rmup="${i}">Remove</button></li>`).join(''); $$('[data-rmup]').forEach(b => (b.onclick = () => { ups.splice(Number(b.dataset.rmup), 1); listUps(); persist(); })); };
     const persist = () => { if (opts.preview || !s || opts.noProgress) return; Hub.assess.saveProgress(s.id, key, { responses: U.readResponses(form, a.questions), uploads: ups, reflection: $('#reflection') ? $('#reflection').value : '' }); const el = $('#autosave'); if (el) el.textContent = 'Saving answers to cloud…'; };
     U.bindPreviews(form, persist); listUps();
     $$('details.hint', form).forEach(d => d.addEventListener('toggle', () => { if (d.open) hints[d.dataset.hint] = true; }));
-    const up = $('#up'); if (up) up.onchange = async () => { for (const f of up.files) { try { const meta = await Hub.uploads.add(f); ups.push(meta); toast('Added ' + f.name); } catch (e) { toast(e.message, 'error'); } } up.value = ''; listUps(); persist(); };
+    const up = $('#up'); if (up) up.onchange = async () => { for (const f of up.files) { try { toast('Uploading ' + f.name + '…'); const meta = await Hub.uploads.add(f); ups.push(meta); toast('Added ' + f.name + ' — check the photo below looks right.'); } catch (e) { toast(e.message, 'error'); } } up.value = ''; listUps(); persist(); };
     let busy = false;
     form.onsubmit = async e => {
       e.preventDefault(); if (busy) return;
