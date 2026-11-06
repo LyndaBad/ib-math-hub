@@ -14,7 +14,7 @@ const state = { schema: 2, settings: { halfLifeDays: 21, minEvidence: 3, join: {
 function studentView(sid) { const s = JSON.parse(JSON.stringify(state)), me = s.roster.students.find(x => x.id === sid); s.roster.students = [me]; s.attempts = s.attempts.filter(t => t.sid === sid); s.evidence = s.evidence.filter(e => e.sid === sid);
   s.progress = Object.fromEntries(Object.entries(s.progress).filter(([k]) => k.startsWith(sid + '|'))); s.donow = {}; return s; }
 const TEACHER = ['#/home', '#/class/SL-A', '#/class/HL-A', '#/lessons', '#/studio', '#/marking', '#/announce', '#/donow?group=SL-A', '#/mastery', '#/datacycle', '#/datacycle?tab=intervention', '#/datacycle?present=1', '#/datacycle?tab=heatmap', '#/datacycle?tab=wrong', '#/datacycle?tab=growth', '#/datacycle?tab=ab', '#/exam', '#/exam?course=HL', '#/weekly', '#/gradebook?g=SL-A', '#/gradebook?g=HL-B&kind=et', '#/feedback', '#/unitnotes?u=2&course=HL', '#/terms', '#/guide?group=SL-A&d=2026-12-02', '#/ia', '#/course', '#/settings', '#/student/s1'];
-const STUDENT = ['#/home', '#/notebook', '#/donow', '#/practice', '#/progress', '#/ia', '#/calendar', '#/terms', '#/guide', '#/unitnotes?u=1', '#/feedback', '#/exampractice'];
+const STUDENT = ['#/home', '#/notebook', '#/donow', '#/practice', '#/progress', '#/ia', '#/calendar', '#/terms', '#/guide', '#/unitnotes?u=1', '#/feedback', '#/exampractice', '#/mygrades'];
 (async () => {
   const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { args: ['--no-sandbox'] });
   const problems = [];

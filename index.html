@@ -200,6 +200,8 @@ details.unit-fold > summary { display: flex; align-items: center; gap: 12px; cur
 .photo-tips { background: var(--cream, #fff8ef); border: 1px dashed var(--line, #ddd); border-radius: 10px; padding: 8px 12px; margin: 6px 0 10px; } .photo-tips ol { margin: 6px 0 4px 18px; padding: 0; } .photo-tips li { margin: 2px 0; } .up-big { max-width: 100%; max-height: 50vh; border-radius: 8px; border: 1px solid var(--line, #ddd); }
 .rd-prev { border-top: 1px dashed var(--line, #ddd); margin-top: 10px; padding-top: 6px; }
 .nbr-sent { display: block; margin: 2px 0 6px 12px; color: var(--ink-2, #445); } .nbr-in { background: #EAF3FB; border-radius: 10px; padding: 8px 12px; margin: 6px 0; } .btn.tiny { padding: 1px 8px; font-size: .75rem; }
+.mg-avgs { margin-bottom: 10px; } .mg-avg { text-align: center; padding: 12px; } .mg-avg b { display: block; font-size: 1.6rem; } .mg-avg span { font-size: .8rem; } .mg-miss td:first-child { color: var(--red, #c53030); }
+@media (max-width: 640px) { .mg-tbl th:nth-child(2), .mg-tbl td:nth-child(2) { display: none; } }
 .gb-ib b { font-size: 1.05em; } .gb-g { font-size: .68em; margin-left: 2px; opacity: .7; font-weight: 700; }
 .gb-dist { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; } .gb-d { min-width: 64px; padding: 8px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--line, #ddd); }
 .gb-d b { display: block; font-size: 1.4rem; } .gb-d span { font-size: .75rem; }
@@ -11969,7 +11971,23 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
     $('#gb-csv').onclick = () => { const blob = new Blob([csv(g, kind)], { type: 'text/csv' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${C().GROUPS[g].label.replace(/[^\w]+/g, '_')}_gradebook${kind === 'all' ? '' : '_' + kind}_${Hub.core.todayISO()}.csv`; document.body.appendChild(a); a.click(); a.remove(); toast('Gradebook downloaded.'); };
     const lp = $('#gb-lp'); if (lp) lp.onchange = async () => { const v = Math.max(0, Math.min(50, +lp.value || 0)); S().settings.latePenalty = v; Hub.store.log(`Late penalty set to ${v}% per day`); Hub.store.save(true); try { await Hub.store.flush(); toast(`Late penalty: −${v}% per day.`); } catch (e) { toast(e.message, 'error'); } Hub.app.render(); };
   }
-  Hub.gradebook = { view, build, csv, columns, rosterOrder, late, perDay };
+  /* ---------- student: their own gradebook (#/mygrades) ---------- */
+  function mine(main, params) {
+    const s = Hub.roster.byId(Hub.auth.sid()); if (!s) { main.innerHTML = U.empty('Sign in to see your marks.'); return; }
+    const g = s.group, kind = KINDS.some(([k]) => k === params.kind) ? params.kind : 'all';
+    const cols = columns(g).filter(c => (!c.a || Hub.assess.released(c.a, g)) && (kind === 'all' || c.kind === kind));
+    const rows = cols.map(c => ({ c, v: c.cell(s.id), t: c.a ? Hub.assess.attemptsFor(c.a.id, s.id).filter(x => x.status === 'released').pop() : null })).filter(r => !r.v.na).reverse();
+    const avg = k => { const v = cols.filter(c => k === 'all' || c.kind === k).map(c => c.cell(s.id)).filter(x => !x.na && x.pct !== null).map(x => x.pct); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+    const label = k => (KINDS.find(([x]) => x === k) || [0, ''])[1];
+    const status = r => r.v.na ? '—' : r.v.pct !== null ? `<b>${r.v.pct}%</b>${r.v.late ? ` <span class="pill red tiny" title="${r.v.raw}% before the late penalty (${r.v.late} day${r.v.late === 1 ? '' : 's'} late × ${perDay()}%)">late ${r.v.late}d</span>` : ''}` : r.v.txt === 'to mark' ? '<span class="pill amber tiny">waiting for marking</span>' : r.v.txt === 'missing' ? '<span class="pill red tiny">missing</span>' : r.v.txt === '✓' ? '✓ done' : '<span class="tiny muted">not done yet</span>';
+    main.innerHTML = U.heading('MY MARKS', 'My gradebook', 'Every Exit Ticket, homework, quiz and test you have been set, newest first. Only you (and Miss Badmus) can see this.') +
+      `<div class="grid g4 mg-avgs">${KINDS.slice(1).map(([k, l]) => { const v = avg(k); return `<div class="card mg-avg ${tone(v)}"><b>${v === null ? '—' : v + '%'}</b><span>${esc(l)}</span></div>`; }).join('')}</div>
+      <div class="gb-tabs">${KINDS.map(([k, l]) => `<a class="chip ${k === kind ? 'on' : ''}" href="#/mygrades${k === 'all' ? '' : '?kind=' + k}">${esc(l)}</a>`).join('')}</div>
+      <section class="card">${rows.length ? `<table class="tbl mg-tbl"><thead><tr><th>Task</th><th>Type</th><th>Due</th><th>Mark</th><th></th></tr></thead><tbody>${rows.map(r => `<tr class="${r.v.txt === 'missing' ? 'mg-miss' : ''}"><td>${esc(r.c.title)}</td><td class="tiny">${esc(label(r.c.kind))}</td><td class="tiny">${r.c.due ? fmtDate(r.c.due) : ''}</td><td class="${r.v.pct !== null ? tone(r.v.pct) : ''}">${status(r)}</td>
+        <td>${r.t ? `<a class="btn small ghost" href="#/result/${esc(r.t.id)}">See feedback</a>` : r.c.a && r.v.txt !== 'to mark' && r.c.a.status === 'published' ? `<a class="btn small" href="#/task/${esc(r.c.a.id)}">Do it</a>` : ''}</td></tr>`).join('')}</tbody></table>` : U.empty('Nothing here yet.')}
+      <p class="tiny muted">Late work loses ${perDay()}% per day after the due date (not Exit Tickets). Retakes only appear if you were given one. Your working IB grade is on <a href="#/progress">My progress</a>.</p></section>`;
+  }
+  Hub.gradebook = { view, build, csv, columns, rosterOrder, late, perDay, mine };
 })(window.Hub = window.Hub || {});
 
 /* ---- js/app.js ---- */
@@ -11978,7 +11996,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   'use strict';
   const { $, $$, esc, initials, toast } = Hub.core, U = Hub.ui, C = () => Hub.curriculum;
   const TEACHER_NAV = [['home', '⌂', 'Dashboard'], ['weekly', '📋', 'Monday summary'], 'Teaching', ['lessons', '▣', 'Lessons & notebooks'], ['donow', '☀', 'Personalised quizzes'], ['announce', '✉', 'Announcements'], ['feedback', '💬', 'Feedback inbox'], 'Assessment', ['studio', '✎', 'Assessment studio'], ['marking', '✓', 'Marking queue'], ['gradebook', '▥', 'Gradebook'], ['exam', '📝', 'Exam prep'], 'Data', ['mastery', '▦', 'Mastery'], ['datacycle', '▲', 'Data cycle'], 'Course', ['ia', '◇', 'IA overview'], ['course', '▤', 'Course & pacing'], ['settings', '⚙', 'Data & settings']];
-  const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar'], ['feedback', '💬', 'Feedback']];
+  const STUDENT_NAV = [['home', '⌂', 'My day'], ['notebook', '▣', 'My notebook'], ['donow', '☀', 'Just for me'], ['practice', '∞', 'Practice'], ['progress', '▦', 'My progress'], ['mygrades', '▥', 'My gradebook'], ['ia', '◇', 'My IA studio'], ['course', '▤', 'My calendar'], ['feedback', '💬', 'Feedback']];
   const ART = Hub.HOST === 'artifact'; let current = '#/home';
   const currentHash = () => (ART ? current : location.hash);
   /** Navigate. In the claude.ai preview frame the URL hash is not used (only plain #names pass through), so routes live in memory there. */
@@ -11989,7 +12007,7 @@ window.PACING = {"AA HL": [{"date": "2026-08-25", "day": "A", "activity": "Taugh
   }
   const ROUTES = {
     teacher: { class: (m, p) => Hub.classdash.view(m, p), lessons: (m, p) => Hub.lessons.list(m, p), lesson: (m, p) => Hub.lessons.edit(m, p), preview: (m, p) => Hub.teacher.preview(m, p), print: (m, p) => Hub.print.view(m, p), home: m => Hub.teacher.dashboard(m), studio: (m, p) => Hub.teacher.studio(m, p), edit: (m, p) => Hub.teacher.edit(m, p), analysis: (m, p) => Hub.teacher.analysis(m, p), marking: m => Hub.teacher.marking(m), announce: m => Hub.announce.view(m), mark: (m, p) => Hub.teacher.mark(m, p), donow: (m, p) => Hub.teacher.donow(m, p), 'donow-print': (m, p) => Hub.teacher.donowPrint(m, p), mastery: (m, p) => Hub.teacher.mastery(m, p), datacycle: (m, p) => Hub.datacycle.view(m, p), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), exam: (m, p) => Hub.exam.teacherView(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), weekly: m => Hub.insights.weeklyView(m), gradebook: (m, p) => Hub.gradebook.view(m, p), feedback: (m, p) => Hub.feedback.teacher(m, p), student: (m, p) => Hub.teacher.student(m, p), ia: (m, p) => Hub.ia.teacher(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), settings: m => Hub.shared.settings(m) },
-    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), exampractice: (m, p) => Hub.student.examPractice(m, p), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), feedback: m => Hub.feedback.student(m) }
+    student: { notebook: (m, p) => Hub.lessons.student(m, p), home: m => Hub.student.home(m), donow: m => Hub.student.donow(m), task: (m, p) => Hub.student.task(m, p), result: (m, p) => Hub.student.result(m, p), practice: (m, p) => Hub.student.practice(m, p), progress: m => Hub.student.progress(m), mygrades: (m, p) => Hub.gradebook.mine(m, p), exampractice: (m, p) => Hub.student.examPractice(m, p), ia: (m, p) => Hub.ia.student(m, p), iaprint: (m, p) => Hub.ia.print(m, p), course: (m, p) => Hub.shared.course(m, p), guide: (m, p) => Hub.exam.guide(m, p), terms: m => Hub.exam.terms(m), unitnotes: (m, p) => Hub.lessons.unitNotes(m, p), feedback: m => Hub.feedback.student(m) }
   };
   function shell() {
     const sess = Hub.auth.current(), role = Hub.auth.role(), st = role === 'student' ? Hub.roster.byId(Hub.auth.sid()) : null;
